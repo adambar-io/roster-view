@@ -115,18 +115,6 @@
   .theme-seg button{ background: none; color: var(--text-2); padding: 6px 12px; font-size: 12.5px; font-weight: 500; min-height: 30px; }
   .theme-seg button[aria-pressed="true"]{ background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
 
-  /* top bar */
-  .top-bar{ display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
-  .top-right{ display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .back{ background: var(--surface-2); color: var(--text); padding: 8px 14px; font-size: 13px; font-weight: 600; min-height: 36px; }
-  .top-actions{ display: flex; gap: 8px; flex-wrap: wrap; }
-  .reset-btn{ background: var(--surface-2); color: var(--text); padding: 8px 16px; font-size: 13px; min-height: 36px; }
-  .compare-btn{ padding: 8px 16px; font-size: 13px; min-height: 36px; }
-
-  /* view tabs: segmented control */
-  .view-tabs{ display: inline-flex; gap: 2px; margin: 0 0 18px; background: var(--surface-2); border-radius: 999px; padding: 3px; }
-  .view-tab{ background: none; color: var(--text-2); padding: 8px 18px; min-height: 38px; font-size: 14px; font-weight: 600; }
-  .view-tab.active{ background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
 
   /* position chips */
   .pos-filter{ display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
@@ -163,17 +151,6 @@
   .cmp-actions button{ min-height: 42px; }
   #cmp-reset{ background: var(--surface-2); color: var(--text); }
 
-  /* scoreboard: Revolut-style card with big numbers */
-  .scoreboard{ background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 20px 22px; margin-bottom: 14px; }
-  .scoreboard-top{ display:flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px; }
-  .scoreboard .team-name{ font-size: 28px; font-weight: 700; letter-spacing: -0.025em; margin: 0 0 4px; line-height: 1.1; }
-  .scoreboard .league-name{ color: var(--text-2); font-size: 14px; }
-  .scoreboard .week{ text-align: right; }
-  .scoreboard .week .num{ font-size: 34px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; }
-  .scoreboard .week .label{ color: var(--text-3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
-  .scoreboard .record{ color: var(--text-2); font-size: 14px; margin-top: 2px; }
-
-  .lineup-compare{ display:flex; align-items:flex-end; gap: 28px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--hair); flex-wrap: wrap; }
   .lc-label{ color: var(--text-3); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
   .lc-val, .lc-diff{ font-size: 26px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
   .lc-diff.up{ color: var(--accent); }
@@ -226,7 +203,6 @@
   .slot-row.bye-start .slot-tag{ color: var(--danger) !important; }
   .bye-alert{ background: var(--danger-soft); border-radius: var(--radius); color: var(--danger); padding: 12px 16px; margin: 0 0 16px; font-size: 13.5px; line-height: 1.45; }
   .bye-alert strong{ font-weight: 600; }
-  .bye-alert .bye-hint{ opacity: .85; }
   .sig{ display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12px; margin-top: 4px; }
   .depth-chip{ font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 1px 6px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); }
   .sig-item{ white-space: nowrap; font-size: 12.5px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--text); }
@@ -293,6 +269,8 @@
   .raw-stats > div{ display:flex; justify-content: space-between; gap: 8px; }
   .raw-stats .rk{ color: var(--text-2); }
   .raw-stats .rv{ font-weight: 600; font-variant-numeric: tabular-nums; }
+  .raw-stats .all-stats{ grid-column: 1 / -1; justify-self: start; margin-top: 6px; background: none; color: var(--accent); padding: 4px 0; font-size: 13px; min-height: 0; }
+  .raw-stats .all-stats:hover{ opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
 
   /* ---- player analysis (game log) ---- */
   .analysis-overlay{ z-index: 60; } /* can open on top of the focus panel */
@@ -318,14 +296,143 @@
   .gl-table tr.gl-bye td.gl-wk{ background: var(--surface-2); }
   .an-wk{ color: var(--text-3); }
 
+
+  /* ============ app shell: sidebar (desktop) / bottom tab bar (phones, tablets) ============ */
+  .shell{ min-height: 100vh; }
+  .eyebrow{ font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+  .card{ background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+
+  .side{ display: none; }
+  .brand{ display: flex; align-items: center; gap: 10px; padding: 4px 8px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .brand .mark{ width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--pos-DEF)); flex-shrink: 0; }
+  .league-card{ background: var(--surface); box-shadow: var(--shadow); border-radius: var(--radius); padding: 12px; display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .league-av{ width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--warn), var(--danger)); flex-shrink: 0; }
+  .league-txt{ min-width: 0; }
+  .league-txt b{ display: block; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .league-txt > span{ display: block; font-size: 12px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .nav{ display: flex; flex-direction: column; gap: 2px; position: relative; }
+  .nav-thumb{ position: absolute; left: 0; right: 0; top: 0; height: 0; border-radius: 10px; background: var(--surface-2); transition: top .35s var(--spring), height .35s var(--spring); }
+  .nav-btn{ position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; background: none; color: var(--text-2); font-weight: 500; font-size: 14px; text-align: left; }
+  .nav-btn[aria-current="page"]{ color: var(--text); }
+  .nav-btn svg{ width: 18px; height: 18px; flex-shrink: 0; }
+  .nav-badge{ margin-left: auto; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--danger); color: #fff; }
+  .side-foot{ margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+  .side-foot .theme-seg{ display: flex; }
+  .side-foot .theme-seg button{ flex: 1; }
+  .data-status{ font-size: 12px; color: var(--text-3); padding: 0 6px; line-height: 1.5; }
+
+  .main{
+    min-width: 0; max-width: 1440px; margin: 0 auto;
+    padding: calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(110px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
+  .page-head{ display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 18px; }
+  .page-head h1{ font-size: 30px; margin: 6px 0 0; line-height: 1.1; letter-spacing: -0.025em; }
+  .page-sub{ color: var(--text-2); font-size: 14px; margin-top: 6px; }
+  .top-actions{ display: flex; gap: 8px; flex-shrink: 0; }
+  .reset-btn{ background: var(--surface-2); color: var(--text); padding: 8px 16px; font-size: 13px; min-height: 36px; }
+  .compare-btn{ padding: 8px 16px; font-size: 13px; min-height: 36px; }
+
+  /* summary cards (Revolut-style numbers) */
+  .kpis{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+  .kpi{ background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 14px 16px; min-width: 0; }
+  .kpi-hero{ grid-column: 1 / -1; padding: 18px 20px; }
+  .kpi-big{ font-size: 42px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; margin-top: 10px; }
+  .kpi-mid{ font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; margin-top: 8px; }
+  .kpi-mid.up{ color: var(--accent); } .kpi-mid.down{ color: var(--danger); } .kpi-mid.flat{ color: var(--text-3); }
+  .kpi-cap{ font-size: 12px; color: var(--text-2); margin-top: 6px; }
+  .bye-alert{ display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .bye-alert .bye-text{ flex: 1; min-width: 200px; }
+  .bye-fix{ background: var(--danger); color: #fff; padding: 6px 14px; font-size: 12.5px; min-height: 32px; }
+
+  .panes{ display: block; }
+  .pane-main{ min-width: 0; }
+  .pane-detail{ display: none; }
+  .view{ animation: viewIn .35s var(--ease); }
+  @keyframes viewIn{ from{ opacity: 0; transform: translateY(8px); } to{ opacity: 1; transform: none; } }
+
+  .slot-row.sel{ background: var(--surface-2); box-shadow: inset 3px 0 0 var(--text); }
+  .slot-row.bye-start.sel{ box-shadow: inset 3px 0 0 var(--danger); }
+
+  /* compare + settings screens */
+  .cmp-card{ padding: 20px; }
+  .cmp-empty{ background: var(--surface); box-shadow: var(--shadow); border-radius: var(--radius-lg); padding: 16px 18px; color: var(--text-2); margin-bottom: 14px; font-size: 14px; }
+  .settings{ display: grid; gap: 14px; max-width: 680px; }
+  .set-card{ padding: 18px 20px; }
+  .set-card h3{ margin: 0 0 4px; font-size: 16px; letter-spacing: -0.01em; }
+  .set-sub{ color: var(--text-2); font-size: 13.5px; margin: 0 0 12px; line-height: 1.5; }
+  .set-row{ display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-top: 1px solid var(--hair); font-size: 14px; }
+  .set-row span{ color: var(--text-2); }
+  .set-row b{ font-weight: 600; text-align: right; }
+  .set-card .quiet-btn{ margin-top: 12px; }
+  .quiet-btn{ background: var(--surface-2); color: var(--text); }
+  .set-data{ font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+
+  /* floating bottom tab bar */
+  .tabbar{
+    position: fixed; z-index: 40; display: flex; padding: 6px; height: 64px; border-radius: 999px;
+    left: calc(12px + env(safe-area-inset-left)); right: calc(12px + env(safe-area-inset-right)); bottom: calc(12px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    backdrop-filter: blur(20px) saturate(1.6); -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    box-shadow: 0 8px 30px rgba(0,0,0,.18), inset 0 0 0 1px var(--hair);
+    max-width: 560px; margin: 0 auto;
+  }
+  .tab-thumb{ position: absolute; top: 6px; bottom: 6px; left: 0; width: 0; border-radius: 999px; background: var(--surface-3); transition: left .4s var(--spring), width .4s var(--spring); }
+  .tab-btn{ flex: 1; position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    background: none; padding: 0; border-radius: 999px; font-size: 10.5px; font-weight: 600; color: var(--text-3); }
+  .tab-btn[aria-current="page"]{ color: var(--text); }
+  .tab-btn svg{ width: 22px; height: 22px; }
+  .tab-btn .nav-badge{ position: absolute; top: 4px; left: calc(50% + 6px); margin: 0; font-size: 10px; padding: 0 5px; }
+
+  /* ---- desktop: sidebar replaces the tab bar ---- */
+  @media (min-width: 1024px){
+    .shell{ display: grid; grid-template-columns: 248px minmax(0, 1fr); }
+    .side{ display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: 100vh; padding: 20px 14px; border-right: 1px solid var(--hair); }
+    .tabbar{ display: none; }
+    .main{ padding: 28px 36px 60px; width: 100%; }
+    .page-head h1{ font-size: 32px; }
+    .kpis{ grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    .kpi{ padding: 18px 20px; }
+    .kpi-hero{ grid-column: auto; }
+    .kpi-big{ font-size: 40px; }
+    .kpi-mid{ font-size: 28px; margin-top: 10px; }
+    .kpi-cap{ font-size: 12.5px; margin-top: 8px; }
+  }
+  /* ---- wide desktop: two panes, the player panel lives on the right instead of a pop-up ---- */
+  @media (min-width: 1200px){
+    .panes{ display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; align-items: start; }
+    .panes.solo{ display: block; }
+    .panes.solo .pane-detail{ display: none; }
+    .pane-detail{ display: block; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; overscroll-behavior: contain;
+      background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+    .pane-detail .focus-panel{ max-width: none; box-shadow: none; border-radius: 0; background: transparent; padding: 22px; animation: none; }
+    .pane-detail .focus-panel.pane-in{ animation: viewIn .35s var(--ease); }
+    .pane-detail .focus-close{ display: none; }
+    .pane-detail .hero{ gap: 14px; }
+    .pane-detail .hero-avatar{ width: 68px; height: 68px; }
+    .pane-detail .hero-name{ font-size: 22px; }
+    .pane-detail .hs-block{ padding: 8px 10px; }
+    .pane-detail .hs-block .hs-label{ font-size: 9.5px; }
+    .pane-detail .hs-block .hs-val{ font-size: 18px; }
+    .pane-detail .raw-stats{ grid-template-columns: 1fr 1fr; gap: 4px 14px; font-size: 12.5px; }
+    .pane-detail .cand-card{ display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 4px; grid-template-areas: "av info act" "av stats act"; padding: 10px; }
+    .pane-detail .cand-avatar{ grid-area: av; width: 40px; height: 40px; align-self: center; }
+    .pane-detail .cand-info{ grid-area: info; }
+    .pane-detail .cand-name{ font-size: 14px; }
+    .pane-detail .cand-stats{ grid-area: stats; margin-top: 0; gap: 2px 12px; flex-wrap: wrap; }
+    .pane-detail .cand-stats .cs{ display: flex; align-items: baseline; gap: 4px; }
+    .pane-detail .swap-btn, .pane-detail .current-tag{ grid-area: act; align-self: center; }
+    .pane-detail .swap-btn{ white-space: nowrap; }
+  }
+
   .hint-touch{ display: none; }
   @media (hover: none){ .hint-touch{ display: inline; } .hint-mouse{ display: none; } }
 
   /* hover styles only where a real pointer exists — on iPhone they'd stick after a tap */
   @media (hover: hover){
     button:not(:disabled):hover{ opacity: .88; }
-    .back:hover, .reset-btn:hover, #cmp-reset:hover, .fa-more:hover, .focus-close:hover{ opacity: 1; background: var(--surface-3); }
-    .view-tab:not(.active):hover, .theme-seg button:not([aria-pressed="true"]):hover{ opacity: 1; color: var(--text); }
+    .reset-btn:hover, .quiet-btn:hover, .fa-more:hover, .focus-close:hover{ opacity: 1; background: var(--surface-3); }
+    .nav-btn:not([aria-current="page"]):hover, .tab-btn:not([aria-current="page"]):hover, .theme-seg button:not([aria-pressed="true"]):hover{ opacity: 1; color: var(--text); }
     .pos-pill:not(.active):hover{ opacity: 1; background: var(--surface-3); }
     .swap-btn:hover{ opacity: 1; filter: brightness(1.08); }
     .slot-row:hover{ background: var(--surface-2); }
@@ -340,22 +447,10 @@
       padding: calc(16px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
     }
     .setup{ margin-top: 8vh; }
+    .page-head h1{ font-size: 26px; }
+    .kpi-big{ font-size: 38px; }
     .setup button#load-btn{ width: 100%; min-height: 48px; font-size: 16px; }
 
-    .top-bar{ margin-bottom: 12px; }
-    .theme-seg button{ padding: 6px 10px; }
-
-    .scoreboard{ padding: 16px 18px; }
-    .scoreboard-top{ flex-wrap: nowrap; align-items: flex-start; }
-    .scoreboard-top > div:first-child{ min-width: 0; }
-    .scoreboard .team-name{ font-size: 24px; overflow-wrap: anywhere; }
-    .scoreboard .week .num{ font-size: 30px; }
-    .lineup-compare{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: end; }
-    .lc-val, .lc-diff{ font-size: 22px; }
-    .lc-label{ font-size: 10px; }
-
-    .view-tabs{ display: flex; }
-    .view-tab{ flex: 1; padding: 8px 10px; }
 
     .list-head{ display: none; } /* each value already carries its own proj/last caption */
     .status-chip .chip-full{ display: none; }
@@ -427,7 +522,7 @@
 </head>
 <body>
 
-<div class="wrap" id="app">
+<div class="wrap" id="setup-wrap">
 
   <div class="setup" id="setup-screen">
     <h1>Roster View</h1>
@@ -449,85 +544,115 @@
     <div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div>
   </div>
 
-  <div id="roster-screen" style="display:none;">
-    <div class="top-bar">
-      <button class="back" id="back-btn">&larr; Back</button>
-      <div class="top-right">
-        <div class="top-actions">
-          <button class="compare-btn" id="compare-btn" style="display:none;">Compare Lineups</button>
-          <button class="reset-btn" id="reset-btn" style="display:none;">Reset lineup</button>
-        </div>
-        <div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div>
+</div>
+
+<div class="shell" id="roster-screen" style="display:none;">
+  <aside class="side">
+    <div class="brand"><span class="mark"></span>Roster View</div>
+    <div class="league-card"><span class="league-av"></span><div class="league-txt"><b id="team-name">—</b><span><span id="league-name">—</span> · <span id="team-record"></span></span></div></div>
+    <nav class="nav" id="side-nav" aria-label="Sections">
+      <span class="nav-thumb"></span>
+      <button class="nav-btn" data-view="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Lineup</span><span class="nav-badge" data-bye-badge hidden></span></button>
+      <button class="nav-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>Waivers</span></button>
+      <button class="nav-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Compare</span></button>
+      <button class="nav-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Settings</span></button>
+    </nav>
+    <div class="side-foot">
+      <div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div>
+      <div class="data-status" data-status></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="page-head">
+      <div>
+        <div class="eyebrow" id="page-eyebrow"></div>
+        <h1 id="page-title">Lineup</h1>
+        <div class="page-sub" id="page-sub"></div>
       </div>
-    </div>
-
-    <div class="scoreboard">
-      <div class="scoreboard-top">
-        <div>
-          <div class="team-name" id="team-name">—</div>
-          <div class="league-name" id="league-name">—</div>
-          <div class="record" id="team-record"></div>
-        </div>
-        <div class="week">
-          <div class="num" id="week-num">—</div>
-          <div class="label">Week</div>
-        </div>
+      <div class="top-actions">
+        <button class="reset-btn" id="reset-btn" style="display:none;">Reset</button>
+        <button class="compare-btn" id="compare-btn" style="display:none;">Compare</button>
       </div>
-      <div class="lineup-compare" id="lineup-compare" style="display:none;">
-        <div class="lc-block">
-          <div class="lc-label">Current lineup proj</div>
-          <div class="lc-val" id="lc-current">—</div>
-        </div>
-        <div class="lc-block">
-          <div class="lc-label">New lineup proj</div>
-          <div class="lc-val" id="lc-new">—</div>
-        </div>
-        <div class="lc-block">
-          <div class="lc-label">Difference</div>
-          <div class="lc-diff" id="lc-diff">—</div>
-        </div>
+    </header>
+
+    <div id="lineup-top">
+      <div class="kpis">
+        <div class="kpi kpi-hero"><div class="eyebrow">Projected points</div><div class="kpi-big num" id="kpi-proj">—</div><div class="kpi-cap">Your planned lineup</div></div>
+        <div class="kpi"><div class="eyebrow">vs Sleeper</div><div class="kpi-mid num flat" id="kpi-delta">±0.0</div><div class="kpi-cap" id="kpi-delta-cap">No changes yet</div></div>
+        <div class="kpi"><div class="eyebrow">Playing</div><div class="kpi-mid num" id="kpi-playing">—</div><div class="kpi-cap" id="kpi-playing-cap"></div></div>
+        <div class="kpi"><div class="eyebrow">Record</div><div class="kpi-mid num" id="kpi-record">—</div><div class="kpi-cap" id="kpi-record-cap"></div></div>
       </div>
+      <div class="bye-alert" id="bye-alert" role="alert" style="display:none;"></div>
     </div>
 
-    <div class="bye-alert" id="bye-alert" role="alert" style="display:none;"></div>
+    <div class="panes" id="panes">
+      <div class="pane-main">
+        <section class="view" id="roster-view">
+          <div class="starters">
+            <div class="section-title">Starters <span style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span></div>
+            <div class="list-head">
+              <div class="h-slot"></div>
+              <div class="h-info">Season stats</div>
+              <div class="h-stat">Proj</div>
+              <div class="h-stat">Last gm</div>
+            </div>
+            <div id="starters-list"></div>
+          </div>
+          <div class="bench-section">
+            <div class="section-title">Bench</div>
+            <div id="bench-list"></div>
+          </div>
+        </section>
 
-    <div class="view-tabs" role="tablist">
-      <button class="view-tab active" data-view="roster" role="tab">My Roster</button>
-      <button class="view-tab" data-view="fa" role="tab">Available Players</button>
-    </div>
+        <section class="view" id="fa-view" style="display:none;">
+          <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
+          <div class="section-title">Top available <span style="opacity:0.7;">— compared with your lowest-projected player at the position</span></div>
+          <div id="fa-list"></div>
+          <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
+        </section>
 
-    <div id="fa-view" style="display:none;">
-      <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
-      <div class="section-title">Top available by projection <span style="text-transform:none; letter-spacing:0; opacity:0.7;">— compared with your lowest-projected player at the position</span></div>
-      <div id="fa-list"></div>
-      <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
-    </div>
+        <section class="view" id="compare-view" style="display:none;">
+          <div class="cmp-empty" id="cmp-empty" style="display:none;">No changes yet. Swap players on the Lineup tab and they'll show up here, side by side.</div>
+          <div class="card cmp-card">
+            <div class="cmp-grid" id="cmp-grid"></div>
+            <div class="cmp-totals">
+              <div><div class="lc-label">Sleeper lineup</div><div class="lc-val" id="cmp-orig-total">—</div></div>
+              <div><div class="lc-label">Your plan</div><div class="lc-val" id="cmp-new-total">—</div></div>
+              <div><div class="lc-label">Difference</div><div class="lc-diff" id="cmp-diff">—</div></div>
+            </div>
+            <div class="cmp-actions">
+              <button class="reset-btn" id="cmp-reset">Reset lineup</button>
+              <button id="cmp-done">Back to lineup</button>
+            </div>
+          </div>
+        </section>
 
-    <div id="roster-view">
-    <div class="starters">
-      <div class="section-title">Starting lineup <span style="text-transform:none; letter-spacing:0; opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span></div>
-      <div class="list-head">
-        <div class="h-slot"></div>
-        <div class="h-info">Season stats</div>
-        <div class="h-stat">Proj</div>
-        <div class="h-stat">Last gm</div>
+        <section class="view" id="settings-view" style="display:none;">
+          <div class="settings">
+            <div class="card set-card"><h3>Appearance</h3><p class="set-sub">Auto follows your device's light or dark setting.</p><div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div></div>
+            <div class="card set-card"><h3>League</h3>
+              <div class="set-row"><span>Team</span><b id="set-team">—</b></div>
+              <div class="set-row"><span>League</span><b id="set-league">—</b></div>
+              <div class="set-row"><span>Season · week</span><b id="set-week">—</b></div>
+              <button class="quiet-btn" id="back-btn">Switch league or user</button>
+            </div>
+            <div class="card set-card"><h3>Data</h3><div class="set-data" data-status></div></div>
+            <div class="card set-card"><h3>About</h3><p class="set-sub" style="margin:0">Read only. Lineup changes here are a plan; nothing is sent to Sleeper. Stats and projections come from Sleeper, scored with your league's settings. Opponents, snap share, target share and depth charts come from nflverse.</p></div>
+          </div>
+        </section>
       </div>
-      <div id="starters-list"></div>
+      <aside class="pane-detail" id="detail-pane" aria-label="Player details"></aside>
     </div>
+  </main>
 
-    <div class="bench-section">
-      <div class="section-title">Bench</div>
-      <div class="list-head">
-        <div class="h-slot"></div>
-        <div class="h-info">Season stats</div>
-        <div class="h-stat">Proj</div>
-        <div class="h-stat">Last gm</div>
-      </div>
-      <div id="bench-list"></div>
-    </div>
-    </div>
-  </div>
-
+  <nav class="tabbar" id="tab-nav" aria-label="Sections">
+    <span class="tab-thumb"></span>
+    <button class="tab-btn" data-view="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Lineup<span class="nav-badge" data-bye-badge hidden></span></button>
+    <button class="tab-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Waivers</button>
+    <button class="tab-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Compare</button>
+    <button class="tab-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</button>
+  </nav>
 </div>
 
 <div class="overlay" id="overlay">
@@ -561,24 +686,6 @@
     <div class="hero-stats" id="an-summary"></div>
     <div class="focus-section-title">Game log</div>
     <div class="gl-wrap" id="an-log"></div>
-  </div>
-</div>
-
-<div class="overlay" id="compare-overlay">
-  <div class="focus-panel">
-    <button class="focus-close" id="compare-close" aria-label="Close">&times;</button>
-    <h2 class="cmp-title">Compare Lineups</h2>
-    <div class="cmp-sub">Projected points for this week. Changed slots are highlighted.</div>
-    <div class="cmp-grid" id="cmp-grid"></div>
-    <div class="cmp-totals">
-      <div><div class="lc-label">Original Lineup</div><div class="lc-val" id="cmp-orig-total">—</div></div>
-      <div><div class="lc-label">New Lineup</div><div class="lc-val" id="cmp-new-total">—</div></div>
-      <div><div class="lc-label">Difference</div><div class="lc-diff" id="cmp-diff">—</div></div>
-    </div>
-    <div class="cmp-actions">
-      <button class="reset-btn" id="cmp-reset">Reset lineup</button>
-      <button id="cmp-done">Done</button>
-    </div>
   </div>
 </div>
 
@@ -632,13 +739,8 @@
     teamName: document.getElementById('team-name'),
     leagueName: document.getElementById('league-name'),
     teamRecord: document.getElementById('team-record'),
-    weekNum: document.getElementById('week-num'),
     startersList: document.getElementById('starters-list'),
     benchList: document.getElementById('bench-list'),
-    lineupCompare: document.getElementById('lineup-compare'),
-    lcCurrent: document.getElementById('lc-current'),
-    lcNew: document.getElementById('lc-new'),
-    lcDiff: document.getElementById('lc-diff'),
     overlay: document.getElementById('overlay'),
     focusClose: document.getElementById('focus-close'),
     heroAvatar: document.getElementById('hero-avatar'),
@@ -648,8 +750,6 @@
     heroSlotNote: document.getElementById('hero-slot-note'),
     candidatesList: document.getElementById('candidates-list'),
     compareBtn: document.getElementById('compare-btn'),
-    compareOverlay: document.getElementById('compare-overlay'),
-    compareClose: document.getElementById('compare-close'),
     cmpGrid: document.getElementById('cmp-grid'),
     cmpOrigTotal: document.getElementById('cmp-orig-total'),
     cmpNewTotal: document.getElementById('cmp-new-total'),
@@ -657,7 +757,29 @@
     cmpReset: document.getElementById('cmp-reset'),
     cmpDone: document.getElementById('cmp-done'),
     focusSectionTitle: document.getElementById('focus-section-title'),
-    viewTabs: document.querySelectorAll('.view-tab'),
+    navBtns: document.querySelectorAll('.nav-btn, .tab-btn'),
+    sideNav: document.getElementById('side-nav'),
+    tabNav: document.getElementById('tab-nav'),
+    compareView: document.getElementById('compare-view'),
+    settingsView: document.getElementById('settings-view'),
+    cmpEmpty: document.getElementById('cmp-empty'),
+    lineupTop: document.getElementById('lineup-top'),
+    panes: document.getElementById('panes'),
+    detailPane: document.getElementById('detail-pane'),
+    focusPanel: document.querySelector('#overlay .focus-panel'),
+    pageEyebrow: document.getElementById('page-eyebrow'),
+    pageTitle: document.getElementById('page-title'),
+    pageSub: document.getElementById('page-sub'),
+    kpiProj: document.getElementById('kpi-proj'),
+    kpiDelta: document.getElementById('kpi-delta'),
+    kpiDeltaCap: document.getElementById('kpi-delta-cap'),
+    kpiPlaying: document.getElementById('kpi-playing'),
+    kpiPlayingCap: document.getElementById('kpi-playing-cap'),
+    kpiRecord: document.getElementById('kpi-record'),
+    kpiRecordCap: document.getElementById('kpi-record-cap'),
+    setTeam: document.getElementById('set-team'),
+    setLeague: document.getElementById('set-league'),
+    setWeek: document.getElementById('set-week'),
     rosterView: document.getElementById('roster-view'),
     faView: document.getElementById('fa-view'),
     faPosFilter: document.getElementById('fa-pos-filter'),
@@ -682,7 +804,8 @@
     originalStarters: [], // the lineup as it exists on Sleeper right now
     draftStarters: [],    // the lineup being built locally
     freeAgents: {},       // position -> [player_id] not rostered by any team, sorted by projection desc
-    view: 'roster',       // 'roster' | 'fa'
+    view: 'roster',       // 'roster' | 'fa' | 'compare' | 'settings'
+    focus: null,          // what the player panel shows: {kind:'roster', pid, slot} | {kind:'fa', pid}
     faPos: 'QB',
     faLimit: FA_LIST_LIMIT,
     focusPid: null,       // player currently open in the focus panel (guards async history loads)
@@ -1022,6 +1145,7 @@
 
   els.backBtn.addEventListener('click', function(){
     els.rosterScreen.style.display = 'none';
+    document.getElementById('setup-wrap').style.display = '';
     els.setupScreen.style.display = 'block';
     els.leagueField.style.display = 'none';
     els.loadBtn.textContent = 'Load teams';
@@ -1033,23 +1157,20 @@
     renderAll();
   }
   els.resetBtn.addEventListener('click', resetLineup);
-  els.cmpReset.addEventListener('click', function(){ resetLineup(); closeCompare(); }); // nothing left to compare after a reset
+  els.cmpReset.addEventListener('click', function(){ resetLineup(); setView('roster'); }); // nothing left to compare after a reset
 
   els.username.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); els.username.blur(); els.loadBtn.click(); } });
 
   els.focusClose.addEventListener('click', closeFocus);
   els.overlay.addEventListener('click', function(e){ if(e.target === els.overlay) closeFocus(); });
-  els.compareBtn.addEventListener('click', openCompare);
-  els.compareClose.addEventListener('click', closeCompare);
-  els.cmpDone.addEventListener('click', closeCompare);
-  els.compareOverlay.addEventListener('click', function(e){ if(e.target === els.compareOverlay) closeCompare(); });
+  els.compareBtn.addEventListener('click', function(){ setView('compare'); });
+  els.cmpDone.addEventListener('click', function(){ setView('roster'); });
   els.anClose.addEventListener('click', closeAnalysis);
   els.anOverlay.addEventListener('click', function(e){ if(e.target === els.anOverlay) closeAnalysis(); });
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
     if(els.anOverlay.classList.contains('open')){ closeAnalysis(); return; } // topmost first
     if(els.overlay.classList.contains('open')) closeFocus();
-    if(els.compareOverlay.classList.contains('open')) closeCompare();
   });
   // Tapping a player's name or photo anywhere opens the Analysis screen. Capture phase so it wins over
   // the row's own click (which opens the focus panel).
@@ -1068,10 +1189,59 @@
     el.classList.remove('open');
     if(!document.querySelector('.overlay.open')) document.body.classList.remove('no-scroll'); // another sheet may still be open underneath
   }
-  function showFocus(){ showOverlay(els.overlay); }
-  function closeFocus(){ hideOverlay(els.overlay); }
-  function openCompare(){ renderCompare(); showOverlay(els.compareOverlay); }
-  function closeCompare(){ hideOverlay(els.compareOverlay); }
+  // The player panel is one element that moves: into the right-hand pane on wide screens, into the pop-up sheet otherwise.
+  const paneMQ = window.matchMedia('(min-width: 1200px)');
+  function paneMode(){ return paneMQ.matches; }
+  function placeFocusPanel(){
+    if(paneMode()){
+      if(els.focusPanel.parentNode !== els.detailPane) els.detailPane.appendChild(els.focusPanel);
+      if(els.overlay.classList.contains('open')) hideOverlay(els.overlay);
+    }else if(els.focusPanel.parentNode !== els.overlay){
+      els.overlay.appendChild(els.focusPanel);
+    }
+  }
+  placeFocusPanel();
+  if(paneMQ.addEventListener) paneMQ.addEventListener('change', function(){ placeFocusPanel(); if(ctx.myRoster) selectDefaultFocus(); });
+  function focusVisible(){ return paneMode() ? !els.panes.classList.contains('solo') : els.overlay.classList.contains('open'); }
+  function showFocus(){
+    markSelected();
+    if(paneMode()){
+      els.detailPane.scrollTop = 0;
+      els.focusPanel.classList.remove('pane-in'); void els.focusPanel.offsetWidth; els.focusPanel.classList.add('pane-in');
+      return;
+    }
+    showOverlay(els.overlay);
+  }
+  function closeFocus(){ if(!paneMode()) hideOverlay(els.overlay); }
+  // Highlight the row whose details are showing (only meaningful when the panel is on screen next to the list).
+  function markSelected(){
+    const f = ctx.focus;
+    document.querySelectorAll('.slot-row.sel').forEach(function(r){ r.classList.remove('sel'); });
+    if(!f || !paneMode()) return;
+    const sel = f.kind === 'fa'
+      ? els.faList.querySelector('[data-fa-id="' + CSS.escape(f.pid) + '"]')
+      : (f.slot != null ? els.startersList.querySelector('[data-slot-index="' + f.slot + '"]')
+                        : els.benchList.querySelector('[data-player-id="' + CSS.escape(f.pid) + '"]'));
+    if(sel) sel.classList.add('sel');
+  }
+  // On wide screens the panel is always visible, so pick something sensible to show: a bye starter first, else the first starter.
+  function selectDefaultFocus(){
+    if(!paneMode()) return;
+    if(ctx.view === 'fa'){
+      const top = (ctx.freeAgents[ctx.faPos] || [])[0];
+      if(top && !(ctx.focus && ctx.focus.kind === 'fa')) openFreeAgent(top);
+      return;
+    }
+    if(ctx.focus && ctx.focus.kind === 'roster' && (ctx.myRoster.players || []).indexOf(ctx.focus.pid) !== -1){ refreshFocus(); return; }
+    let i = ctx.draftStarters.findIndex(function(pid){ return pid && pid !== '0' && isOnBye(pid); });
+    if(i === -1) i = ctx.draftStarters.findIndex(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
+    if(i !== -1){ openFocus(ctx.draftStarters[i], i); ctx.focusAuto = true; } // picked for you, so it can be re-picked when bye data arrives
+  }
+  function refreshFocus(){
+    const f = ctx.focus;
+    if(!f || !focusVisible()) return;
+    if(f.kind === 'fa') openFreeAgent(f.pid); else openFocus(f.pid, f.slot);
+  }
   function closeAnalysis(){ ctx.analysisPid = null; hideOverlay(els.anOverlay); }
 
   // ---- main load ----
@@ -1100,7 +1270,6 @@
       const teamName = (owner && owner.metadata && owner.metadata.team_name) || (owner && owner.display_name) || ctx.username;
       els.teamName.textContent = teamName;
       els.leagueName.textContent = league.name;
-      els.weekNum.textContent = week;
       const settings = myRoster.settings || {};
       els.teamRecord.textContent = (typeof settings.wins === 'number')
         ? (settings.wins + '-' + settings.losses + (settings.ties ? '-' + settings.ties : ''))
@@ -1120,17 +1289,21 @@
 
       ctx.freeAgents = computeFreeAgents(rosters);
       ctx.faLimit = FA_LIST_LIMIT;
-      setView('roster');
+      ctx.focus = null;
       renderAll();
-      els.setupScreen.style.display = 'none';
-      els.rosterScreen.style.display = 'block';
+      document.getElementById('setup-wrap').style.display = 'none';
+      els.rosterScreen.style.display = '';
+      setView('roster');
+      renderStatus();
       setStatus('');
 
       nflPromise.then(function(data){
         if(loadId !== ctx.loadId || !data) return; // a different league was loaded meanwhile, or no data
         ctx.nfl = data;
         logNflCoverage();
+        if(ctx.focusAuto && ctx.view === 'roster') ctx.focus = null; // byes are known now; let the default pick a bye starter
         rerenderEverything();
+        if(!ctx.focus) selectDefaultFocus();
       });
     }catch(err){
       console.error(err);
@@ -1143,6 +1316,9 @@
   function rerenderEverything(){
     renderAll();
     if(ctx.view === 'fa') renderFreeAgents();
+    if(ctx.view === 'compare') renderCompare();
+    renderStatus();
+    refreshFocus();
     if(ctx.analysisPid && els.anOverlay.classList.contains('open')) renderAnalysis(ctx.analysisPid, !ctx.history[ctx.analysisPid]);
   }
 
@@ -1284,19 +1460,61 @@
     el.className = 'lc-diff ' + (flat ? 'flat' : (diff > 0 ? 'up' : 'down'));
   }
 
+  // Summary cards: projected total, change vs the Sleeper lineup, who's actually playing, record.
   function renderLineupCompare(){
     const isDirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
-    els.resetBtn.style.display = isDirty ? 'inline-block' : 'none';
-    els.compareBtn.style.display = isDirty ? 'inline-block' : 'none';
-    if(!isDirty){ els.lineupCompare.style.display = 'none'; return; }
+    els.resetBtn.style.display = isDirty ? '' : 'none';
+    els.compareBtn.style.display = isDirty ? '' : 'none';
 
-    const curTotal = sumProj(ctx.originalStarters);
-    const newTotal = sumProj(ctx.draftStarters);
+    const total = sumProj(ctx.draftStarters), diff = total - sumProj(ctx.originalStarters);
+    countTo(els.kpiProj, total);
+    setDiff(els.kpiDelta, diff);
+    els.kpiDelta.className = 'kpi-mid num ' + els.kpiDelta.className.replace('lc-diff', '').trim();
+    const changed = ctx.draftStarters.filter(function(pid, i){ return pid !== ctx.originalStarters[i]; }).length;
+    els.kpiDeltaCap.textContent = changed ? changed + ' slot' + (changed > 1 ? 's' : '') + ' changed' : 'No changes yet';
 
-    els.lcCurrent.textContent = curTotal.toFixed(1);
-    els.lcNew.textContent = newTotal.toFixed(1);
-    setDiff(els.lcDiff, newTotal - curTotal);
-    els.lineupCompare.style.display = ''; // fall back to the stylesheet (flex on desktop, grid on phones)
+    const filled = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
+    const bye = filled.filter(isOnBye).length;
+    const out = filled.filter(function(pid){ const st = ctx.players[pid].injury_status; return !isOnBye(pid) && st && /^(Out|IR|Doubtful|PUP|Sus)/i.test(st); }).length;
+    const slots = ctx.rosterPositions.length;
+    els.kpiPlaying.textContent = (filled.length - bye - out) + '/' + slots;
+    els.kpiPlaying.className = 'kpi-mid num' + (bye || out || filled.length < slots ? ' down' : '');
+    const why = [];
+    if(bye) why.push(bye + ' on bye');
+    if(out) why.push(out + ' out');
+    if(filled.length < slots) why.push((slots - filled.length) + ' empty');
+    els.kpiPlayingCap.textContent = why.length ? why.join(' · ') : 'Everyone plays';
+
+    const st = ctx.myRoster.settings || {};
+    els.kpiRecord.textContent = typeof st.wins === 'number' ? st.wins + '–' + st.losses + (st.ties ? '–' + st.ties : '') : '—';
+    els.kpiRecordCap.textContent = typeof st.fpts === 'number' ? (st.fpts + (st.fpts_decimal || 0) / 100).toFixed(1) + ' points for' : '';
+
+    document.querySelectorAll('[data-bye-badge]').forEach(function(b){ b.hidden = !bye; b.textContent = bye; });
+  }
+
+  // Animate a number from what's showing now to its new value.
+  function countTo(el, to){
+    const from = parseFloat(el.textContent);
+    if(isNaN(from) || window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(from - to) < 0.05){ el.textContent = to.toFixed(1); return; }
+    const t0 = performance.now(), dur = 650;
+    (function tick(now){
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = (from + (to - from) * e).toFixed(1);
+      if(k < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  function renderStatus(){
+    const nfl = ctx.nfl;
+    const txt = 'Sleeper · ' + ctx.season + ' week ' + ctx.week + '<br>' + (nfl
+      ? 'nflverse · stats through week ' + nfl.stats_through_week + ', depth charts ' + escapeHTML(String(nfl.depth_as_of || '').slice(0, 10))
+      : 'nflverse · not loaded (opponents, snaps and depth show "—")');
+    document.querySelectorAll('[data-status]').forEach(function(el){ el.innerHTML = txt; });
+    if(els.setTeam){
+      els.setTeam.textContent = els.teamName.textContent;
+      els.setLeague.textContent = ctx.league ? ctx.league.name : '—';
+      els.setWeek.textContent = ctx.season + ' · week ' + ctx.week;
+    }
   }
 
   function compareCell(pid, changed){
@@ -1313,6 +1531,9 @@
   }
 
   function renderCompare(){
+    const isDirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    els.cmpEmpty.style.display = isDirty ? 'none' : '';
+    els.cmpReset.style.display = isDirty ? '' : 'none';
     let html = '<div></div><div class="cmp-head">Original Lineup</div><div class="cmp-head">New Lineup</div>';
     ctx.rosterPositions.forEach(function(slot, i){
       const orig = ctx.originalStarters[i], next = ctx.draftStarters[i];
@@ -1396,9 +1617,9 @@
     const byeStarters = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && isOnBye(pid); });
     els.byeAlert.style.display = byeStarters.length ? '' : 'none';
     els.byeAlert.innerHTML = byeStarters.length
-      ? '<strong>' + byeStarters.length + ' starter' + (byeStarters.length > 1 ? 's are' : ' is') + ' on a bye in week ' + ctx.week + ':</strong> ' +
+      ? '<div class="bye-text"><strong>' + byeStarters.length + ' starter' + (byeStarters.length > 1 ? 's are' : ' is') + ' on a bye in week ' + ctx.week + ':</strong> ' +
         byeStarters.map(function(pid){ const p = ctx.players[pid]; return escapeHTML(playerName(p)) + ' (' + escapeHTML(p.team) + ')'; }).join(', ') +
-        '. <span class="bye-hint">Swap them out so the slot scores.</span>'
+        '. Swap them out so the slot scores.</div><button class="bye-fix" data-bye-fix="' + ctx.draftStarters.indexOf(byeStarters[0]) + '">Show options</button>'
       : '';
 
     document.querySelectorAll('.slot-row[data-player-id]').forEach(function(row){
@@ -1410,20 +1631,55 @@
     });
 
     renderLineupCompare();
+    markSelected();
   }
+  els.byeAlert.addEventListener('click', function(e){
+    const b = e.target.closest('[data-bye-fix]');
+    if(b){ const i = Number(b.getAttribute('data-bye-fix')); openFocus(ctx.draftStarters[i], i); }
+  });
 
   // ---- available players (informational only — not part of the lineup builder) ----
+  const VIEW_TITLES = { roster: 'Lineup', fa: 'Waivers', compare: 'Compare', settings: 'Settings' };
   function setView(view){
+    const changed = ctx.view !== view;
     ctx.view = view;
-    els.viewTabs.forEach(function(t){
-      const on = t.getAttribute('data-view') === view;
-      t.classList.toggle('active', on);
-      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    els.navBtns.forEach(function(t){
+      if(t.getAttribute('data-view') === view) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
     });
+    moveNavThumbs();
     els.rosterView.style.display = view === 'roster' ? '' : 'none';
     els.faView.style.display = view === 'fa' ? '' : 'none';
+    els.compareView.style.display = view === 'compare' ? '' : 'none';
+    els.settingsView.style.display = view === 'settings' ? '' : 'none';
+    els.lineupTop.style.display = view === 'roster' ? '' : 'none';
+    els.panes.classList.toggle('solo', view === 'compare' || view === 'settings');
+
+    els.pageEyebrow.textContent = 'Week ' + ctx.week + ' · ' + (ctx.league ? ctx.league.name : '');
+    els.pageTitle.textContent = VIEW_TITLES[view];
+    const st = ctx.myRoster ? (ctx.myRoster.settings || {}) : {};
+    els.pageSub.textContent = view === 'roster' ? els.teamName.textContent + (typeof st.wins === 'number' ? ' · ' + st.wins + '–' + st.losses + (st.ties ? '–' + st.ties : '') : '')
+      : view === 'fa' ? 'Not on any roster in your league, sorted by projection.'
+      : view === 'compare' ? 'Your Sleeper lineup next to your plan. Nothing is sent to Sleeper.'
+      : '';
+    document.querySelector('.top-actions').style.display = (view === 'roster' || view === 'compare') ? '' : 'none';
+
     if(view === 'fa') renderFreeAgents();
+    if(view === 'compare') renderCompare();
+    if(view === 'settings') renderStatus();
+    if(changed){
+      [els.rosterView, els.faView, els.compareView, els.settingsView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
+      if(!paneMode()) window.scrollTo(0, 0);
+    }
+    if(view === 'roster' || view === 'fa') selectDefaultFocus();
   }
+  function moveNavThumbs(){
+    const side = els.sideNav.querySelector('[aria-current="page"]'), tab = els.tabNav.querySelector('[aria-current="page"]');
+    const st = els.sideNav.querySelector('.nav-thumb'), tt = els.tabNav.querySelector('.tab-thumb');
+    if(side && side.offsetHeight){ st.style.top = side.offsetTop + 'px'; st.style.height = side.offsetHeight + 'px'; }
+    if(tab && tab.offsetWidth){ tt.style.left = tab.offsetLeft + 'px'; tt.style.width = tab.offsetWidth + 'px'; }
+  }
+  window.addEventListener('resize', moveNavThumbs);
+  els.navBtns.forEach(function(t){ t.addEventListener('click', function(){ setView(t.getAttribute('data-view')); }); });
 
   function faVsLine(pid, pos){
     const worst = weakestRostered(pos);
@@ -1465,15 +1721,16 @@
     const remaining = all.length - shown.length;
     els.faMore.style.display = remaining > 0 ? '' : 'none';
     els.faMore.textContent = 'Show ' + Math.min(FA_LIST_LIMIT, remaining) + ' more';
+    markSelected();
   }
 
-  els.viewTabs.forEach(function(t){ t.addEventListener('click', function(){ setView(t.getAttribute('data-view')); }); });
   els.faPosFilter.addEventListener('click', function(e){
     const btn = e.target.closest('[data-fa-pos]');
     if(!btn) return;
     ctx.faPos = btn.getAttribute('data-fa-pos');
     ctx.faLimit = FA_LIST_LIMIT;
     renderFreeAgents();
+    if(paneMode()){ const top = (ctx.freeAgents[ctx.faPos] || [])[0]; if(top) openFreeAgent(top); }
   });
   els.faMore.addEventListener('click', function(){ ctx.faLimit += FA_LIST_LIMIT; renderFreeAgents(); });
   els.faList.addEventListener('click', function(e){
@@ -1502,7 +1759,8 @@
     }
     ctx.draftStarters[targetSlotIndex] = newPid;
     renderAll();
-    closeFocus();
+    if(paneMode()) openFocus(newPid, targetSlotIndex); // keep the panel on the slot you just changed
+    else closeFocus();
   }
 
   function candidateStatsHTML(pid){
@@ -1533,11 +1791,14 @@
       ['Season total', pending || fmtPts(seasonTotalPts(playerId))],
     ].map(function(pair){ return '<div class="hs-block"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div></div>'; }).join('');
 
+    // Season stats: the most important few here; everything else lives on the Analysis screen.
     const raw = aggregatedRaw(playerId, 'season') || {};
-    const keys = Object.keys(raw).sort(compareStatKeys);
+    const keys = Object.keys(raw).filter(function(k){ return raw[k] !== 0; }).sort(compareStatKeys);
+    const HERO_STAT_LIMIT = 8;
     if(keys.length){
       els.heroStats.innerHTML += '<div class="raw-stats">' +
-        keys.map(function(k){ return '<div><span class="rk">' + escapeHTML(statLabel(k)) + '</span><span class="rv">' + fmtStat(raw[k]) + '</span></div>'; }).join('') + '</div>';
+        keys.slice(0, HERO_STAT_LIMIT).map(function(k){ return '<div><span class="rk">' + escapeHTML(statLabel(k)) + '</span><span class="rv">' + fmtStat(raw[k]) + '</span></div>'; }).join('') +
+        '<button type="button" class="all-stats"' + analyzeAttr(playerId) + '>' + (keys.length > HERO_STAT_LIMIT ? 'All ' + keys.length + ' stats &amp; game log' : 'Game log') + ' →</button></div>';
     }
   }
 
@@ -1661,6 +1922,7 @@
     const p = ctx.players[pid];
     if(!p) return;
     ctx.focusPid = pid;
+    ctx.focus = { kind: 'fa', pid: pid };
     const needsHistory = !ctx.history[pid];
     renderHero(pid, needsHistory);
 
@@ -1698,7 +1960,7 @@
 
     if(needsHistory){
       await ensureHistory(pid);
-      if(ctx.focusPid === pid && els.overlay.classList.contains('open')) renderHero(pid); // skip if they've moved on
+      if(ctx.focusPid === pid && focusVisible()) renderHero(pid); // skip if they've moved on
     }
   }
 
@@ -1724,6 +1986,8 @@
     const group = groupForSlot(slotLabel, player.position);
 
     ctx.focusPid = playerId;
+    ctx.focus = { kind: 'roster', pid: playerId, slot: slotIndexIfStarter != null ? slotIndexIfStarter : null };
+    ctx.focusAuto = false;
     renderHero(playerId);
     els.focusSectionTitle.textContent = 'Options for this slot';
 
