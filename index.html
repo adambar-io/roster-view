@@ -68,6 +68,7 @@
   }
   :root{
     --muted: var(--text-2);  /* used from JS markup */
+    --pos-FLEX: var(--accent);
     --radius-lg:20px; --radius:14px; --radius-sm:10px;
     --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.4,.5,1);
   }
@@ -207,6 +208,12 @@
   .opp.bye{ color: var(--danger); font-weight: 600; }
   .status-chip.bye-tag{ background: var(--danger); color: #fff; }
   .slot-row.bye-start{ background: var(--danger-soft); box-shadow: inset 3px 0 0 var(--danger); }
+  .slot-row.empty-slot{ background: var(--danger-soft); box-shadow: inset 3px 0 0 var(--danger); cursor: pointer; }
+  .slot-row.empty-slot .slot-tag{ color: var(--danger) !important; }
+  .slot-row.empty-slot .empty-name{ color: var(--danger); }
+  .add-avatar{ display: grid; place-items: center; background: none !important; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--danger) 55%, transparent) !important; color: var(--danger); border: none; }
+  .add-avatar svg{ width: 18px; height: 18px; }
+  .slot-row.empty-slot:focus-visible{ outline: 2px solid var(--danger); outline-offset: -2px; }
   .slot-row.bye-start .slot-tag{ color: var(--danger) !important; }
   .bye-alert{ background: var(--danger-soft); border-radius: var(--radius); color: var(--danger); padding: 12px 16px; margin: 0 0 16px; font-size: 13.5px; line-height: 1.45; }
   .bye-alert strong{ font-weight: 600; }
@@ -504,6 +511,13 @@
   @container list (min-width: 740px){
     .slot-row .col.col-avg, .list-head .h-col.h-avg{ display: block; width: 58px; text-align: right; color: var(--text-2); }
   }
+  /* Waivers has the most columns: until there's room, drop target share and tighten the rest so names stay readable. */
+  @container list (min-width: 600px) and (max-width: 819px){
+    .slot-row .col.col-tgt, .list-head .h-col.h-tgt{ display: none; }
+    .col-opp, .h-opp{ width: 62px; }
+    .col-snap, .h-snap{ width: 64px; }
+    .col-vs, .h-vs{ width: 136px; }
+  }
 
   /* expand buttons */
   .xbtn{ width: 32px; height: 32px; padding: 0; border-radius: 10px; display: inline-grid; place-items: center; background: var(--surface-2); color: var(--text-2); flex-shrink: 0; }
@@ -723,6 +737,7 @@
     .swap-btn:hover{ opacity: 1; filter: brightness(1.08); }
     .slot-row:hover{ background: var(--surface-2); }
     .slot-row.bye-start:hover{ background: var(--danger-soft); }
+    .slot-row.empty-slot:hover{ background: color-mix(in srgb, var(--danger) 16%, transparent); }
     .slot-row.static:hover{ background: none; }
     .an-link:hover{ text-decoration-color: var(--text-3); }
     .league-card:hover{ opacity: 1; background: var(--surface-2); }
@@ -923,7 +938,7 @@
 
         <section class="view" id="fa-view" style="display:none;">
           <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
-          <div class="section-title">Top available <span style="opacity:0.7;">— compared with your lowest-projected player at the position</span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
+          <div class="section-title">Top available <span style="opacity:0.7;" id="fa-sub">— compared with your lowest-projected player at the position</span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
           <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
@@ -1559,19 +1574,23 @@
   function selectDefaultFocus(){
     if(!paneMode()) return;
     if(ctx.view === 'fa'){
-      const top = (ctx.freeAgents[ctx.faPos] || [])[0];
+      const top = faList()[0];
       if(top && !(ctx.focus && ctx.focus.kind === 'fa')) openFreeAgent(top);
       return;
     }
     if(ctx.focus && ctx.focus.kind === 'roster' && (ctx.myRoster.players || []).indexOf(ctx.focus.pid) !== -1){ refreshFocus(); return; }
+    if(ctx.focus && ctx.focus.kind === 'empty' && !ctx.focusAuto && ctx.focus.slot < ctx.rosterPositions.length){ refreshFocus(); return; }
     let i = ctx.draftStarters.findIndex(function(pid){ return pid && pid !== '0' && isOnBye(pid); });
+    if(i === -1){ const e = emptyStarterSlots(); if(e.length){ openEmptySlot(e[0]); ctx.focusAuto = true; return; } }
     if(i === -1) i = ctx.draftStarters.findIndex(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
     if(i !== -1){ openFocus(ctx.draftStarters[i], i); ctx.focusAuto = true; } // picked for you, so it can be re-picked when bye data arrives
   }
   function refreshFocus(){
     const f = ctx.focus;
     if(!f || !focusVisible()) return;
-    if(f.kind === 'fa') openFreeAgent(f.pid); else openFocus(f.pid, f.slot);
+    if(f.kind === 'fa') openFreeAgent(f.pid);
+    else if(f.kind === 'empty'){ const pid = ctx.draftStarters[f.slot]; if(!pid || pid === '0') openEmptySlot(f.slot); else openFocus(pid, f.slot); }
+    else openFocus(f.pid, f.slot);
   }
 
   // ---- main load ----
@@ -1718,6 +1737,7 @@
       ctx.players = players;
       ctx.rosterPositions = (league.roster_positions || []).filter(function(p){ return p !== 'BN' && p !== 'IR' && p !== 'TAXI'; });
       ctx.originalStarters = (myRoster.starters || []).slice();
+      while(ctx.originalStarters.length < ctx.rosterPositions.length) ctx.originalStarters.push('0');
       ctx.draftStarters = ctx.originalStarters.slice();
 
       const owner = users.find(function(u){ return u.user_id === ctx.userId; });
@@ -1746,6 +1766,9 @@
       ctx.focus = null;
       els.rosterScreen.classList.remove('is-loading');
       els.kpiProj.textContent = '0.0'; // so the total counts up on first load
+      // If the app-open animation is still playing, hold the total at 0 and skip the row fade-in for now;
+      // both play once, after it lands (ctx.afterVt below). Otherwise they'd run twice.
+      ctx.deferEntrance = !!ctx.vtRunning;
       renderAll();
       document.getElementById('setup-wrap').style.display = 'none';
       els.rosterScreen.style.display = '';
@@ -1753,9 +1776,10 @@
       renderStatus();
       setStatus('');
       // If the app-open transition is still playing, replay the row + total entrance once it lands so you actually see it.
-      if(ctx.vtRunning) ctx.afterVt = function(){
+      if(ctx.deferEntrance) ctx.afterVt = function(){
+        ctx.deferEntrance = false;
         staggerIn(els.startersList); staggerIn(els.benchList);
-        const total = parseFloat(els.kpiProj.textContent); els.kpiProj.textContent = '0.0'; if(!isNaN(total)) countTo(els.kpiProj, total);
+        els.kpiProj.textContent = '0.0'; countTo(els.kpiProj, sumProj(ctx.draftStarters));
       };
 
       nflPromise.then(function(data){
@@ -1953,7 +1977,7 @@
     els.compareBtn.classList.toggle('is-hidden', !isDirty);
 
     const total = sumProj(ctx.draftStarters), diff = total - sumProj(ctx.originalStarters);
-    countTo(els.kpiProj, total);
+    if(ctx.deferEntrance) els.kpiProj.textContent = '0.0'; else countTo(els.kpiProj, total);
     setDiff(els.kpiDelta, diff);
     els.kpiDelta.className = 'kpi-mid num ' + els.kpiDelta.className.replace('lc-diff', '').trim();
     const changed = ctx.draftStarters.filter(function(pid, i){ return pid !== ctx.originalStarters[i]; }).length;
@@ -1975,7 +1999,8 @@
     els.kpiRecord.textContent = typeof st.wins === 'number' ? st.wins + '–' + st.losses + (st.ties ? '–' + st.ties : '') : '—';
     els.kpiRecordCap.textContent = typeof st.fpts === 'number' ? (st.fpts + (st.fpts_decimal || 0) / 100).toFixed(1) + ' points for' : '';
 
-    document.querySelectorAll('[data-bye-badge]').forEach(function(b){ b.hidden = !bye; b.textContent = bye; });
+    const problemCount = bye + (slots - filled.length);
+    document.querySelectorAll('[data-bye-badge]').forEach(function(b){ b.hidden = !problemCount; b.textContent = problemCount; });
   }
 
   // Animate a number from what's showing now to its new value.
@@ -2085,12 +2110,16 @@
 
   function playerRow(playerId, slotLabel, slotIndex){
     if(!playerId || playerId === '0'){
+      // An empty starting slot is a lineup problem: make it a real, tappable row that opens "add to this slot".
+      const group = groupForSlot(slotLabel, null);
       return '' +
-        '<div class="slot-row static">' +
+        '<div class="slot-row empty-slot" role="button" tabindex="0" data-empty-slot="' + slotIndex + '" data-slot-index="' + slotIndex + '" aria-label="Empty ' + escapeHTML(slotLabel) + ' slot. Add a starter">' +
           '<div class="slot-tag">' + escapeHTML(slotLabel || '—') + '</div>' +
-          '<div class="avatar"></div>' +
-          '<div class="player-info"><div class="player-name" style="color:var(--muted);">Empty</div></div>' +
-          '<div class="stat-col"></div><div class="stat-col"></div>' +
+          '<span class="avatar add-avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></span>' +
+          '<div class="player-info"><div class="player-name empty-name">Empty</div>' +
+            '<div class="player-meta"><span class="hint-mouse">Click</span><span class="hint-touch">Tap</span> to add ' + escapeHTML(group.join('/')) + '</div></div>' +
+          '<div class="col col-opp"></div><div class="col col-snap"></div>' +
+          '<div class="stat-col"><div class="val">—</div><div class="cap">proj</div></div><div class="stat-col"></div><div class="col col-avg"></div>' +
         '</div>';
     }
     const p = ctx.players[playerId];
@@ -2151,12 +2180,23 @@
     });
     els.benchList.innerHTML = benchHTML || '<div class="empty-state">Bench is empty.</div>';
 
+    // Lineup problems: starters on a bye and empty starting slots. Neither scores.
     const byeStarters = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && isOnBye(pid); });
-    els.byeAlert.classList.toggle('gone', !byeStarters.length);
-    if(byeStarters.length) els.byeAlert.innerHTML = // left in place when fixed, so it can collapse away
-      '<div class="bye-text"><strong>' + byeStarters.length + ' starter' + (byeStarters.length > 1 ? 's are' : ' is') + ' on a bye in week ' + ctx.week + ':</strong> ' +
-        byeStarters.map(function(pid){ const p = ctx.players[pid]; return escapeHTML(playerName(p)) + ' (' + escapeHTML(p.team) + ')'; }).join(', ') +
-        '. Swap them out so the slot scores.</div><button class="bye-fix" data-bye-fix="' + ctx.draftStarters.indexOf(byeStarters[0]) + '">Show options</button>';
+    const emptySlots = emptyStarterSlots();
+    const problems = byeStarters.length + emptySlots.length;
+    els.byeAlert.classList.toggle('gone', !problems);
+    if(problems){ // content is left in place when fixed, so it can collapse away
+      const byeTxt = byeStarters.map(function(pid){ const p = ctx.players[pid]; return escapeHTML(playerName(p)) + ' (' + escapeHTML(p.team) + ') is on a bye'; });
+      const emptyTxt = emptySlots.map(function(i){ return 'your ' + escapeHTML(ctx.rosterPositions[i]) + ' slot is empty'; });
+      const all = byeTxt.concat(emptyTxt);
+      const firstSlot = byeStarters.length ? ctx.draftStarters.indexOf(byeStarters[0]) : emptySlots[0];
+      const head = problems === 1
+        ? (byeStarters.length ? all[0].charAt(0).toUpperCase() + all[0].slice(1) + ' in week ' + ctx.week + '.' : 'Your ' + escapeHTML(ctx.rosterPositions[emptySlots[0]]) + ' slot is empty.')
+        : problems + ' starting slots won’t score in week ' + ctx.week + ':';
+      els.byeAlert.innerHTML = '<div class="bye-text"><strong>' + head + '</strong> ' +
+        (problems === 1 ? (byeStarters.length ? 'Swap them out so the slot scores.' : 'It won’t score until you add someone.') : all.join('; ') + '.') +
+        '</div><button class="bye-fix" data-fix-slot="' + firstSlot + '">' + (byeStarters.length ? 'Show options' : 'Fill it') + '</button>';
+    }
 
     document.querySelectorAll('.slot-row[data-player-id]').forEach(function(row){
       row.addEventListener('click', function(){
@@ -2165,14 +2205,59 @@
         openFocus(row.getAttribute('data-player-id'), slotIndex);
       });
     });
+    els.startersList.querySelectorAll('.slot-row[data-empty-slot]').forEach(function(row){
+      const open = function(){ openEmptySlot(Number(row.getAttribute('data-empty-slot'))); };
+      row.addEventListener('click', open);
+      row.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); } });
+    });
 
     renderLineupCompare();
     markSelected();
   }
   els.byeAlert.addEventListener('click', function(e){
-    const b = e.target.closest('[data-bye-fix]');
-    if(b){ const i = Number(b.getAttribute('data-bye-fix')); openFocus(ctx.draftStarters[i], i); }
+    const b = e.target.closest('[data-fix-slot]');
+    if(!b) return;
+    const i = Number(b.getAttribute('data-fix-slot')), pid = ctx.draftStarters[i];
+    if(!pid || pid === '0') openEmptySlot(i); else openFocus(pid, i);
   });
+  function emptyStarterSlots(){
+    return ctx.rosterPositions.map(function(s, i){ return i; }).filter(function(i){ const pid = ctx.draftStarters[i]; return !pid || pid === '0'; });
+  }
+
+  // Panel for an empty starting slot: bench players who can play it, best projection first, each with Swap in.
+  function openEmptySlot(slotIndex){
+    const label = ctx.rosterPositions[slotIndex], group = groupForSlot(label, null);
+    ctx.focusPid = null;
+    ctx.focus = { kind: 'empty', slot: slotIndex };
+    ctx.focusAuto = false;
+    els.heroAvatar.style.display = 'none'; els.heroAvatar.removeAttribute('src'); els.heroAvatar.removeAttribute('data-analyze');
+    els.focusPanel.style.setProperty('--team', 'var(--danger)');
+    els.heroName.textContent = 'Empty ' + label + ' slot';
+    els.heroMeta.textContent = 'This slot won’t score until you add someone.';
+    document.getElementById('hero-expand').hidden = true;
+    els.heroStats.innerHTML = '';
+    els.heroSlotNote.textContent = 'Bench players who can play ' + label + (group.length > 1 ? ' (' + group.join('/') + ')' : '') + ', best projection first.';
+    els.focusSectionTitle.textContent = 'Add to ' + label;
+    const starterSet = new Set(ctx.draftStarters.filter(function(x){ return x && x !== '0'; }));
+    const bench = (ctx.myRoster.players || []).filter(function(pid){ const p = ctx.players[pid]; return p && !starterSet.has(pid) && group.indexOf(p.position) !== -1; })
+      .sort(function(a, b){ const pa = ctx.projections[a], pb = ctx.projections[b]; return (typeof pb === 'number' ? pb : -1) - (typeof pa === 'number' ? pa : -1); });
+    const waiverPos = group.length > 1 && group.every(function(g){ return ['RB','WR','TE','QB'].indexOf(g) !== -1; }) ? 'FLEX' : group[0];
+    els.candidatesList.innerHTML = bench.map(function(pid){
+      const p = ctx.players[pid];
+      return '<div class="cand-card">' +
+        '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
+        '<div class="cand-info"><div class="cand-name">' + analyzeName(pid, playerName(p)) + ' ' + injuryChip(p.injury_status) + '</div>' +
+        '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div></div>' +
+        candidateStatsHTML(pid) +
+        '<button class="swap-btn" data-fill="' + escapeHTML(pid) + '">Add</button></div>';
+    }).join('') || '<div class="empty-state">No bench players can play ' + escapeHTML(label) + '.<br><button class="quiet-btn" style="margin-top:12px" data-go-waivers="' + escapeHTML(waiverPos) + '">Find one on Waivers</button></div>';
+    els.candidatesList.querySelectorAll('[data-fill]').forEach(function(btn){
+      btn.addEventListener('click', function(){ swapIntoSlot(slotIndex, btn.getAttribute('data-fill')); });
+    });
+    const go = els.candidatesList.querySelector('[data-go-waivers]');
+    if(go) go.addEventListener('click', function(){ closeFocus(); ctx.faPos = go.getAttribute('data-go-waivers'); ctx.faLimit = FA_LIST_LIMIT; setView('fa'); });
+    showFocus();
+  }
 
   // ---- available players (informational only — not part of the lineup builder) ----
   const VIEW_TITLES = { roster: 'Lineup', fa: 'Waivers', compare: 'Compare', settings: 'Settings' };
@@ -2211,7 +2296,7 @@
     if(view === 'settings') renderStatus();
     if(changed){
       [els.rosterView, els.faView, els.compareView, els.settingsView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
-      if(view === 'roster'){ staggerIn(els.startersList); staggerIn(els.benchList); }
+      if(view === 'roster' && !ctx.deferEntrance){ staggerIn(els.startersList); staggerIn(els.benchList); }
       if(view === 'fa') staggerIn(els.faList);
       if(!paneMode()) window.scrollTo(0, 0);
     }
@@ -2233,26 +2318,59 @@
   window.addEventListener('resize', moveNavThumbs);
   els.navBtns.forEach(function(t){ t.addEventListener('click', function(){ setView(t.getAttribute('data-view')); }); });
 
-  function faVsLine(pid, pos){
-    const worst = weakestRostered(pos);
-    if(!worst) return '<div class="fa-vs"><span class="who">No ' + escapeHTML(pos) + ' with a projection on your roster</span></div>';
-    const proj = ctx.projections[pid];
-    if(typeof proj !== 'number') return '<div class="fa-vs"><span class="who">No projection this week</span></div>';
-    const diff = proj - ctx.projections[worst];
-    const flat = Math.abs(diff) < 0.05;
-    const txt = flat ? '±0.0' : ((diff > 0 ? '+' : '−') + Math.abs(diff).toFixed(1));
-    return '<div class="fa-vs"><span class="d ' + (flat ? 'flat' : (diff > 0 ? 'up' : 'down')) + '">' + txt + '</span>' +
-      '<span class="who">vs your ' + escapeHTML(playerName(ctx.players[worst])) + '</span></div>';
+  const WAIVER_FILTERS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
+  // FLEX = the best available RB/WR/TE together, by projection.
+  function faList(){
+    if(ctx.faPos !== 'FLEX') return ctx.freeAgents[ctx.faPos] || [];
+    if(ctx._flexCache && ctx._flexCache.src === ctx.freeAgents) return ctx._flexCache.list;
+    const list = ['RB', 'WR', 'TE'].reduce(function(a, pos){ return a.concat(ctx.freeAgents[pos] || []); }, [])
+      .sort(function(a, b){ const pa = ctx.projections[a], pb = ctx.projections[b]; return (typeof pb === 'number' ? pb : -Infinity) - (typeof pa === 'number' ? pa : -Infinity); });
+    ctx._flexCache = { src: ctx.freeAgents, list: list };
+    return list;
+  }
+  // Who a pickup would be compared with. FLEX: whoever is in your FLEX-type slot this player could fill (the weakest one,
+  // an empty FLEX counts as weakest). Otherwise: your lowest-projected player at the position.
+  function faCompare(pid){
+    const p = ctx.players[pid];
+    if(ctx.faPos === 'FLEX'){
+      let best = null;
+      ctx.rosterPositions.forEach(function(label, i){
+        const g = FLEX_GROUPS[label];
+        if(!g || g.length < 2 || g.indexOf(p.position) === -1) return;
+        const occ = ctx.draftStarters[i], has = occ && occ !== '0' && ctx.players[occ];
+        const proj = has ? (typeof ctx.projections[occ] === 'number' ? ctx.projections[occ] : 0) : -1;
+        if(!best || proj < best.proj) best = { pid: has ? occ : null, proj: proj, slot: label };
+      });
+      if(best) return { pid: best.pid, slot: best.slot, empty: !best.pid, prefix: 'your ' + best.slot + ' ' };
+    }
+    return { pid: weakestRostered(p.position), prefix: 'your ' };
+  }
+  function faVsParts(pid){
+    const c = faCompare(pid), proj = ctx.projections[pid];
+    if(typeof proj !== 'number') return { cls: 'flat', txt: '', who: 'No projection this week' };
+    if(c.empty) return { cls: 'up', txt: '+' + proj.toFixed(1), who: 'fills your empty ' + c.slot };
+    if(!c.pid) return { cls: 'flat', txt: '', who: 'No ' + ctx.players[pid].position + ' with a projection on your roster' };
+    const diff = proj - ctx.projections[c.pid], flat = Math.abs(diff) < 0.05;
+    return { cls: flat ? 'flat' : diff > 0 ? 'up' : 'down', txt: flat ? '±0.0' : (diff > 0 ? '+' : '−') + Math.abs(diff).toFixed(1), who: 'vs ' + c.prefix + playerName(ctx.players[c.pid]) };
+  }
+  function faVsLine(pid){
+    const v = faVsParts(pid);
+    return '<div class="fa-vs">' + (v.txt ? '<span class="d ' + v.cls + '">' + v.txt + '</span>' : '') + '<span class="who">' + escapeHTML(v.who) + '</span></div>';
   }
 
   function renderFreeAgents(){
-    els.faPosFilter.innerHTML = FANTASY_POSITIONS.map(function(pos){
+    els.faPosFilter.innerHTML = WAIVER_FILTERS.map(function(pos){
       const on = pos === ctx.faPos;
       return '<button class="pos-pill' + (on ? ' active' : '') + '" role="tab" aria-selected="' + on + '" data-fa-pos="' + pos + '" style="--pill-color:' + posColor(pos) + ';">' + pos + '</button>';
     }).join('');
 
-    const all = ctx.freeAgents[ctx.faPos] || [];
+    const all = faList();
     const shown = all.slice(0, ctx.faLimit);
+    const vsHead = document.querySelector('#fa-view .h-vs');
+    if(vsHead) vsHead.textContent = ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest';
+    document.getElementById('fa-sub').textContent = ctx.faPos === 'FLEX'
+      ? '— best RB, WR and TE together, compared with who’s in your FLEX'
+      : '— compared with your lowest-projected player at the position';
     const color = posColor(ctx.faPos);
     els.faList.innerHTML = shown.map(function(pid){
       const p = ctx.players[pid];
@@ -2287,7 +2405,7 @@
     ctx.faLimit = FA_LIST_LIMIT;
     renderFreeAgents();
     staggerIn(els.faList);
-    if(paneMode()){ const top = (ctx.freeAgents[ctx.faPos] || [])[0]; if(top) openFreeAgent(top); }
+    if(paneMode()){ const top = faList()[0]; if(top) openFreeAgent(top); }
   });
   els.faMore.addEventListener('click', function(){ ctx.faLimit += FA_LIST_LIMIT; renderFreeAgents(); });
   els.faList.addEventListener('click', function(e){
@@ -2340,11 +2458,12 @@
 
   function renderHero(playerId, loadingHistory){
     const player = ctx.players[playerId];
-    els.heroAvatar.style.visibility = '';
+    els.heroAvatar.style.visibility = ''; els.heroAvatar.style.display = '';
     els.heroAvatar.src = playerImageUrl(playerId);
     els.heroAvatar.style.setProperty('--team', teamColor(player.team));
     els.focusPanel.style.setProperty('--team', teamColor(player.team));
     els.heroAvatar.setAttribute('data-analyze', playerId);
+    document.getElementById('hero-expand').hidden = false;
     els.heroName.innerHTML = analyzeName(playerId, playerName(player));
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
 
@@ -2485,8 +2604,15 @@
     renderHero(pid, needsHistory);
 
     const worst = weakestRostered(p.position);
-    const proj = ctx.projections[pid];
-    if(worst && typeof proj === 'number'){
+    const proj = ctx.projections[pid], flexCmp = ctx.faPos === 'FLEX' && ctx.view === 'fa' ? faCompare(pid) : null;
+    if(flexCmp && flexCmp.slot && typeof proj === 'number'){
+      if(flexCmp.empty) els.heroSlotNote.textContent = 'Available. Your ' + flexCmp.slot + ' slot is empty. Picking this player up adds ' + proj.toFixed(1) + ' projected points.';
+      else{
+        const d = proj - (ctx.projections[flexCmp.pid] || 0);
+        els.heroSlotNote.textContent = 'Available. Projects ' + (Math.abs(d) < 0.05 ? 'even with' : Math.abs(d).toFixed(1) + (d > 0 ? ' more than' : ' less than')) +
+          ' your ' + flexCmp.slot + ', ' + playerName(ctx.players[flexCmp.pid]) + '.';
+      }
+    }else if(worst && typeof proj === 'number'){
       const diff = proj - ctx.projections[worst];
       els.heroSlotNote.textContent = 'Available. Projects ' + (Math.abs(diff) < 0.05 ? 'even with' : (Math.abs(diff).toFixed(1) + (diff > 0 ? ' more than' : ' less than'))) +
         ' your lowest-projected ' + p.position + ', ' + playerName(ctx.players[worst]) + '.';
@@ -2747,17 +2873,13 @@
   }
 
   function maxWaiversHTML(){
-    const list = (ctx.freeAgents[ctx.faPos] || []).slice(0, ctx.faLimit);
-    const shares = SKILL_POSITIONS.indexOf(ctx.faPos) !== -1 && ctx.faPos !== 'QB';
+    const list = faList().slice(0, ctx.faLimit);
+    const shares = ctx.faPos === 'FLEX' || (SKILL_POSITIONS.indexOf(ctx.faPos) !== -1 && ctx.faPos !== 'QB');
     return '<div class="mx-scroll"><table class="mx-tbl"><thead><tr><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th>' +
-      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">vs your weakest ' + escapeHTML(ctx.faPos) + '</th></tr></thead><tbody class="stagger">' +
+      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">' + (ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest ' + escapeHTML(ctx.faPos)) + '</th></tr></thead><tbody class="stagger">' +
       list.map(function(pid, i){
-        const worst = weakestRostered(ctx.faPos), proj = ctx.projections[pid];
-        let vs = '<span class="dim">—</span>';
-        if(worst && typeof proj === 'number'){
-          const d = proj - ctx.projections[worst], flat = Math.abs(d) < 0.05;
-          vs = '<b class="' + (flat ? 'dim' : d > 0 ? 'trend up' : 'trend down') + '">' + (flat ? '±0.0' : (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1)) + '</b> <span class="muted">vs ' + escapeHTML(playerName(ctx.players[worst])) + '</span>';
-        }
+        const proj = ctx.projections[pid], v = faVsParts(pid);
+        const vs = (v.txt ? '<b class="' + (v.cls === 'flat' ? 'dim' : 'trend ' + v.cls) + '">' + v.txt + '</b> ' : '') + '<span class="muted">' + escapeHTML(v.who) + '</span>';
         return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
           (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + pct(seasonShare(pid, 'a')) + '</td>' : '') +
           '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td></tr>';
