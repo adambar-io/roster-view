@@ -740,6 +740,80 @@
   .m-brand .wordmark{ font-size: 20px; }
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
+  /* ---- head-to-head ---- */
+  .vs-btn{ flex-shrink: 0; display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 999px;
+    background: var(--surface-3); color: var(--text-2); font: inherit; font-size: 11px; font-weight: 800; letter-spacing: .03em; cursor: pointer;
+    -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s, transform .25s var(--spring); }
+  .vs-btn[hidden]{ display: none; }
+  .vs-btn:active{ transform: scale(.88); }
+  .vs-btn.on{ background: var(--accent); color: var(--on-accent); }
+  .cand-acts{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .pane-detail .cand-acts, .pf-card .cand-acts{ grid-area: act; align-self: center; }
+  .row-vs{ flex-shrink: 0; display: flex; align-items: center; }
+  .h-pick{ width: 36px; flex-shrink: 0; }
+  .hero .hero-vs{ margin-left: auto; align-self: flex-start; }
+  .hero .hero-vs + .xbtn{ margin-left: 0; }
+  .sr-only{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .h2h-tray{ position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: 24px; width: min(480px, calc(100vw - 24px));
+    display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 999px; background: var(--surface); box-shadow: var(--shadow-lg), 0 0 0 1px var(--hair);
+    animation: trayIn .4s var(--spring); }
+  .h2h-tray[hidden]{ display: none; }
+  body.has-tray .main::after{ content: ''; display: block; height: 72px; }
+  @keyframes trayIn{ from{ opacity: 0; transform: translate(-50%, 16px); } to{ opacity: 1; transform: translate(-50%, 0); } }
+  .h2h-slot{ flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px 0 4px; border: none; border-radius: 999px;
+    background: var(--surface-2); color: var(--text); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .h2h-hint{ flex: 1 1 0; min-width: 0; padding: 0 8px; color: var(--text-2); font-size: 12.5px; line-height: 1.25; }
+  .h2h-hint b{ color: var(--text); font-weight: 800; font-size: 11px; }
+  .h2h-tav{ width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+  .h2h-tn{ flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  .h2h-tx{ color: var(--text-3); font-size: 16px; font-weight: 400; }
+  .h2h-tvs{ font-size: 11px; font-weight: 800; color: var(--text-3); flex-shrink: 0; }
+  .h2h-go{ flex-shrink: 0; height: 40px; padding: 0 14px; border: none; border-radius: 999px; background: var(--accent); color: var(--on-accent); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  @media (max-width: 1023px){ .h2h-tray{ bottom: calc(100px + env(safe-area-inset-bottom)); } body.no-scroll .h2h-tray{ bottom: calc(14px + env(safe-area-inset-bottom)); } }
+  @media (max-width: 420px){ .h2h-go{ padding: 0 12px; } .h2h-tray{ gap: 5px; padding: 6px; } .h2h-slot{ padding-right: 8px; gap: 5px; } .h2h-tav{ width: 28px; height: 28px; } }
+  .h2h{ max-width: 760px; margin: 0 auto; }
+  .h2h-head{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; margin-bottom: 14px; }
+  .h2h-who{ display: grid; justify-items: center; text-align: center; gap: 4px; padding: 16px 10px; border-radius: var(--radius);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--team) 30%, transparent), transparent 70%), var(--surface); cursor: pointer; min-width: 0; }
+  .h2h-av{ width: 72px; height: 72px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--team); margin-bottom: 4px; }
+  .h2h-nm{ font-size: 17px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; overflow-wrap: anywhere; }
+  .h2h-mt{ font-size: 12.5px; color: var(--text-2); }
+  .h2h-score{ margin-top: 4px; font-size: 12.5px; color: var(--text-2); }
+  .h2h-score b{ font-size: 15px; color: var(--text); }
+  .h2h-score.lead b{ color: var(--accent); }
+  .h2h-vsmark{ align-self: center; font-size: 13px; font-weight: 800; color: var(--text-3); letter-spacing: .04em; }
+  .h2h-sticky{ position: sticky; top: var(--bar-h, 56px); z-index: 2; display: flex; justify-content: space-between; padding: 8px 14px; margin: 0 0 10px;
+    border-radius: 12px; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--text-2); box-shadow: 0 0 0 1px var(--hair); }
+  .h2h-note{ font-size: 13px; color: var(--text-2); margin: 0 2px 10px; }
+  .h2h-card{ padding: 6px 14px 10px; }
+  .h2h-sec h3{ display: flex; align-items: baseline; gap: 8px; margin: 14px 0 6px; font-size: 15px; font-weight: 700; }
+  .h2h-row{ display: grid; grid-template-columns: 1fr minmax(110px, 1.2fr) 1fr; align-items: center; gap: 8px; padding: 3px 0; border-top: 1px solid var(--hair); }
+  .h2h-sec h3 + .h2h-row{ border-top: none; }
+  .h2h-row .hl{ text-align: center; font-size: 12.5px; color: var(--text-2); line-height: 1.25; }
+  .h2h-low{ display: block; font-size: 10.5px; color: var(--text-3); }
+  .h2h-row .hv{ padding: 7px 10px; border-radius: 10px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .h2h-row .hv:first-child{ text-align: left; } .h2h-row .hv:last-child{ text-align: right; }
+  .h2h-row .hv.win{ color: var(--accent); background: var(--accent-soft); }
+  .h2h-row .hv.lose{ color: var(--danger); background: var(--danger-soft); }
+  .h2h-row.text .hv{ font-size: 13px; font-weight: 500; }
+  .h2h-row.text .hv .status-chip{ margin: 0; }
+  .h2h-row .chip-full{ display: inline !important; } .h2h-row .chip-short{ display: none !important; }
+  .h2h-more summary{ cursor: pointer; padding: 10px 0 6px; font-size: 13px; font-weight: 600; color: var(--accent); list-style: none; }
+  .h2h-more summary::-webkit-details-marker{ display: none; }
+  .h2h-more[open] summary{ color: var(--text-2); }
+  .h2h-foot{ color: var(--text-3); font-size: 12px; text-align: center; margin: 14px 8px 30px; }
+  @media (max-width: 560px){
+    .h2h-head{ gap: 6px; }
+    .h2h-who{ padding: 12px 6px; }
+    .h2h-av{ width: 56px; height: 56px; }
+    .h2h-nm{ font-size: 15px; }
+    .h2h-card{ padding: 4px 8px 8px; }
+    .h2h-row{ grid-template-columns: 1fr minmax(96px, 1.1fr) 1fr; gap: 4px; }
+    .h2h-row .hv{ padding: 7px 8px; font-size: 14px; }
+    .cand-acts{ grid-area: act; align-self: center; gap: 6px; }
+  }
+
   /* the logo is a home button */
   [data-home][role="button"], .home-btn{ cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
   [data-home][role="button"]{ border-radius: 12px; transition: transform .3s var(--spring), opacity .2s; }
@@ -1010,7 +1084,7 @@
         <section class="view" id="fa-view" style="display:none;">
           <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
           <div class="section-title">Top available <span style="opacity:0.7;" id="fa-sub">— compared with your lowest-projected player at the position</span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
-          <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div></div>
+          <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
         </section>
@@ -1069,6 +1143,7 @@
         <h2 class="hero-name" id="hero-name">—</h2>
         <div class="hero-meta" id="hero-meta">—</div>
       </div>
+      <button type="button" class="vs-btn hero-vs" id="hero-vs" data-vs="" title="Compare head-to-head">VS</button>
       <button class="xbtn" id="hero-expand" data-expand="player" aria-label="Open full player page" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button>
     </div>
     <div class="hero-stats" id="hero-stats"></div>
@@ -1080,6 +1155,8 @@
 
 
 <!-- Full-screen layer: lineup / waivers tables and the full player page. Grows out of whatever you expanded. -->
+<div class="h2h-tray" id="h2h-tray" role="region" aria-label="Head-to-head comparison" hidden></div>
+
 <div class="max" id="max" hidden>
   <div class="max-bg"></div>
   <div class="max-panel" role="dialog" aria-modal="true" aria-labelledby="max-title">
@@ -1995,6 +2072,7 @@
     setStatus('Loading roster…');
     const loadId = ctx.loadId = (ctx.loadId || 0) + 1;
     ctx.nfl = null;
+    ctx.h2h = []; renderH2HTray();
     const nflPromise = loadNflverse(ctx.season); // in parallel; never blocks the roster
     try{
       const dataReady = Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
@@ -2723,6 +2801,7 @@
     els.heroName.textContent = 'Empty ' + label + ' slot';
     els.heroMeta.textContent = 'This slot won’t score until you add someone.';
     document.getElementById('hero-expand').hidden = true;
+    document.getElementById('hero-vs').hidden = true;
     els.heroStats.innerHTML = '';
     els.heroSlotNote.textContent = 'Bench players who can play ' + label + (group.length > 1 ? ' (' + group.join('/') + ')' : '') + ', best projection first.';
     els.focusSectionTitle.textContent = 'Add to ' + label;
@@ -2737,7 +2816,7 @@
         '<div class="cand-info"><div class="cand-name">' + analyzeName(pid, playerName(p)) + ' ' + injuryChip(p.injury_status) + '</div>' +
         '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div></div>' +
         candidateStatsHTML(pid) +
-        '<button class="swap-btn" data-fill="' + escapeHTML(pid) + '">Add</button></div>';
+        '<div class="cand-acts">' + vsBtn(pid) + '<button class="swap-btn" data-fill="' + escapeHTML(pid) + '">Add</button></div></div>';
     }).join('') || '<div class="empty-state">No bench players can play ' + escapeHTML(label) + '.<br><button class="quiet-btn" style="margin-top:12px" data-go-waivers="' + escapeHTML(waiverPos) + '">Find one on Waivers</button></div>';
     els.candidatesList.querySelectorAll('[data-fill]').forEach(function(btn){
       btn.addEventListener('click', function(){ swapIntoSlot(slotIndex, btn.getAttribute('data-fill')); });
@@ -2877,6 +2956,7 @@
           '<div class="col col-tgt">' + (SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—') + '</div>' +
           '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div></div>' +
           '<div class="col col-vs">' + faVsLine(pid, p.position).replace('class="fa-vs"', 'class="fa-vs-inline"') + '</div>' +
+          '<div class="row-vs">' + vsBtn(pid) + '</div>' +
         '</div>';
     }).join('') || '<div class="empty-state">No available ' + escapeHTML(ctx.faPos) + ' found.</div>';
 
@@ -2953,6 +3033,9 @@
     els.focusPanel.style.setProperty('--team', teamColor(player.team));
     els.heroAvatar.setAttribute('data-analyze', playerId);
     document.getElementById('hero-expand').hidden = false;
+    const hv = document.getElementById('hero-vs');
+    hv.hidden = false; hv.setAttribute('data-vs', playerId); hv.setAttribute('aria-label', 'Compare ' + playerName(player) + ' head-to-head');
+    syncVsButtons();
     els.heroName.innerHTML = analyzeName(playerId, playerName(player));
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
 
@@ -3125,7 +3208,7 @@
             '<div class="cand-meta">' + escapeHTML(mp.position) + ' · ' + escapeHTML(mp.team || 'FA') + matchupHTML(mp.team) + '</div>' +
           '</div>' +
           candidateStatsHTML(id) +
-          (id === worst ? '<div class="current-tag">Lowest</div>' : '') +
+          '<div class="cand-acts">' + vsBtn(id) + (id === worst ? '<div class="current-tag">Lowest</div>' : '') + '</div>' +
         '</div>';
     }).join('') || '<div class="empty-state">You have no ' + escapeHTML(p.position) + ' on your roster.</div>';
 
@@ -3201,9 +3284,9 @@
             '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div>' +
           '</div>' +
           candidateStatsHTML(pid) +
-          (isCurrentStarter
+          '<div class="cand-acts">' + vsBtn(pid) + (isCurrentStarter
             ? '<div class="current-tag">Starting</div>'
-            : '<button class="swap-btn" data-swap-to="' + escapeHTML(pid) + '">Swap in</button>') +
+            : '<button class="swap-btn" data-swap-to="' + escapeHTML(pid) + '">Swap in</button>') + '</div>' +
         '</div>';
     });
     if(!benchCandidates.length){ html += '<div class="empty-state">No bench players are eligible for this slot.</div>'; }
@@ -3225,7 +3308,10 @@
   const FULL_CLIP = 'inset(0px 0px 0px 0px round 0px)';
 
   function maxOpen(){ return !maxEl.hidden; }
-  function maxTitleFor(e){ return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Waivers · full view' : playerName(ctx.players[e.pid]); }
+  function maxTitleFor(e){
+    if(e.kind === 'h2h') return lastName(e.pids[0]) + ' vs ' + lastName(e.pids[1]);
+    return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Waivers · full view' : playerName(ctx.players[e.pid]);
+  }
   function insetOf(el){
     if(!el || !el.isConnected || !el.getClientRects().length) return 'inset(12% 12% 12% 12% round 24px)';
     const r = el.getBoundingClientRect();
@@ -3233,13 +3319,17 @@
   }
   function renderMax(dir){
     const e = maxStack[maxStack.length - 1];
-    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : maxPlayerHTML(e.pid);
+    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : maxPlayerHTML(e.pid);
+    maxBody.style.setProperty('--bar-h', maxEl.querySelector('.max-bar').offsetHeight + 'px');
     maxTitle.textContent = maxTitleFor(e);
     maxBackLabel.textContent = maxStack.length > 1 ? maxTitleFor(maxStack[maxStack.length - 2]) : 'Back to ' + VIEW_TITLES[ctx.view];
     if(dir && !reduceMotion.matches) maxBody.animate([{ opacity: 0, transform: 'translateX(' + (dir > 0 ? 28 : -28) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' });
     // A player page needs their season history; fetch it once, then re-render if they're still on top.
     if(e.kind === 'player' && !ctx.history[e.pid]){
       ensureHistory(e.pid).then(function(){ if(maxOpen() && maxStack[maxStack.length - 1] === e) renderMax(0); });
+    }
+    if(e.kind === 'h2h' && e.pids.some(function(id){ return !ctx.history[id]; })){
+      Promise.all(e.pids.map(ensureHistory)).then(function(){ if(maxOpen() && maxStack[maxStack.length - 1] === e) renderMax(0); });
     }
   }
   let maxClosing = null; // pending cleanup from a close animation
@@ -3295,6 +3385,159 @@
     if(!top || maxClosing) return;
     if(row && !(top.kind === 'player' && top.pid === row.getAttribute('data-open'))) openMax({ kind: 'player', pid: row.getAttribute('data-open') });
   });
+
+  // ---- head-to-head: pick any two players (VS buttons) and compare them stat by stat ----
+  // Selection lives in a tray pinned to the bottom of the screen; picking the second player opens the comparison.
+  ctx.h2h = [];
+  function lastName(pid){ const p = ctx.players[pid]; return p ? (p.last_name || playerName(p).split(' ').slice(-1)[0] || playerName(p)) : '?'; }
+  function vsBtn(pid){
+    const on = ctx.h2h.indexOf(pid) !== -1;
+    return '<button type="button" class="vs-btn' + (on ? ' on' : '') + '" data-vs="' + escapeHTML(pid) + '" aria-pressed="' + on + '" aria-label="Compare ' +
+      escapeHTML(playerName(ctx.players[pid])) + ' head-to-head" title="Compare head-to-head">VS</button>';
+  }
+  function syncVsButtons(){
+    document.querySelectorAll('[data-vs]').forEach(function(b){
+      const on = ctx.h2h.indexOf(b.getAttribute('data-vs')) !== -1;
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+    });
+  }
+  function toggleH2H(pid, fromEl){
+    if(!pid || !ctx.players[pid]) return;
+    const i = ctx.h2h.indexOf(pid);
+    if(i !== -1) ctx.h2h.splice(i, 1);
+    else if(ctx.h2h.length < 2) ctx.h2h.push(pid);
+    else ctx.h2h[1] = pid; // a third pick replaces the second
+    syncVsButtons(); renderH2HTray();
+    if(i === -1 && ctx.h2h.length === 2) openMax({ kind: 'h2h', pids: ctx.h2h.slice() }, fromEl);
+  }
+  function renderH2HTray(){
+    const t = document.getElementById('h2h-tray');
+    const sel = ctx.h2h;
+    t.hidden = !sel.length;
+    document.body.classList.toggle('has-tray', !!sel.length); // room at the bottom so the tray never hides the last row
+    if(!sel.length){ t.innerHTML = ''; return; }
+    const slot = function(pid){
+      if(!pid) return '<div class="h2h-hint">Tap <b>VS</b> on another player to compare</div>';
+      return '<button type="button" class="h2h-slot" data-h2h-remove="' + escapeHTML(pid) + '" aria-label="Remove ' + escapeHTML(playerName(ctx.players[pid])) + '">' +
+        avatarTag(pid, 'h2h-tav') + '<span class="h2h-tn">' + escapeHTML(lastName(pid)) + '</span><span class="h2h-tx" aria-hidden="true">×</span></button>';
+    };
+    t.innerHTML = sel.length < 2 ? slot(sel[0]) + slot(null)
+      : slot(sel[0]) + '<span class="h2h-tvs">vs</span>' + slot(sel[1]) + '<button type="button" class="h2h-go">Compare</button>';
+  }
+  document.getElementById('h2h-tray').addEventListener('click', function(e){
+    const rm = e.target.closest('[data-h2h-remove]');
+    if(rm){ toggleH2H(rm.getAttribute('data-h2h-remove')); return; }
+    const go = e.target.closest('.h2h-go');
+    if(go && ctx.h2h.length === 2) openMax({ kind: 'h2h', pids: ctx.h2h.slice() }, go);
+  });
+  // Capture phase: a VS button inside a clickable row/card must not also open that row.
+  document.addEventListener('click', function(e){
+    const b = e.target.closest && e.target.closest('[data-vs]');
+    if(!b) return;
+    e.preventDefault(); e.stopPropagation();
+    toggleH2H(b.getAttribute('data-vs'), b);
+  }, true);
+
+  // Which way is better. Lower wins for mistakes and things a defense gives up; DEF takeaways (int, sack, fum_rec)
+  // are separate keys from the passer's pass_int / pass_sack, so they stay "higher is better".
+  const LOWER_IS_BETTER = /^(pass_int|pass_int_td|pass_sack|pass_sack_yds?|pass_inc|fum|fum_lost|rush_fum|rec_fum|rec_drop|rush_tkl_loss|rush_tkl_loss_yds?|fgmiss(_.+)?|xpmiss|pts_allow|yds_allow|def_(pass|rush)_yds?_allow|penalty|pen_yds?)$/;
+  const NEUTRAL_STAT = /^pts_allow_\d/; // points-allowed buckets: how many games landed in each range
+  function statDirection(key){ return NEUTRAL_STAT.test(key) ? null : LOWER_IS_BETTER.test(key) ? 'low' : 'high'; }
+
+  function h2hHTML(a, b){
+    const pa = ctx.players[a], pb = ctx.players[b];
+    if(!pa || !pb) return '<div class="empty-state">Pick two players to compare.</div>';
+    const loading = !ctx.history[a] || !ctx.history[b];
+    const tally = { a: 0, b: 0 };
+    const cell = function(v, fmt){ return v === null || v === undefined || (typeof v === 'number' && isNaN(v)) ? '—' : fmt(v); };
+    // One comparable row: the better value green, the worse red; ties and missing values stay neutral.
+    function row(label, va, vb, fmt, dir){
+      fmt = fmt || fmtStat;
+      let ca = '', cb = '';
+      if(dir && typeof va === 'number' && typeof vb === 'number' && fmt(va) !== fmt(vb)){
+        const aWins = dir === 'high' ? va > vb : va < vb;
+        ca = aWins ? ' win' : ' lose'; cb = aWins ? ' lose' : ' win';
+        tally[aWins ? 'a' : 'b']++;
+      }
+      return '<div class="h2h-row"><div class="hv' + ca + '">' + cell(va, fmt) + '</div><div class="hl">' + escapeHTML(label) +
+        (dir === 'low' ? '<span class="h2h-low" title="Lower is better">lower is better</span>' : '') + '</div><div class="hv' + cb + '">' + cell(vb, fmt) + '</div></div>';
+    }
+    function textRow(label, ta, tb){
+      return '<div class="h2h-row text"><div class="hv">' + (ta || '—') + '</div><div class="hl">' + escapeHTML(label) + '</div><div class="hv">' + (tb || '—') + '</div></div>';
+    }
+    const sec = function(title, rows){ return rows ? '<div class="h2h-sec"><h3>' + title + '</h3>' + rows + '</div>' : ''; };
+    const dots = function(){ return '…'; };
+
+    // This week
+    const opp = function(pid){ const m = matchup(ctx.players[pid].team, ctx.week); return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : ''; };
+    const status = function(pid){ const st = effectiveStatus(pid); return st && st !== 'Healthy' ? injuryChip(st) : '<span class="dim">Healthy</span>'; };
+    let week = row('Projected points', ctx.projections[a], ctx.projections[b], fmtPts, 'high') +
+      textRow('Opponent', opp(a), opp(b)) + textRow('Status', status(a), status(b));
+
+    // Fantasy points (league scoring)
+    const best = function(pid){ const h = ctx.history[pid] || []; return h.length ? Math.max.apply(null, h.map(function(w){ return w.pts; })) : null; };
+    const games = function(pid){ return ctx.history[pid] ? ctx.history[pid].length : null; };
+    const fp = loading
+      ? row('Last game', null, null, dots) + row('Season average', null, null, dots) + row('Season total', null, null, dots)
+      : row('Last game', lastGamePts(a), lastGamePts(b), fmtPts, 'high') +
+        row('Season average', seasonAvgPts(a), seasonAvgPts(b), fmtPts, 'high') +
+        row('Season total', seasonTotalPts(a), seasonTotalPts(b), fmtPts, 'high') +
+        row('Best game', best(a), best(b), fmtPts, 'high') +
+        row('Games played', games(a), games(b), fmtStat, null);
+
+    // Usage (nflverse)
+    const trA = snapTrend(a), trB = snapTrend(b);
+    const share = function(pid, k){ return seasonShare(pid, k); };
+    let usage = '';
+    if(trA || trB) usage += row('Snap share, last game', trA ? trA.last : null, trB ? trB.last : null, pct, 'high') +
+      row('Snap share, season', share(a, 's'), share(b, 's'), pct, 'high');
+    const catcher = ['RB', 'WR', 'TE'].indexOf(pa.position) !== -1 || ['RB', 'WR', 'TE'].indexOf(pb.position) !== -1; // not meaningful for two QBs
+    if(catcher && (share(a, 't') !== null || share(b, 't') !== null)) usage += row('Target share', share(a, 't'), share(b, 't'), pct, 'high');
+    if(catcher && (share(a, 'a') !== null || share(b, 'a') !== null)) usage += row('Air yards share', share(a, 'a'), share(b, 'a'), pct, 'high');
+    const depth = function(pid){ const e = ctx.nfl && ctx.nfl.players ? ctx.nfl.players[pid] : null; return e && e.d ? '<span class="depth-chip">' + escapeHTML(e.d) + '</span>' : ''; };
+    if(depth(a) || depth(b)) usage += textRow('Depth chart', depth(a), depth(b));
+
+    // Season stats: every stat either player has. A counting stat a player never recorded is 0 once they've played;
+    // rates and "long" stats have no value without attempts, so they stay "—".
+    let stats = '', more = '', moreN = 0;
+    if(loading) stats = '<div class="h2h-row"><div class="hv">…</div><div class="hl">Loading season stats</div><div class="hv">…</div></div>';
+    else {
+      const ra = aggregatedRaw(a, 'season'), rb = aggregatedRaw(b, 'season');
+      const keys = {};
+      [ra, rb].forEach(function(r){ if(r) for(const k in r){ if(r[k] !== 0 && !NOT_PLAYER_STAT.test(k)) keys[k] = true; } });
+      const all = Object.keys(keys);
+      const ga = statsForPosition(pa.position, all);
+      const extraMain = pb.position !== pa.position ? statsForPosition(pb.position, all).main.filter(function(k){ return ga.main.indexOf(k) === -1; }) : [];
+      const main = ga.main.concat(extraMain);
+      const rest = ga.more.filter(function(k){ return main.indexOf(k) === -1; });
+      const val = function(r, k){ if(!r) return null; if(k in r) return r[k]; return statKind(k) === 'count' ? 0 : null; };
+      stats = main.map(function(k){ return row(statLabel(k), val(ra, k), val(rb, k), fmtStat, statDirection(k)); }).join('');
+      more = rest.map(function(k){ return row(statLabel(k), val(ra, k), val(rb, k), fmtStat, statDirection(k)); }).join('');
+      moreN = rest.length;
+      if(!main.length && !moreN) stats = '<div class="empty-state">No stats yet this season.</div>';
+    }
+
+    const body = sec('This week', week) + sec('Fantasy points <span class="eyebrow">league scoring</span>', fp) +
+      sec('Usage <span class="eyebrow">nflverse</span>', usage) +
+      sec('Season stats <span class="eyebrow">totals</span>', stats + (moreN ? '<details class="h2h-more"><summary>More stats (' + moreN + ')</summary>' + more + '</details>' : ''));
+
+    const who = function(pid, side){
+      const p = ctx.players[pid], onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1, si = ctx.draftStarters.indexOf(pid);
+      const role = si !== -1 ? 'Starting ' + ctx.rosterPositions[si] : onRoster ? 'Bench' : 'Available';
+      const wins = tally[side], other = tally[side === 'a' ? 'b' : 'a'];
+      return '<div class="h2h-who ' + side + '" data-open="' + escapeHTML(pid) + '" style="--team:' + teamColor(p.team) + '">' + avatarTag(pid, 'h2h-av') +
+        '<div class="h2h-nm">' + escapeHTML(playerName(p)) + '</div>' +
+        '<div class="h2h-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + ' · ' + role + '</div>' +
+        '<div class="h2h-score' + (wins > other ? ' lead' : '') + '">Better in <b>' + wins + '</b></div></div>';
+    };
+    const note = pa.position !== pb.position ? '<div class="h2h-note">Different positions (' + escapeHTML(pa.position) + ' vs ' + escapeHTML(pb.position) + '): each stat compares what both players have.</div>' : '';
+    // tally is complete once body is built, so the header (with "Better in N") comes last
+    return '<div class="h2h">' +
+      '<div class="h2h-head">' + who(a, 'a') + '<div class="h2h-vsmark" aria-hidden="true">VS</div>' + who(b, 'b') + '</div>' +
+      '<div class="h2h-sticky" aria-hidden="true"><span>' + escapeHTML(lastName(a)) + '</span><span>' + escapeHTML(lastName(b)) + '</span></div>' +
+      note + '<div class="card h2h-card">' + body + '</div>' +
+      '<p class="h2h-foot">Green is better, red is worse; ties stay neutral. Season stats are totals, so a player with more games has a head start there.</p></div>';
+  }
 
   // ---- builders ----
   function avatarTag(pid, cls){
@@ -3365,13 +3608,13 @@
     const list = faList().slice(0, ctx.faLimit);
     const shares = ctx.faPos === 'FLEX' || (SKILL_POSITIONS.indexOf(ctx.faPos) !== -1 && ctx.faPos !== 'QB');
     return '<div class="mx-scroll"><table class="mx-tbl"><thead><tr><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th>' +
-      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">' + (ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest ' + escapeHTML(ctx.faPos)) + '</th></tr></thead><tbody class="stagger">' +
+      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">' + (ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest ' + escapeHTML(ctx.faPos)) + '</th><th><span class="sr-only">Compare</span></th></tr></thead><tbody class="stagger">' +
       list.map(function(pid, i){
         const proj = ctx.projections[pid], v = faVsParts(pid);
         const vs = (v.txt ? '<b class="' + (v.cls === 'flat' ? 'dim' : 'trend ' + v.cls) + '">' + v.txt + '</b> ' : '') + '<span class="muted">' + escapeHTML(v.who) + '</span>';
         return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
           (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + pct(seasonShare(pid, 'a')) + '</td>' : '') +
-          '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td></tr>';
+          '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td><td>' + vsBtn(pid) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (list.length ? '' : '<div class="empty-state">No available ' + escapeHTML(ctx.faPos) + ' found.</div>');
   }
@@ -3437,7 +3680,7 @@
       return '<div class="cand-card' + (current ? ' is-current' : '') + '" data-open="' + escapeHTML(id) + '" style="cursor:pointer">' + avatarTag(id, 'cand-avatar') +
         '<div class="cand-info"><div class="cand-name">' + escapeHTML(playerName(q)) + ' ' + injuryChip(q.injury_status) + '</div>' +
         '<div class="cand-meta">' + escapeHTML(q.position || '') + ' · ' + escapeHTML(q.team || 'FA') + matchupHTML(q.team) + '</div></div>' +
-        candidateStatsHTML(id) + right + '</div>';
+        candidateStatsHTML(id) + '<div class="cand-acts">' + vsBtn(id) + right + '</div></div>';
     }
     if(!onRoster){
       const worst = weakestRostered(p.position);
