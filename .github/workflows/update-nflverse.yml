@@ -1,10 +1,14 @@
 # Optional: only used if this folder is a GitHub repo (e.g. hosted on GitHub Pages).
-# Rebuilds nflverse.json every morning and commits it when the data changed.
+# Rebuilds nflverse.json a few times a day and commits it when the data changed.
 name: Update nflverse data
 
 on:
   schedule:
-    - cron: '0 14 * * *'   # daily, 14:00 UTC — after nflverse's morning refresh
+    # 14:00 UTC: after nflverse's morning refresh. 23:30 and 03:30 UTC: after the day's practice reports
+    # (~4pm ET), so the by-day practice log catches each day if nflverse has updated. Unchanged data = no commit.
+    - cron: '0 14 * * *'
+    - cron: '30 23 * * *'
+    - cron: '30 3 * * *'
   workflow_dispatch:        # "Run workflow" button for a manual refresh
 
 permissions:
@@ -19,6 +23,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python build_nflverse.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # only used to read when nflverse last updated injuries
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"

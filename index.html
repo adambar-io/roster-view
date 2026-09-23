@@ -630,6 +630,7 @@
     .max-body{ padding-left: calc(14px + env(safe-area-inset-left)); padding-right: calc(14px + env(safe-area-inset-right)); padding-top: 16px; }
     .max-bar{ padding-left: calc(14px + env(safe-area-inset-left)); padding-right: calc(14px + env(safe-area-inset-right)); }
     .max-hint{ display: none; }
+    .max-home{ margin-left: auto; }
   }
 
 
@@ -739,6 +740,51 @@
   .m-brand .wordmark{ font-size: 20px; }
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
+  /* the logo is a home button */
+  [data-home][role="button"], .home-btn{ cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  [data-home][role="button"]{ border-radius: 12px; transition: transform .3s var(--spring), opacity .2s; }
+  [data-home][role="button"]:active{ transform: scale(.94); opacity: .8; }
+  [data-home][role="button"]:focus-visible{ outline: 2px solid var(--accent); outline-offset: 4px; }
+  .m-brand[data-home]{ align-self: flex-start; padding: 6px 8px 6px 0; margin-top: -6px; min-height: 36px; } /* bigger tap target */
+  .home-btn{ display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 12px; background: var(--surface-2); transition: transform .3s var(--spring); }
+  .home-btn:active{ transform: scale(.9); }
+  .home-btn .brand-mark{ width: 22px; height: 22px; }
+  .focus-home{ float: right; margin: -6px 8px 0 0; }
+  .pane-detail .focus-home{ display: none; }
+  .focus-home ~ .hero{ padding-right: 88px; } /* room for the floating home + close buttons */
+  .pane-detail .focus-home ~ .hero{ padding-right: 0; }
+  /* data freshness: "Updated 2 min ago" + manual refresh */
+  .fresh{ display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 0 -8px; padding: 6px 8px; min-height: 32px; border: none; background: none; border-radius: 999px;
+    color: var(--text-3); font: inherit; font-size: 12.5px; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s; }
+  .fresh[hidden]{ display: none; }
+  .fresh svg{ width: 13px; height: 13px; flex-shrink: 0; }
+  .fresh.busy svg{ animation: freshSpin .9s linear infinite; }
+  .fresh.err{ color: var(--danger); }
+  .fresh:active{ background: var(--surface-2); }
+  @keyframes freshSpin{ to{ transform: rotate(360deg); } }
+  .shell.is-loading .fresh{ visibility: hidden; }
+  /* injury detail */
+  .inj-card{ grid-column: 1 / -1; border-radius: 14px; padding: 12px 14px; background: var(--warn-soft); margin-bottom: 4px; font-size: 13.5px; line-height: 1.45; }
+  .max-body .inj-card{ margin: 0 0 16px; padding: 14px 18px; }
+  .inj-top{ display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+  .inj-top b{ font-weight: 600; color: var(--text); }
+  .inj-top .status-chip{ margin: 0; }
+  .inj-card .chip-full{ display: inline !important; } .inj-card .chip-short{ display: none !important; } /* room to spell it out */
+  .inj-since{ color: var(--text-2); font-size: 12.5px; }
+  .inj-line{ color: var(--text-2); margin-top: 6px; }
+  .inj-line b{ color: var(--text); font-weight: 600; }
+  .prac{ margin-top: 10px; }
+  .prac-head{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .prac-trend{ font-size: 12.5px; font-weight: 600; color: var(--text-2); text-align: right; }
+  .prac-trend.up{ color: var(--accent); } .prac-trend.down{ color: var(--danger); }
+  .prac-days{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .prac-day{ display: grid; gap: 2px; padding: 7px 10px; border-radius: 10px; background: var(--surface); }
+  .pd-dow{ font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+  .pd-val{ font-size: 13px; font-weight: 600; color: var(--text); }
+  .prac-day.dnp{ box-shadow: inset 0 -3px 0 var(--danger); } .prac-day.dnp .pd-val{ color: var(--danger); }
+  .prac-day.lp{ box-shadow: inset 0 -3px 0 var(--warn); } .prac-day.lp .pd-val{ color: var(--warn); }
+  .prac-day.fp{ box-shadow: inset 0 -3px 0 var(--accent); } .prac-day.fp .pd-val{ color: var(--accent); }
+  .prac-day.later .pd-val, .prac-day.today .pd-val, .prac-day.none .pd-val{ color: var(--text-3); font-weight: 500; }
   /* the bunny blinks now and then */
   .m-eyes{ transform-box: fill-box; transform-origin: center; animation: blink 6s infinite; }
   @keyframes blink{ 0%, 93%, 100%{ transform: scaleY(1); } 95.5%{ transform: scaleY(.12); } }
@@ -801,6 +847,11 @@
       position: fixed; z-index: 2; float: none; margin: 0;
       top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
       background: var(--surface-3); width: 38px; height: 38px; color: var(--text);
+    }
+    .focus-home{
+      position: fixed; z-index: 2; float: none; margin: 0;
+      top: calc(10px + env(safe-area-inset-top)); right: calc(56px + env(safe-area-inset-right));
+      width: 38px; height: 38px; background: var(--surface-3);
     }
     .hero{ gap: 14px; padding-right: 44px; }
     .hero-avatar{ width: 64px; height: 64px; }
@@ -870,7 +921,7 @@
 <div class="wrap" id="setup-wrap">
 
   <div class="setup" id="setup-screen">
-    <div class="setup-brand"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><h1 class="wordmark">sleepa</h1></div>
+    <div class="setup-brand" data-home><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><h1 class="wordmark">sleepa</h1></div>
     <p class="tagline">Your Sleeper lineup, sharper.</p>
     <p class="sub">Projections in your league's scoring, matchups, snap trends and waiver picks. Read only — nothing is sent to Sleeper.</p>
 
@@ -894,7 +945,7 @@
 
 <div class="shell" id="roster-screen" style="display:none;">
   <aside class="side">
-    <div class="brand"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><span class="wordmark">sleepa</span></div>
+    <div class="brand" data-home role="button" tabindex="0" aria-label="sleepa: go to your lineup"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><span class="wordmark">sleepa</span></div>
     <div class="league-switch">
       <button type="button" class="league-card" id="league-card" aria-haspopup="true" aria-expanded="false" title="Switch league">
         <span class="league-av"></span><div class="league-txt"><b id="team-name">—</b><span><span id="league-name">—</span> · <span id="team-record"></span></span></div>
@@ -916,12 +967,13 @@
   </aside>
 
   <main class="main">
-    <div class="m-brand"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><span class="wordmark">sleepa</span></div>
+    <div class="m-brand" data-home role="button" tabindex="0" aria-label="sleepa: go to your lineup"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><span class="wordmark">sleepa</span></div>
     <header class="page-head">
       <div>
         <div class="eyebrow" id="page-eyebrow"></div>
         <h1 id="page-title">Lineup</h1>
         <div class="page-sub" id="page-sub"></div>
+        <button type="button" class="fresh" id="fresh" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span id="fresh-txt"></span></button>
       </div>
       <div class="top-actions">
         <button class="reset-btn is-hidden" id="reset-btn">Reset</button>
@@ -1010,6 +1062,7 @@
 <div class="overlay" id="overlay">
   <div class="focus-panel">
     <button class="focus-close" id="focus-close" aria-label="Close">&times;</button>
+    <button type="button" class="home-btn focus-home" data-home aria-label="Go to your lineup"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg></button>
     <div class="hero">
       <img class="hero-avatar" id="hero-avatar" src="" alt="" onerror="this.style.visibility='hidden'">
       <div>
@@ -1034,6 +1087,7 @@
       <button class="max-back" id="max-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span id="max-back-label">Back</span></button>
       <h2 id="max-title"></h2>
       <div class="max-hint"><kbd>Esc</kbd> to go back</div>
+      <button type="button" class="home-btn max-home" data-home aria-label="Go to your lineup"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg></button>
     </div>
     <div class="max-body" id="max-body"></div>
   </div>
@@ -1043,17 +1097,58 @@
 (function(){
   const API = 'https://api.sleeper.app/v1';
   const UNOFFICIAL = 'https://api.sleeper.app';
-  const PLAYERS_CACHE_KEY = 'sleeper_players_cache_v2'; // v2 = trimmed fields (see slimPlayers)
-  const PLAYER_FIELDS = ['full_name','first_name','last_name','position','team','injury_status'];
-  const PLAYERS_CACHE_TTL = 1000 * 60 * 60 * 24 * 3;
+  const PLAYERS_CACHE_KEY = 'sleeper_players_cache_v3'; // v3 = + injury detail fields (see slimPlayers)
+  const PLAYER_FIELDS = ['full_name','first_name','last_name','position','team','injury_status',
+    'injury_body_part','injury_notes','injury_start_date','practice_participation','practice_description'];
   const STATS_CACHE_PREFIX = 'sleeper_stats_v2_'; // v2: v1 cached empty histories (week-keyed object response wasn't parsed)
-  const HISTORY_CACHE_TTL = 1000 * 60 * 60 * 6;
 
   // nflverse signals (opponent/bye, snap %, target/air-yards share, depth chart) come from a small JSON file
   // built by build_nflverse.py and deployed next to this HTML. Cached in IndexedDB (too big for localStorage
   // alongside the player DB). If it's missing or fails, everything else works and those values show "—".
   const NFLVERSE_URL = 'nflverse.json';
-  const NFLVERSE_TTL = 1000 * 60 * 60 * 6;
+
+  // ---- data freshness ----
+  // Each kind of data refreshes on its own schedule (US Eastern time, where the NFL week runs):
+  //  - rosters, lineup, league, matchups, projections: fetched every time the app is opened or comes back to the front
+  //  - player database (it carries injury status): on game days (Thu/Sun/Mon, until 3am the next morning) on every
+  //    open, at most every 15 minutes; otherwise once a day, and again once a game day has wrapped up
+  //  - season stats (per player): once a day, and again once a game day has wrapped up
+  //  - nflverse.json (snaps, depth charts, injury reports; rebuilt a few times a day): re-checked on every open
+  // Cached copies show immediately and are replaced in the background.
+  const HOUR = 60 * 60 * 1000, DAY = 24 * HOUR;
+  const GAME_DAY_MIN_GAP = 15 * 60 * 1000;
+  const FOREGROUND_MIN_GAP = 60 * 1000;   // coming back to the app refreshes at most once a minute
+  const GAME_DAYS = ['Thu', 'Sun', 'Mon'], MORNING_AFTER = { Fri: 1, Mon: 1, Tue: 1 };
+  let etFmt = null, etDateFmt = null;
+  function etInfo(t){
+    try{
+      etFmt = etFmt || new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'short', hour: 'numeric', hourCycle: 'h23' });
+      const parts = etFmt.formatToParts(new Date(t));
+      const get = function(k){ const x = parts.find(function(q){ return q.type === k; }); return x ? x.value : ''; };
+      return { dow: get('weekday'), hour: Number(get('hour')) % 24 };
+    }catch(e){ const d = new Date(t); return { dow: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], hour: d.getHours() }; }
+  }
+  function etDateISO(t){
+    try{ etDateFmt = etDateFmt || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }); return etDateFmt.format(new Date(t)); }
+    catch(e){ return new Date(t).toISOString().slice(0, 10); }
+  }
+  function isGameDay(t){ const e = etInfo(t); return GAME_DAYS.indexOf(e.dow) !== -1 || (!!MORNING_AFTER[e.dow] && e.hour < 3); }
+  // The last time a game day wrapped up: 3am ET the morning after Thursday, Sunday and Monday games.
+  let gameDayEndMemo = { hour: -1, value: 0 };
+  function lastGameDayEnd(now){
+    const h = Math.floor(now / HOUR);
+    if(gameDayEndMemo.hour === h) return gameDayEndMemo.value;
+    let value = 0;
+    for(let t = h * HOUR, i = 0; i < 8 * 24; i++, t -= HOUR){ const e = etInfo(t); if(MORNING_AFTER[e.dow] && e.hour === 3){ value = t; break; } }
+    gameDayEndMemo = { hour: h, value: value };
+    return value;
+  }
+  function isStale(kind, ts){
+    if(!ts) return true;
+    const now = Date.now(), age = now - ts;
+    if(kind === 'players' && isGameDay(now)) return age > GAME_DAY_MIN_GAP;
+    return age > DAY || ts < lastGameDayEnd(now);
+  }
   const SKILL_POSITIONS = ['QB','RB','WR','TE'];
 
   // Available Players: how many free agents to show per position before "Show more".
@@ -1212,19 +1307,27 @@
     return { league, rosters, users, week: nflState.week || 1 };
   }
 
+  // Returns { ts, data }. A cached copy comes back right away even when it's stale (refreshData replaces it in the
+  // background); only the very first run waits for the download.
   async function getPlayersDict(){
-    try{
-      const cached = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null');
-      if(cached && cached.ts && (Date.now() - cached.ts < PLAYERS_CACHE_TTL) && cached.data){ return cached.data; }
-    }catch(e){}
+    const cached = readPlayersCache();
+    if(cached) return cached;
     setStatus('Downloading player database (first run only)…');
+    return downloadPlayers();
+  }
+  function readPlayersCache(){
+    try{ const c = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null'); if(c && c.ts && c.data) return c; }catch(e){}
+    return null;
+  }
+  async function downloadPlayers(){
     const data = slimPlayers(await fetchJSON(API + '/players/nfl'));
+    const ts = Date.now();
     try{
-      localStorage.removeItem('sleeper_players_cache_v1');
-      localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+      ['sleeper_players_cache_v1', 'sleeper_players_cache_v2'].forEach(function(k){ localStorage.removeItem(k); });
+      localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify({ ts: ts, data: data }));
     }
     catch(e){ console.warn('Could not cache players locally:', e); }
-    return data;
+    return { ts: ts, data: data };
   }
   // The full dump is well over iOS Safari's ~5MB localStorage quota, so keep only the fields we render.
   function slimPlayers(full){
@@ -1260,18 +1363,23 @@
     }catch(e){ console.warn('Projections fetch failed', e); return {}; }
   }
 
-  async function getPlayerSeasonHistory(playerId, season){
-    const cacheKey = STATS_CACHE_PREFIX + 'player_' + playerId + '_' + season;
-    try{
-      const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if(cached && cached.ts && (Date.now() - cached.ts < HISTORY_CACHE_TTL)){ return cached.data; }
-    }catch(e){}
+  function historyCacheKey(playerId, season){ return STATS_CACHE_PREFIX + 'player_' + playerId + '_' + season; }
+  function readHistoryCache(playerId, season){
+    try{ const c = JSON.parse(localStorage.getItem(historyCacheKey(playerId, season)) || 'null'); if(c && c.ts) return c; }catch(e){}
+    return null;
+  }
+  // opts.allowStale: use any cached copy (first paint; refreshData fetches the stale ones after). opts.force: always fetch.
+  async function getPlayerSeasonHistory(playerId, season, opts){
+    opts = opts || {};
+    const cacheKey = historyCacheKey(playerId, season);
+    const cached = readHistoryCache(playerId, season);
+    if(cached && !opts.force && (opts.allowStale || !isStale('daily', cached.ts))) return cached.data;
     let weeks = [];
     try{
       const url = UNOFFICIAL + '/stats/nfl/player/' + playerId + '?season_type=regular&season=' + season + '&grouping=week';
       weeks = normalizeHistory(await fetchJSON(url));
       if(!weeks.length) console.warn('History parsed to 0 weeks for player', playerId, '— check response shape');
-    }catch(e){ console.warn('History fetch failed for player', playerId, e); return weeks; } // don't cache failures
+    }catch(e){ console.warn('History fetch failed for player', playerId, e); return cached ? cached.data : weeks; } // don't cache failures
     try{ localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: weeks })); }catch(e){}
     return weeks;
   }
@@ -1316,19 +1424,27 @@
     }catch(e){ console.warn('IndexedDB write failed:', e); }
   }
 
+  // Both return { ts, data } or null. The cached copy is only a placeholder for the first paint: refreshData re-checks
+  // the file on every open (the server answers "not modified" cheaply when it hasn't changed).
   async function loadNflverse(season){
     const cached = await idbGet('nflverse');
-    const usable = cached && cached.data && cached.data.season === season;
-    if(usable && Date.now() - cached.ts < NFLVERSE_TTL) return cached.data;
+    if(cached && cached.data && cached.data.season === season) return cached;
+    return fetchNflverse(season);
+  }
+  async function fetchNflverse(season){
+    let cached = null;
     try{
       const res = await fetch(NFLVERSE_URL, { cache: 'no-cache' });
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if(data.season !== season) throw new Error(NFLVERSE_URL + ' is for ' + data.season + ', not ' + season + ' — re-run build_nflverse.py');
-      idbSet('nflverse', { ts: Date.now(), data: data });
-      return data;
+      const out = { ts: Date.now(), data: data };
+      idbSet('nflverse', out);
+      return out;
     }catch(e){
-      if(usable){ console.warn('nflverse: refresh failed, using cached copy —', e.message); return cached.data; }
+      cached = await idbGet('nflverse');
+      const usable = cached && cached.data && cached.data.season === season;
+      if(usable){ console.warn('nflverse: refresh failed, using cached copy —', e.message); return cached; }
       console.warn('nflverse data unavailable (' + e.message + '). Opponent/bye, snap %, target/air-yards share and depth ' +
         'chart will show "—"; everything else works normally. Run build_nflverse.py and serve nflverse.json next to the HTML.');
       return null;
@@ -1512,6 +1628,35 @@
     });
   });
 
+  // ---- the logo goes home: the Lineup page exactly as you left it (plan, swaps, compare state, loaded data) ----
+  function goHome(fromEl){
+    if(!ctx.myRoster) return; // nothing loaded yet: the setup screen is home
+    const onSetup = els.rosterScreen.style.display === 'none';
+    if(maxOpen()) closeMax();
+    if(!paneMode()) closeFocus();
+    if(onSetup){ // came back out to switch league: go straight back in, no reload
+      switchScreens('enter', function(){
+        document.getElementById('setup-wrap').style.display = 'none';
+        els.rosterScreen.style.display = '';
+        setView('roster');
+      }, fromEl);
+      return;
+    }
+    if(ctx.view !== 'roster') setView('roster');
+    else window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+  }
+  document.addEventListener('click', function(e){
+    const h = e.target.closest('[data-home]');
+    if(!h || !ctx.myRoster) return;
+    e.preventDefault();
+    goHome(h);
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const h = e.target.closest && e.target.closest('[data-home]');
+    if(h && ctx.myRoster){ e.preventDefault(); goHome(h); }
+  });
+
   function resetLineup(){
     ctx.draftStarters = ctx.originalStarters.slice();
     hideOptNote();
@@ -1528,7 +1673,8 @@
     const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
     const pool = (ctx.myRoster.players || []).filter(function(pid){
       const p = ctx.players[pid];
-      return p && !parked.has(pid) && !isOnBye(pid) && !(p.injury_status && CANT_PLAY.test(p.injury_status));
+      const st = effectiveStatus(pid);
+      return p && !parked.has(pid) && !isOnBye(pid) && !(st && CANT_PLAY.test(st));
     });
     // One "leave it empty" column per slot, so every slot always has a legal choice. Its cost is far above any
     // player's, so a slot is only left empty when nobody eligible is available.
@@ -1854,7 +2000,8 @@
       const dataReady = Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
       dataReady.catch(function(){}); // handled below; avoids an "unhandled rejection" while we wait for the screen switch
       await shellReady; // don't render data until the loading layout is actually in place
-      const [bundle, players] = await dataReady;
+      const [bundle, playersCache] = await dataReady;
+      const players = playersCache.data;
       const { league, rosters, users, week } = bundle;
       const myRoster = rosters.find(function(r){ return r.owner_id === ctx.userId; });
       if(!myRoster){ switchScreens('exit', hideLoadingShell); setError('Could not find your roster in this league.'); setBusy(false); return; }
@@ -1863,19 +2010,14 @@
       ctx.league = league;
       ctx.myRoster = myRoster;
       ctx.players = players;
+      ctx.playersTs = playersCache.ts;
+      ctx.lastRosters = rosters;
       ctx.rosterPositions = (league.roster_positions || []).filter(function(p){ return p !== 'BN' && p !== 'IR' && p !== 'TAXI'; });
       ctx.originalStarters = (myRoster.starters || []).slice();
       while(ctx.originalStarters.length < ctx.rosterPositions.length) ctx.originalStarters.push('0');
       ctx.draftStarters = ctx.originalStarters.slice();
 
-      const owner = users.find(function(u){ return u.user_id === ctx.userId; });
-      const teamName = (owner && owner.metadata && owner.metadata.team_name) || (owner && owner.display_name) || ctx.username;
-      els.teamName.textContent = teamName;
-      els.leagueName.textContent = league.name;
-      const settings = myRoster.settings || {};
-      els.teamRecord.textContent = (typeof settings.wins === 'number')
-        ? (settings.wins + '-' + settings.losses + (settings.ties ? '-' + settings.ties : ''))
-        : '';
+      setTeamHeader(users);
 
       setStatus('Fetching projections…');
       const scoring = league.scoring_settings || {};
@@ -1886,7 +2028,7 @@
       const rosterIds = myRoster.players || [];
       ctx.history = {};
       setStatus('Fetching season stats…');
-      const histories = await Promise.all(rosterIds.map(function(pid){ return getPlayerSeasonHistory(pid, ctx.season); }));
+      const histories = await Promise.all(rosterIds.map(function(pid){ return getPlayerSeasonHistory(pid, ctx.season, { allowStale: true }); }));
       rosterIds.forEach(function(pid, idx){ ctx.history[pid] = scoreHistory(histories[idx]); });
 
       ctx.freeAgents = computeFreeAgents(rosters);
@@ -1903,6 +2045,11 @@
       setView('roster');
       renderStatus();
       setStatus('');
+      ctx.updatedAt = ctx.lastRefresh = Date.now(); ctx.refreshFailed = false;
+      const sb = document.querySelector('.setup-brand');
+      sb.setAttribute('role', 'button'); sb.setAttribute('tabindex', '0'); sb.setAttribute('aria-label', 'sleepa: back to your lineup');
+      renderFreshness();
+      refreshData({ topUp: true }); // anything that came from a stale cache is re-fetched in the background
       // If the app-open transition is still playing, replay the row + total entrance once it lands so you actually see it.
       if(ctx.deferEntrance) ctx.afterVt = function(){
         ctx.deferEntrance = false;
@@ -1910,9 +2057,8 @@
         els.kpiProj.textContent = '0.0'; countTo(els.kpiProj, sumProj(ctx.draftStarters));
       };
 
-      nflPromise.then(function(data){
-        if(loadId !== ctx.loadId || !data) return; // a different league was loaded meanwhile, or no data
-        ctx.nfl = data;
+      nflPromise.then(function(res){
+        if(loadId !== ctx.loadId || !res || !applyNfl(res)) return; // another league loaded meanwhile, no data, or already newer
         logNflCoverage();
         if(ctx.focusAuto && ctx.view === 'roster') ctx.focus = null; // byes are known now; let the default pick a bye starter
         rerenderEverything();
@@ -1926,6 +2072,155 @@
       setBusy(false);
     }
   }
+
+  // ---- keeping data current (see "data freshness" above) ----
+  // Runs when the app is opened or comes back to the front (iPhone often resumes a page from memory instead of
+  // reloading it), on the refresh button, and every few minutes while it's open. Your draft lineup, swaps, the
+  // compare view and whatever panel is open all stay as they are.
+  async function refreshData(opts){
+    opts = opts || {};
+    if(!ctx.myRoster || !ctx.league || ctx.refreshing) return;
+    if(!opts.manual && !opts.topUp && Date.now() - (ctx.lastRefresh || 0) < FOREGROUND_MIN_GAP) return;
+    const loadId = ctx.loadId, leagueId = ctx.league.league_id;
+    ctx.refreshing = true; renderFreshness();
+    let changed = false, failed = false;
+    try{
+      const playersP = (opts.manual || isStale('players', ctx.playersTs)) ? downloadPlayers() : null;
+      if(playersP) playersP.catch(function(){});
+      const nflP = fetchNflverse(ctx.season);
+      if(!opts.topUp){ // topUp: the load that just ran already fetched these
+        const bundle = await fetchLeagueBundle(leagueId);
+        if(loadId !== ctx.loadId) return;
+        const projRaw = await getWeekProjections(ctx.season, bundle.week);
+        if(loadId !== ctx.loadId) return;
+        applyLeagueBundle(bundle, projRaw);
+        changed = true;
+      }
+      if(playersP){
+        try{ const pc = await playersP; if(loadId !== ctx.loadId) return; ctx.players = pc.data; ctx.playersTs = pc.ts; changed = true; }
+        catch(e){ console.warn('Player database refresh failed; keeping the cached copy', e); }
+      }
+      if(changed) ctx.freeAgents = computeFreeAgents(ctx.lastRosters);
+      // Season stats: whatever is stale (everything on a manual refresh or when the week rolled over).
+      const ids = ctx.myRoster.players || [];
+      const want = ids.filter(function(pid){
+        if(opts.manual || ctx.weekRolled || !ctx.history[pid]) return true;
+        const c = readHistoryCache(pid, ctx.season);
+        return !c || isStale('daily', c.ts);
+      });
+      if(want.length){
+        const fetched = await Promise.all(want.map(function(pid){ return getPlayerSeasonHistory(pid, ctx.season, { force: true }); }));
+        if(loadId !== ctx.loadId) return;
+        want.forEach(function(pid, i){ ctx.history[pid] = scoreHistory(fetched[i]); });
+        changed = true;
+      }
+      if(ctx.weekRolled || opts.manual){ // free agents' stats load on demand; drop them so they're re-fetched when opened
+        Object.keys(ctx.history).forEach(function(pid){ if(ids.indexOf(pid) === -1) delete ctx.history[pid]; });
+        ctx.weekRolled = false;
+      }
+      const nfl = await nflP;
+      if(loadId !== ctx.loadId) return;
+      if(nfl && applyNfl(nfl)) changed = true;
+      ctx.updatedAt = Date.now();
+      if(changed){
+        rerenderEverything();
+        if(!ctx.focus) selectDefaultFocus();
+      }
+    }catch(e){
+      failed = true;
+      console.warn('Refresh failed; showing the last data', e);
+    }finally{
+      if(loadId === ctx.loadId){ ctx.lastRefresh = Date.now(); ctx.refreshFailed = failed; }
+      ctx.refreshing = false;
+      renderFreshness(); renderStatus();
+    }
+  }
+  // Only ever move forward: a slow cached read must not replace a fresher download.
+  function applyNfl(res){
+    if(!res || !res.data) return false;
+    const cur = ctx.nfl;
+    if(cur && (res.data.generated || '') < (cur.generated || '')) return false;
+    const same = cur && cur.generated === res.data.generated;
+    ctx.nfl = res.data; ctx.nflTs = res.ts;
+    return !same;
+  }
+  // Fresh rosters / league / projections, keeping your plan: if you haven't changed anything the plan follows Sleeper;
+  // if you have, your changes stay (minus anyone no longer on your roster). A new week or a new slot layout starts over.
+  function applyLeagueBundle(bundle, projRaw){
+    const my = bundle.rosters.find(function(r){ return r.owner_id === ctx.userId; });
+    if(!my) return;
+    const positions = (bundle.league.roster_positions || []).filter(function(q){ return q !== 'BN' && q !== 'IR' && q !== 'TAXI'; });
+    const orig = (my.starters || []).slice();
+    while(orig.length < positions.length) orig.push('0');
+    const weekRolled = bundle.week !== ctx.week;
+    const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    const layoutChanged = JSON.stringify(positions) !== JSON.stringify(ctx.rosterPositions);
+    ctx.league = bundle.league; ctx.myRoster = my; ctx.lastRosters = bundle.rosters; ctx.rosterPositions = positions;
+    if(weekRolled){ ctx.week = bundle.week; ctx.weekRolled = true; }
+    if(!dirty || weekRolled || layoutChanged){ ctx.draftStarters = orig.slice(); if(dirty) hideOptNote(); }
+    else {
+      const onRoster = new Set(my.players || []);
+      ctx.draftStarters = ctx.draftStarters.map(function(pid){ return pid && pid !== '0' && !onRoster.has(pid) ? '0' : pid; });
+    }
+    ctx.originalStarters = orig;
+    // A failed projections call comes back empty: keep the ones we have rather than zeroing the lineup.
+    if(Object.keys(projRaw).length || weekRolled){
+      const scoring = bundle.league.scoring_settings || {};
+      ctx.projections = {};
+      for(const pid in projRaw){ ctx.projections[pid] = calcPoints(projRaw[pid], scoring); }
+    }
+    setTeamHeader(bundle.users);
+    // the panel may be showing someone who's no longer yours, or a slot that no longer exists
+    const f = ctx.focus;
+    if(f && ((f.kind === 'roster' && f.pid && (my.players || []).indexOf(f.pid) === -1) || (f.kind === 'empty' && f.slot >= positions.length))){
+      ctx.focus = null;
+      if(!paneMode()) closeFocus();
+    }
+  }
+  function setTeamHeader(users){
+    const owner = users.find(function(u){ return u.user_id === ctx.userId; });
+    els.teamName.textContent = (owner && owner.metadata && owner.metadata.team_name) || (owner && owner.display_name) || ctx.username;
+    els.leagueName.textContent = ctx.league.name;
+    const settings = ctx.myRoster.settings || {};
+    els.teamRecord.textContent = (typeof settings.wins === 'number')
+      ? (settings.wins + '-' + settings.losses + (settings.ties ? '-' + settings.ties : ''))
+      : '';
+    if(ctx.view === 'roster') els.pageSub.textContent = els.teamName.textContent + // record under the page title
+      (typeof settings.wins === 'number' ? ' · ' + settings.wins + '–' + settings.losses + (settings.ties ? '–' + settings.ties : '') : '');
+  }
+
+  function agoText(t){
+    const sec = (Date.now() - t) / 1000;
+    if(sec < 60) return 'just now';
+    if(sec < 3600) return Math.floor(sec / 60) + ' min ago';
+    const d = new Date(t), time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return sec < 20 * 3600 ? 'at ' + time : d.toLocaleDateString([], { weekday: 'short' }) + ' ' + time;
+  }
+  function renderFreshness(){
+    const b = document.getElementById('fresh'), t = document.getElementById('fresh-txt');
+    if(!b || !t) return;
+    b.hidden = !ctx.updatedAt;
+    b.classList.toggle('busy', !!ctx.refreshing);
+    b.classList.toggle('err', !ctx.refreshing && !!ctx.refreshFailed);
+    const txt = ctx.refreshing ? 'Updating…'
+      : ctx.refreshFailed ? 'Couldn’t update · tap to retry'
+      : ctx.updatedAt ? 'Updated ' + agoText(ctx.updatedAt) : '';
+    t.textContent = txt;
+    b.setAttribute('aria-label', txt + '. Refresh now');
+    b.title = 'Refresh now';
+  }
+  document.getElementById('fresh').addEventListener('click', function(){ refreshData({ manual: true }); });
+  // Back to the app: iPhone restores the page from memory (pageshow.persisted) or just makes it visible again.
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') refreshData(); });
+  window.addEventListener('pageshow', function(e){ if(e.persisted) refreshData(); });
+  window.addEventListener('focus', function(){ refreshData(); });
+  window.addEventListener('online', function(){ refreshData(); });
+  // While it stays open: keep the "Updated" time current, and refresh every 15 minutes on game days (hourly otherwise).
+  setInterval(function(){
+    if(document.visibilityState !== 'visible') return;
+    renderFreshness();
+    if(ctx.lastRefresh && Date.now() - ctx.lastRefresh > (isGameDay(Date.now()) ? GAME_DAY_MIN_GAP : HOUR)) refreshData();
+  }, 30 * 1000);
 
   function rerenderEverything(){
     renderAll();
@@ -2076,6 +2371,60 @@
   function posColor(pos){ return 'var(--pos-' + (pos || '').toUpperCase() + ', var(--muted))'; }
 
   // Full label on desktop; short form (Q / D / O / IR / PUP…) on phones where the name column is narrow.
+  // ---- injury detail: Sleeper's player record + the official report and by-day practice log (nflverse.json 'inj') ----
+  function officialInjury(pid){
+    const e = ctx.nfl && ctx.nfl.inj ? ctx.nfl.inj[pid] : null;
+    return e && e.w === ctx.week ? e : null;
+  }
+  // The official game status wins when there is one (it's this week's); otherwise Sleeper's.
+  function effectiveStatus(pid){
+    const off = officialInjury(pid), p = ctx.players[pid];
+    return (off && off.st) || (p && p.injury_status) || '';
+  }
+  // Same rule as build_nflverse.py practice_days(): three report days before the game (short weeks shift a day).
+  function practiceDays(gameISO){
+    const g = new Date(gameISO + 'T12:00:00Z'), dow = g.getUTCDay();
+    return ((dow === 4 || dow === 6) ? [3, 2, 1] : [4, 3, 2]).map(function(b){ return new Date(g.getTime() - b * DAY).toISOString().slice(0, 10); });
+  }
+  function dowShort(iso){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(iso + 'T12:00:00Z').getUTCDay()]; }
+  const PRAC = { DNP: ['DNP', 0], LP: ['Limited', 1], FP: ['Full', 2] };
+  function injuryDetailHTML(pid){
+    const p = ctx.players[pid];
+    if(!p) return '';
+    const sl = p.injury_status && p.injury_status !== 'Healthy' ? p.injury_status : '';
+    const off = officialInjury(pid);
+    if(!sl && !off) return '';
+    const status = (off && off.st) || sl;
+    const body = (off && off.b) || (p.injury_body_part && p.injury_body_part !== 'Undisclosed' ? p.injury_body_part : '') || p.injury_body_part || '';
+    const since = p.injury_start_date ? new Date(p.injury_start_date + 'T12:00:00Z').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+    let h = '<div class="inj-card"><div class="inj-top">' + (status ? injuryChip(status) : '<span class="status-chip">On report</span>') +
+      '<b>' + escapeHTML(body || 'Injury') + '</b>' + (since ? '<span class="inj-since">since ' + since + '</span>' : '') + '</div>';
+    if(off && off.st) h += '<div class="inj-line">Official game status for ' + dowShort(off.g) + ': <b>' + escapeHTML(off.st) + '</b></div>';
+    if(p.injury_notes) h += '<div class="inj-line">' + escapeHTML(p.injury_notes) + '</div>';
+    if(p.practice_participation) h += '<div class="inj-line">Practice: ' + escapeHTML(p.practice_participation) + (p.practice_description ? ' · ' + escapeHTML(p.practice_description) : '') + '</div>';
+    if(off){
+      const days = practiceDays(off.g), log = off.p || {}, today = etDateISO(Date.now());
+      const seq = days.map(function(d){ return log[d]; }).filter(Boolean);
+      let trend = 'No practice report yet', tcls = '';
+      if(off.st === 'Out'){ trend = 'Ruled out'; tcls = 'down'; }
+      else if(seq.length === 1){ trend = { DNP: 'Not practicing so far', LP: 'Limited so far', FP: 'Practicing fully' }[seq[0]]; tcls = { DNP: 'down', LP: '', FP: 'up' }[seq[0]]; }
+      else if(seq.length > 1){
+        const a = PRAC[seq[0]][1], z = PRAC[seq[seq.length - 1]][1];
+        if(z > a){ trend = 'Trending toward playing'; tcls = 'up'; }
+        else if(z < a){ trend = 'Trending the wrong way'; tcls = 'down'; }
+        else { trend = { FP: 'Full all week', LP: 'Limited all week', DNP: 'Hasn’t practiced' }[seq[0]]; tcls = { FP: 'up', LP: '', DNP: 'down' }[seq[0]]; }
+      }
+      h += '<div class="prac"><div class="prac-head"><span class="eyebrow">Practice · week ' + off.w + '</span><span class="prac-trend ' + tcls + '">' + trend + '</span></div><div class="prac-days">' +
+        days.map(function(d){
+          const c = log[d];
+          const cls = c ? c.toLowerCase() : d > today ? 'later' : d === today ? 'today' : 'none';
+          const val = c ? PRAC[c][0] : d > today ? 'Upcoming' : d === today ? 'Later today' : 'No report';
+          return '<div class="prac-day ' + cls + '"><span class="pd-dow">' + dowShort(d) + '</span><span class="pd-val">' + val + '</span></div>';
+        }).join('') + '</div></div>';
+    }
+    return h + '</div>';
+  }
+
   function injuryChip(status){
     if(!status || status === 'Healthy') return '';
     const short = status.length <= 3 ? status : status[0];
@@ -2113,7 +2462,7 @@
 
     const filled = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
     const bye = filled.filter(isOnBye).length;
-    const out = filled.filter(function(pid){ const st = ctx.players[pid].injury_status; return !isOnBye(pid) && st && /^(Out|IR|Doubtful|PUP|Sus)/i.test(st); }).length;
+    const out = filled.filter(function(pid){ const st = effectiveStatus(pid); return !isOnBye(pid) && st && /^(Out|IR|Doubtful|PUP|Sus)/i.test(st); }).length;
     const slots = ctx.rosterPositions.length;
     els.kpiPlaying.textContent = (filled.length - bye - out) + '/' + slots;
     els.kpiPlaying.className = 'kpi-mid num' + (bye || out || filled.length < slots ? ' down' : '');
@@ -2197,9 +2546,14 @@
 
   function renderStatus(){
     const nfl = ctx.nfl;
+    const hm = function(t){ return t ? new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—'; };
+    const statTs = (ctx.myRoster && ctx.myRoster.players || []).map(function(pid){ const c = readHistoryCache(pid, ctx.season); return c ? c.ts : 0; }).filter(Boolean);
     const txt = 'Sleeper · ' + ctx.season + ' week ' + ctx.week + '<br>' + (nfl
-      ? 'nflverse · stats through week ' + nfl.stats_through_week + ', depth charts ' + escapeHTML(String(nfl.depth_as_of || '').slice(0, 10))
-      : 'nflverse · not loaded (opponents, snaps and depth show "—")');
+      ? 'nflverse · stats through week ' + nfl.stats_through_week + ', depth charts ' + escapeHTML(String(nfl.depth_as_of || '').slice(0, 10)) +
+        (nfl.inj_as_of ? ', injury reports ' + escapeHTML(new Date(nfl.inj_as_of.replace('Z', ':00Z')).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })) : '')
+      : 'nflverse · not loaded (opponents, snaps and depth show "—")') +
+      (ctx.updatedAt ? '<br>Updated · lineup &amp; projections ' + hm(ctx.lastRefresh) + ', injuries ' + hm(ctx.playersTs) +
+        ', season stats ' + hm(statTs.length ? Math.min.apply(null, statTs) : 0) + ', nflverse ' + hm(ctx.nflTs) : '');
     document.querySelectorAll('[data-status]').forEach(function(el){ el.innerHTML = txt; });
     renderLeagues();
     setLeagueAvatar(ctx.league);
@@ -2603,7 +2957,7 @@
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
 
     const pending = loadingHistory ? '…' : null;
-    els.heroStats.innerHTML = [
+    els.heroStats.innerHTML = injuryDetailHTML(playerId) + [
       ['Proj this wk', fmtPts(ctx.projections[playerId])],
       ['Last game', pending || fmtPts(lastGamePts(playerId))],
       ['Season avg', pending || fmtPts(seasonAvgPts(playerId))],
@@ -2972,7 +3326,7 @@
       const p = ctx.players[pid], st = p.injury_status || '';
       if(isOnBye(pid)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is on a bye in week ' + ctx.week + '.</b>&nbsp;' + (ctx.draftStarters.indexOf(pid) !== -1 ? 'That slot won&#39;t score.' : '') + '</div>';
       if(/^(Out|IR|Doubtful|PUP|Sus)/i.test(st)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is listed ' + escapeHTML(st) + '.</b></div>';
-      if(/^Q/i.test(st)) return '<div class="callout warn"><b>' + escapeHTML(playerName(p)) + ' is questionable.</b>&nbsp;Check his status before kickoff.</div>';
+      if(/^Q/i.test(st)) return '<div class="callout warn"><b>' + escapeHTML(playerName(p)) + ' is questionable.</b>&nbsp;Check the status before kickoff.</div>';
       return '';
     }).join('');
   }
@@ -3060,7 +3414,7 @@
         snaps.map(function(x, i){ return '<div class="bar"><span class="lbl">Wk ' + x.week + '</span><div class="track"><div class="fill snap" style="--i:' + i + ';width:' + (x.s * 100) + '%"></div></div><b>' + pct(x.s) + '</b></div>'; }).join('') + '</div>';
     }
     left += '</div>';
-    return byeCallouts([pid]) + hero + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
+    return byeCallouts([pid]) + hero + injuryDetailHTML(pid) + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
   }
 
   // The last two header cards depend on the position, so there's never a card that can't apply (no "snap %" for a kicker).
