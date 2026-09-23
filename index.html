@@ -619,6 +619,32 @@
   /* theme switch crossfades (View Transitions API where supported) */
   ::view-transition-old(root), ::view-transition-new(root){ animation-duration: .35s; animation-timing-function: ease; }
 
+  /* ---- entering a league: iOS "app open" style ----
+     The app grows out of the View team button (clip-path from the button's rounded rect + a slight scale-up and
+     de-blur), the setup screen recedes, and the logo + wordmark fly to their spot in the app (shared names below).
+     Leaving plays it in reverse. Only one element per name is ever rendered (the others are display:none). */
+  .setup-brand .brand-mark, .side .brand .brand-mark, .m-brand .brand-mark{ view-transition-name: sleepa-mark; }
+  .setup-brand .wordmark, .side .brand .wordmark, .m-brand .wordmark{ view-transition-name: sleepa-word; }
+  html.vt-enter::view-transition-old(root), html.vt-enter::view-transition-new(root),
+  html.vt-exit::view-transition-old(root), html.vt-exit::view-transition-new(root){ mix-blend-mode: normal; }
+  html.vt-enter::view-transition-old(root){ animation: vtRecede .45s cubic-bezier(.4,0,.2,1) both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 50%); }
+  html.vt-enter::view-transition-new(root){ animation: vtAppOpen .72s cubic-bezier(.2,.9,.2,1) both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 50%); }
+  html.vt-enter::view-transition-group(sleepa-mark), html.vt-enter::view-transition-group(sleepa-word),
+  html.vt-exit::view-transition-group(sleepa-mark), html.vt-exit::view-transition-group(sleepa-word){ animation-duration: .7s; animation-timing-function: cubic-bezier(.2,.9,.2,1); }
+  html.vt-exit::view-transition-old(root){ animation: vtAppClose .45s cubic-bezier(.4,0,.2,1) both; }
+  html.vt-exit::view-transition-new(root){ animation: vtSetupIn .6s cubic-bezier(.2,.9,.2,1) .08s both; }
+  @keyframes vtRecede{ to{ opacity: 0; transform: scale(.94); filter: blur(6px); } }
+  @keyframes vtAppOpen{
+    from{ clip-path: var(--vt-from, inset(40% 40% 40% 40% round 24px)); transform: scale(.9); opacity: .5; filter: blur(10px); }
+    55%{ opacity: 1; }
+    to{ clip-path: inset(0 0 0 0 round 0px); transform: none; opacity: 1; filter: blur(0); }
+  }
+  @keyframes vtAppClose{ to{ opacity: 0; transform: scale(.92); filter: blur(8px); } }
+  @keyframes vtSetupIn{ from{ opacity: 0; transform: scale(1.04); filter: blur(6px); } to{ opacity: 1; transform: none; filter: blur(0); } }
+  /* browsers without View Transitions: a simpler zoom-in */
+  .shell.entering{ animation: shellIn .6s cubic-bezier(.2,.9,.2,1); }
+  @keyframes shellIn{ from{ opacity: 0; transform: scale(.97); filter: blur(8px); } to{ opacity: 1; transform: none; filter: blur(0); } }
+
 
   /* ============ brand: sleepa (robot bunny mark + Poppins wordmark) ============ */
   .brand-mark{ width: 28px; height: 28px; flex-shrink: 0; overflow: visible; }
@@ -1374,12 +1400,15 @@
   });
 
   els.backBtn.addEventListener('click', function(){
-    els.rosterScreen.style.display = 'none';
-    document.getElementById('setup-wrap').style.display = '';
-    els.setupScreen.style.display = 'block';
-    els.leagueField.style.display = 'none';
-    els.loadBtn.textContent = 'Load teams';
-    ctx.pendingLeagues = null;
+    switchScreens('exit', function(){ // the app shrinks away and the logo flies back
+      els.rosterScreen.style.display = 'none';
+      document.getElementById('setup-wrap').style.display = '';
+      els.setupScreen.style.display = 'block';
+      els.leagueField.style.display = 'none';
+      els.loadBtn.textContent = 'Load teams';
+      ctx.pendingLeagues = null;
+      window.scrollTo(0, 0);
+    });
   });
 
   function resetLineup(){
@@ -1511,6 +1540,29 @@
     requestAnimationFrame(moveNavThumbs);
     window.scrollTo(0, 0);
   }
+  // Run a screen change with the app-open (enter) or app-close (exit) transition. Resolves once the DOM has switched,
+  // so callers can safely render data afterwards (startViewTransition applies the change a frame later).
+  function switchScreens(kind, update, fromEl){
+    const html = document.documentElement;
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ update(); return Promise.resolve(); }
+    if(!document.startViewTransition){
+      update();
+      if(kind === 'enter'){ els.rosterScreen.classList.add('entering'); setTimeout(function(){ els.rosterScreen.classList.remove('entering'); }, 700); }
+      return Promise.resolve();
+    }
+    if(fromEl && fromEl.getClientRects().length){
+      const r = fromEl.getBoundingClientRect();
+      html.style.setProperty('--vt-from', 'inset(' + r.top + 'px ' + (innerWidth - r.right) + 'px ' + (innerHeight - r.bottom) + 'px ' + r.left + 'px round ' + (r.height / 2) + 'px)');
+      html.style.setProperty('--vt-ox', (r.left + r.width / 2) + 'px');
+      html.style.setProperty('--vt-oy', (r.top + r.height / 2) + 'px');
+    }
+    html.classList.add(kind === 'enter' ? 'vt-enter' : 'vt-exit');
+    const t = document.startViewTransition(update);
+    t.ready.catch(function(){}); // browsers skip transitions in background tabs; the page still switches, so ignore
+    t.finished.finally(function(){ html.classList.remove('vt-enter', 'vt-exit'); });
+    return t.updateCallbackDone.catch(function(){});
+  }
+
   function hideLoadingShell(){
     els.rosterScreen.classList.remove('is-loading');
     els.rosterScreen.style.display = 'none';
@@ -1520,16 +1572,19 @@
   async function loadEverything(leagueId){
     setBusy(true);
     setError('');
-    showLoadingShell();
+    const shellReady = switchScreens('enter', showLoadingShell, els.loadBtn); // app grows out of the View team button
     setStatus('Loading roster…');
     const loadId = ctx.loadId = (ctx.loadId || 0) + 1;
     ctx.nfl = null;
     const nflPromise = loadNflverse(ctx.season); // in parallel; never blocks the roster
     try{
-      const [bundle, players] = await Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
+      const dataReady = Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
+      dataReady.catch(function(){}); // handled below; avoids an "unhandled rejection" while we wait for the screen switch
+      await shellReady; // don't render data until the loading layout is actually in place
+      const [bundle, players] = await dataReady;
       const { league, rosters, users, week } = bundle;
       const myRoster = rosters.find(function(r){ return r.owner_id === ctx.userId; });
-      if(!myRoster){ hideLoadingShell(); setError('Could not find your roster in this league.'); setBusy(false); return; }
+      if(!myRoster){ switchScreens('exit', hideLoadingShell); setError('Could not find your roster in this league.'); setBusy(false); return; }
 
       ctx.week = week;
       ctx.league = league;
@@ -1582,7 +1637,7 @@
       });
     }catch(err){
       console.error(err);
-      hideLoadingShell();
+      switchScreens('exit', hideLoadingShell);
       setError('Could not load that league. Try again.');
     }finally{
       setBusy(false);
@@ -1795,7 +1850,8 @@
   // Animate a number from what's showing now to its new value.
   function countTo(el, to){
     const from = parseFloat(el.textContent);
-    if(isNaN(from) || window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(from - to) < 0.05){ el.textContent = to.toFixed(1); return; }
+    // No animation frames run in a background tab, so just show the number.
+    if(isNaN(from) || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(from - to) < 0.05){ el.textContent = to.toFixed(1); return; }
     const t0 = performance.now(), dur = 650;
     (function tick(now){
       const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
