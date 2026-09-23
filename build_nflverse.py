@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Builds nflverse.json for sleeper-roster-view.html.
+Builds nflverse.json for sleepa (index.html).
 
 Why this exists: nflverse publishes its data as GitHub release files, and browsers can't fetch those
 directly (GitHub doesn't send CORS headers for release downloads). So this script downloads them,
@@ -33,7 +33,7 @@ def default_season():
 
 
 def get(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'sleeper-roster-view build_nflverse.py'})
+    req = urllib.request.Request(url, headers={'User-Agent': 'sleepa build_nflverse.py'})
     with urllib.request.urlopen(req, timeout=180) as r:
         data = r.read()
     return gzip.decompress(data) if url.endswith('.gz') else data

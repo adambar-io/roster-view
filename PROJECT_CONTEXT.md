@@ -2,7 +2,7 @@
 
 A single-file local web app for viewing a Sleeper fantasy football roster with clearer stats/projections and a local (non-syncing) lineup planner. Built iteratively in Claude chat; handing off to Claude Code from here.
 
-**Give Claude Code both this file and `sleeper-roster-view.html`** — this file explains the *why* and the gotchas; the HTML file is the current, working implementation.
+**Give Claude Code both this file and `index.html`** — this file explains the *why* and the gotchas; the HTML file is the current, working implementation.
 
 ## What it does today
 
@@ -49,12 +49,12 @@ A single-file local web app for viewing a Sleeper fantasy football roster with c
 One HTML file (vanilla JS, no build step, no framework), inline CSS, Google Fonts (Inter) loaded via `<link>`. No backend — Sleeper's API is called directly from the browser. The one companion is **`nflverse.json`**, a static data file built by **`build_nflverse.py`** and served next to the HTML (see "nflverse" below for why it can't be fetched from the browser directly).
 
 Files:
-- `sleeper-roster-view.html` — the app
+- `index.html` — the app (was `sleeper-roster-view.html` until Sept 2026)
 - `build_nflverse.py` — Python 3, standard library only. `python build_nflverse.py [--season 2026]` → writes `nflverse.json` (~50 KB in week 3). Skips rewriting if only the timestamp would change
 - `nflverse.json` — generated; commit/deploy it alongside the HTML
 - `.github/workflows/update-nflverse.yml` — daily GitHub Action (14:00 UTC + manual "Run workflow" button) that re-runs the script and commits the JSON as `github-actions[bot]`
 
-**Hosting (live since Sept 23, 2026):** GitHub Pages from `adambar-io/roster-view`, branch `main`, root. App: https://adambar-io.github.io/roster-view/sleeper-roster-view.html (the bare `/roster-view/` URL 404s unless the HTML is renamed to `index.html`). Verified end to end: the Action's bot commit automatically triggers a "pages build and deployment" run, so the refreshed `nflverse.json` goes live with no manual step. Uploading through GitHub's web drag-and-drop **skips the `.github` folder** — the workflow file had to be created with "Add file → Create new file". Scheduled Actions are paused by GitHub after 60 days of no repo activity (likely in the off-season); re-enable from the Actions tab.
+**Hosting (live since Sept 23, 2026):** GitHub Pages from `adambar-io/sleepa` (repo renamed from `roster-view` on Sept 23, 2026), branch `main`, root. App: https://adambar-io.github.io/sleepa/ (the HTML is `index.html`). GitHub Pages does **not** redirect after a repo rename, so the old `/roster-view/…` URLs 404. Verified end to end: the Action's bot commit automatically triggers a "pages build and deployment" run, so the refreshed `nflverse.json` goes live with no manual step. Uploading through GitHub's web drag-and-drop **skips the `.github` folder** — the workflow file had to be created with "Add file → Create new file". Scheduled Actions are paused by GitHub after 60 days of no repo activity (likely in the off-season); re-enable from the Actions tab.
 
 Design language (Sept 2026 redesign, "style A"): **clean native app first** (Apple Sports / Spotify / Revolut / Notion / Flighty references), a light data-terminal influence for tables, and only subtle broadcast touches. Rules:
 - **Tokens only.** All colors are CSS custom properties in `:root`, with a light base and a dark set applied via `prefers-color-scheme` *or* `data-theme="dark"` (keep the two dark blocks identical). No hard-coded hex outside the token blocks. `--muted` is kept as an alias because JS-built markup uses it.
