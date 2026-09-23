@@ -8,12 +8,12 @@ A single-file local web app for viewing a Sleeper fantasy football roster with c
 
 - Looks up a Sleeper username → resolves to `user_id` → lists their leagues → loads one league's roster
 - Shows starters (in the league's real slot order) and bench, each with photo, position, team, injury status
-- Position-based color coding (QB blue, RB green, WR gold, TE purple, K grey, DEF red)
+- Position-based color accents (QB blue, RB green, WR gold, TE purple, K grey, DEF cyan)
 - Projected points for the current week, computed against **the league's own `scoring_settings`** (not a generic PPR/standard default — this matters for leagues with custom scoring)
 - Season-total key stats shown inline per position (e.g. RBs show rush yd/TD/rec, WRs show rec/yd/TD/targets) — no dropdown, always visible
 - Click any player → large focus panel: big photo/name, proj/last-game/season-avg/season-total, full raw stat breakdown, and swap candidates for that slot: the slot's current occupant (pinned on top, labeled "Starting", no swap button) plus **bench players only** who are eligible for the slot (including FLEX-type slots), sorted by projection. Other starters are deliberately excluded even if eligible. Clicking a bench player targets the lowest-projected slot they're eligible for
 - **Local lineup builder**: "Swap in" on any candidate card updates a draft lineup (not pushed to Sleeper — there's no public write endpoint for this). A comparison bar shows current-lineup-proj vs new-lineup-proj vs the difference, with a Reset button
-- **Compare Lineups view** (button appears alongside Reset once the draft differs): side-by-side Original vs New per starting slot in roster order, changed slots highlighted amber in both columns, totals + signed/colored difference, Reset and Done
+- **Compare Lineups view** (button appears alongside Reset once the draft differs): side-by-side Original vs New per starting slot in roster order, changed slots highlighted green in both columns, totals + signed/colored difference, Reset and Done
 - **Available Players tab** (informational only, not part of the lineup builder): free agents = every QB/RB/WR/TE/K/DEF with a current NFL team who isn't on *any* roster in the league (union of all `rosters[].players`, computed once per load in `computeFreeAgents`). Position pills, sorted by projection, capped at `FA_LIST_LIMIT` (15) with a "Show more" button. Each row shows "+X vs your [lowest-projected rostered player at that position]" — players with no projection (byes/IR) are skipped when picking that comparison player. No extra projections fetch (the bulk projections call already covers free agents); a free agent's season history is fetched only when you open them
 - **Player Analysis screen** (`openAnalysis` / `renderAnalysis`): tap a player's **name or photo** anywhere (roster rows, focus panel hero + cards, compare view, waiver list) → full-screen game log for that player. It's a separate overlay that can stack on top of the focus panel, and Escape closes the top one first. Tap targets are marked with `data-analyze="<pid>"` and handled by one capture-phase document click listener, so they win over the row's own click (which still opens the focus panel). Game log: one row per completed week, Wk (pinned when scrolling sideways) · Opp (`vs`/`@` from Sleeper's history entries) · Pts (league scoring) · every stat that's non-zero at least once, labeled via `statLabel`, ordered by `STAT_LABELS` then alphabetically. Total + Per-game rows: counts sum; `*_lng` takes the max; per-play rates (`*_ypr`, `*_ypt`, `*_pct`…) show no total and average the weekly values (`statKind`). Sleeper's generic `pts_*`, ranks and ADP are excluded (`NON_STAT_KEY`). History is loaded on demand via `ensureHistory` — never prefetched for free agents
 - Slot eligibility is keyed off the **slot** label (`groupForSlot`), never the player's position — getting this wrong makes every non-FLEX slot look eligible for everyone
@@ -29,7 +29,7 @@ A single-file local web app for viewing a Sleeper fantasy football roster with c
 
 ## Architecture
 
-One HTML file (vanilla JS, no build step, no framework), inline CSS, Google Fonts (Oswald for numbers/headings, Inter for body) loaded via `<link>`. No backend — Sleeper's API is called directly from the browser. The one companion is **`nflverse.json`**, a static data file built by **`build_nflverse.py`** and served next to the HTML (see "nflverse" below for why it can't be fetched from the browser directly).
+One HTML file (vanilla JS, no build step, no framework), inline CSS, Google Fonts (Inter) loaded via `<link>`. No backend — Sleeper's API is called directly from the browser. The one companion is **`nflverse.json`**, a static data file built by **`build_nflverse.py`** and served next to the HTML (see "nflverse" below for why it can't be fetched from the browser directly).
 
 Files:
 - `sleeper-roster-view.html` — the app
@@ -39,7 +39,14 @@ Files:
 
 **Hosting (live since Sept 23, 2026):** GitHub Pages from `adambar-io/roster-view`, branch `main`, root. App: https://adambar-io.github.io/roster-view/sleeper-roster-view.html (the bare `/roster-view/` URL 404s unless the HTML is renamed to `index.html`). Verified end to end: the Action's bot commit automatically triggers a "pages build and deployment" run, so the refreshed `nflverse.json` goes live with no manual step. Uploading through GitHub's web drag-and-drop **skips the `.github` folder** — the workflow file had to be created with "Add file → Create new file". Scheduled Actions are paused by GitHub after 60 days of no repo activity (likely in the off-season); re-enable from the Actions tab.
 
-Design language: dark "stadium at night" palette (`#12151A` background, turf green accent, amber "stadium light" highlight for the swap/new-lineup state). Deliberately avoided generic SaaS-card styling — see the CSS `:root` custom properties for the full token set if extending.
+Design language (Sept 2026 redesign, "style A"): **clean native app first** (Apple Sports / Spotify / Revolut / Notion / Flighty references), a light data-terminal influence for tables, and only subtle broadcast touches. Rules:
+- **Tokens only.** All colors are CSS custom properties in `:root`, with a light base and a dark set applied via `prefers-color-scheme` *or* `data-theme="dark"` (keep the two dark blocks identical). No hard-coded hex outside the token blocks. `--muted` is kept as an alias because JS-built markup uses it.
+- **Theme toggle**: Auto / Light / Dark (`.theme-seg`, `applyTheme`), saved in `localStorage['rv-theme']`, applied by an inline script in `<head>` before first paint; also rewrites the `theme-color` metas so iOS/Android browser chrome matches.
+- **Type**: Inter only (Oswald was removed), `font-variant-numeric: tabular-nums` on every number so columns align. Big Revolut-style numbers for projections/totals; small uppercase letter-spaced labels.
+- **Color meaning**: one green accent (active states, positive deltas, "New", Swap in). **Red is reserved for things you must act on** — bye starters, Out/IR/Doubtful, negative deltas. Amber = Questionable only. Position colors are small accents (DEF moved off red to cyan).
+- **Shape**: borderless rounded cards (20px), separation by background shade + spacing; pill buttons/chips; primary button = ink pill (text color background).
+- **Motion**: 150–350ms eased/spring transitions; everything disabled under `prefers-reduced-motion`.
+- Design previews that led here (mobile A/B, desktop two-pane, full-screen expand) were throwaway HTML files, not in the repo. Planned next: desktop sidebar + two-pane layout and mobile bottom tab bar (step 2), roster table/cards + team-color accents + full-screen expand views (step 3), motion polish (step 4).
 
 ## Data sources
 
