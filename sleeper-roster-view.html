@@ -273,8 +273,6 @@
   .raw-stats .all-stats:hover{ opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
 
   /* ---- player analysis (game log) ---- */
-  .analysis-overlay{ z-index: 60; } /* can open on top of the focus panel */
-  .analysis-panel{ max-width: 960px; }
   [data-analyze]{ cursor: pointer; }
   .player-name .an-link{ overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .an-link{ text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
@@ -423,6 +421,141 @@
     .pane-detail .cand-stats .cs{ display: flex; align-items: baseline; gap: 4px; }
     .pane-detail .swap-btn, .pane-detail .current-tag{ grid-area: act; align-self: center; }
     .pane-detail .swap-btn{ white-space: nowrap; }
+  }
+
+
+  /* ============ step 3: team colors, table mode, full-screen expand ============ */
+  /* Team color ring + glow behind headshots (the only "broadcast" touch). --team is set inline per player. */
+  .avatar, .cand-avatar, .hero-avatar, .mx-av{
+    background: radial-gradient(circle at 50% 115%, color-mix(in srgb, var(--team, var(--text-3)) 55%, transparent), color-mix(in srgb, var(--team, var(--text-3)) 14%, var(--surface-2)) 70%);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--team, var(--text-3)) 65%, transparent);
+  }
+  .focus-panel{ background-image: linear-gradient(170deg, color-mix(in srgb, var(--team, transparent) 22%, transparent), transparent 260px); background-repeat: no-repeat; }
+
+  /* column cells that only show when the list is wide enough to be a table */
+  .slot-row .col, .list-head .h-col{ display: none; }
+  .depth-chip{ margin-left: 2px; vertical-align: 1px; }
+  .fa-vs-inline{ font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+  .fa-vs-inline .d{ font-weight: 600; margin-right: 4px; }
+  .fa-vs-inline .d.up{ color: var(--accent); } .fa-vs-inline .d.down{ color: var(--danger); } .fa-vs-inline .d.flat{ color: var(--text-3); }
+  .fa-vs-inline .who{ color: var(--text-2); }
+  .section-title{ display: flex; align-items: baseline; gap: 6px; }
+  .section-title .xbtn{ margin-left: auto; align-self: center; }
+  .list-head{ display: none; }
+  .pane-main{ container-type: inline-size; container-name: list; }
+  @container list (min-width: 600px){
+    .list-head{ display: flex; }
+    .slot-row .col{ display: block; flex-shrink: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+    .list-head .h-col{ display: block; flex-shrink: 0; }
+    .slot-row .col.col-avg, .list-head .h-col.h-avg{ display: none; } /* only from 740px, below */
+    .col-opp, .h-opp{ width: 78px; text-align: left; }
+    .col-snap, .h-snap{ width: 78px; text-align: right; }
+    .col-tgt, .h-tgt{ width: 58px; text-align: right; color: var(--text-2); }
+    .col-vs, .h-vs{ width: 176px; text-align: left; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-info{ padding-left: 54px; }
+    .slot-row .key-stats, .slot-row .sig, .slot-row .m-opp, .slot-row .fa-vs{ display: none; }
+    .slot-row .stat-col .cap{ display: none; }
+    .slot-row .stat-col .val{ font-size: 17px; }
+    .slot-row .stat-col + .stat-col .val{ font-size: 14px; }
+    .slot-row.static .col{ visibility: hidden; }
+  }
+  @container list (min-width: 740px){
+    .slot-row .col.col-avg, .list-head .h-col.h-avg{ display: block; width: 58px; text-align: right; color: var(--text-2); }
+  }
+
+  /* expand buttons */
+  .xbtn{ width: 32px; height: 32px; padding: 0; border-radius: 10px; display: inline-grid; place-items: center; background: var(--surface-2); color: var(--text-2); flex-shrink: 0; }
+  .xbtn svg{ width: 16px; height: 16px; }
+  .hero .xbtn{ margin-left: auto; align-self: flex-start; }
+
+  /* full-screen layer: clip-path grows it out of the element you expanded */
+  body.no-scroll{ overflow: hidden; }
+  .max{ position: fixed; inset: 0; z-index: 100; }
+  .max[hidden]{ display: none; }
+  .max-bg{ position: absolute; inset: 0; background: var(--scrim); }
+  .max-panel{ position: absolute; inset: 0; background: var(--bg); overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .max-bar{ position: sticky; top: 0; z-index: 3; display: flex; align-items: center; gap: 14px;
+    padding: calc(12px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) 12px calc(24px + env(safe-area-inset-left));
+    background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5); border-bottom: 1px solid var(--hair); }
+  .max-back{ display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px 7px 10px; background: var(--surface-2); color: var(--text); font-size: 13px; min-height: 36px; max-width: 60vw; }
+  .max-back span{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .max-back svg{ width: 16px; height: 16px; flex-shrink: 0; }
+  .max-bar h2{ margin: 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .max-hint{ margin-left: auto; color: var(--text-3); font-size: 12px; white-space: nowrap; }
+  .max-hint kbd{ font-family: inherit; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: var(--surface-2); color: var(--text-2); }
+  .max-body{ padding: 24px calc(24px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left)); max-width: 1560px; margin: 0 auto; }
+  .callout{ display: flex; gap: 10px; align-items: center; border-radius: var(--radius); padding: 12px 16px; margin-bottom: 14px; background: var(--danger-soft); color: var(--danger); font-size: 14px; }
+  .callout.warn{ background: var(--warn-soft); color: var(--warn); }
+  .callout b{ font-weight: 600; }
+
+  /* full-screen tables */
+  .mx-scroll{ overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); }
+  .mx-tbl{ width: 100%; border-collapse: separate; border-spacing: 0; }
+  .mx-tbl th{ font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); text-align: right; padding: 14px 12px 10px; white-space: nowrap; }
+  .mx-tbl td{ padding: 12px; text-align: right; border-top: 1px solid var(--hair); white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .mx-tbl .l{ text-align: left; }
+  .mx-tbl th:first-child, .mx-tbl td:first-child{ padding-left: 18px; }
+  .mx-tbl th:last-child, .mx-tbl td:last-child{ padding-right: 18px; }
+  .mx-tbl tbody tr[data-open]{ cursor: pointer; transition: background .18s var(--ease); }
+  .mx-tbl tr.bye td{ background: var(--danger-soft); }
+  .mx-tbl tr.fresh td{ background: var(--accent-soft); }
+  .mx-tbl tr.grp td{ background: var(--surface-2); font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text-3); padding: 9px 18px; text-align: left; cursor: default; }
+  .mx-tbl .slot{ font-size: 11.5px; font-weight: 600; color: var(--text-2); }
+  .mx-tbl .proj{ font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+  .mx-tbl .muted{ color: var(--text-2); }
+  .mx-tbl .dim{ color: var(--text-3); }
+  .mx-tbl .wk-bye{ color: var(--danger); font-size: 12px; font-weight: 600; }
+  .mx-who{ display: flex; align-items: center; gap: 12px; }
+  .mx-av{ width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: center 15%; flex-shrink: 0; }
+  .mx-nm{ font-weight: 600; font-size: 14.5px; display: flex; align-items: center; gap: 6px; }
+  .mx-mt{ font-size: 12.5px; color: var(--text-2); margin-top: 2px; }
+
+  /* full-screen player page */
+  .pf-hero{ border-radius: 24px; padding: 26px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; box-shadow: var(--shadow);
+    background: linear-gradient(120deg, color-mix(in srgb, var(--team, var(--text-3)) 30%, var(--surface)), var(--surface) 62%); }
+  .pf-hero .mx-av{ width: 104px; height: 104px; }
+  .pf-name{ font-size: 38px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
+  .pf-meta{ font-size: 14px; color: var(--text-2); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pf-stats{ display: grid; grid-template-columns: repeat(6, minmax(86px, 1fr)); gap: 10px; margin-left: auto; }
+  .pf-stat{ background: color-mix(in srgb, var(--surface) 72%, transparent); border-radius: var(--radius-sm); padding: 12px 14px; }
+  .pf-stat .v{ font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .pf-stat .k{ font-size: 10.5px; color: var(--text-3); margin-top: 2px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+  .pf-grid{ display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+  .pf-card{ padding: 6px 20px 20px; min-width: 0; }
+  .pf-card .cand-card{ display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 4px; grid-template-areas: "av info act" "av stats act"; padding: 10px; }
+  .pf-card .cand-avatar{ grid-area: av; width: 40px; height: 40px; align-self: center; }
+  .pf-card .cand-info{ grid-area: info; min-width: 0; }
+  .pf-card .cand-name{ font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pf-card .cand-stats{ grid-area: stats; margin-top: 0; gap: 2px 12px; flex-wrap: wrap; }
+  .pf-card .cand-stats .cs{ display: flex; align-items: baseline; gap: 4px; }
+  .pf-card .swap-btn, .pf-card .current-tag{ grid-area: act; align-self: center; white-space: nowrap; }
+  .pf-sec{ display: flex; justify-content: space-between; align-items: baseline; margin: 16px 0 10px; }
+  .pf-sec h3{ margin: 0; font-size: 15px; }
+  .bars{ display: grid; gap: 10px; }
+  .bar{ display: grid; grid-template-columns: 96px 1fr 52px; align-items: center; gap: 12px; font-size: 13px; }
+  .bar .lbl{ color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar b{ text-align: right; font-variant-numeric: tabular-nums; }
+  .bar .track{ height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar .fill{ height: 100%; border-radius: 999px; background: var(--accent); transform-origin: left; animation: grow .8s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms + 200ms); }
+  .bar .fill.proj{ opacity: .45; }
+  .bar .fill.snap{ background: var(--pos-QB); }
+  @keyframes grow{ from{ transform: scaleX(0); } to{ transform: scaleX(1); } }
+  .stagger > *{ animation: viewIn .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 35ms); }
+
+  @media (hover: hover){
+    .xbtn:hover{ opacity: 1; background: var(--surface-3); color: var(--text); }
+    .max-back:hover{ opacity: 1; background: var(--surface-3); }
+    .mx-tbl tbody tr[data-open]:hover td{ background: var(--surface-2); }
+  }
+  @media (max-width: 900px){
+    .pf-grid{ grid-template-columns: 1fr; }
+    .pf-stats{ grid-template-columns: repeat(3, 1fr); margin-left: 0; width: 100%; }
+    .pf-name{ font-size: 28px; }
+    .pf-hero{ padding: 20px; gap: 16px; }
+    .pf-hero .mx-av{ width: 76px; height: 76px; }
+    .max-body{ padding-left: calc(14px + env(safe-area-inset-left)); padding-right: calc(14px + env(safe-area-inset-right)); padding-top: 16px; }
+    .max-bar{ padding-left: calc(14px + env(safe-area-inset-left)); padding-right: calc(14px + env(safe-area-inset-right)); }
+    .max-hint{ display: none; }
   }
 
   .hint-touch{ display: none; }
@@ -590,24 +723,21 @@
       <div class="pane-main">
         <section class="view" id="roster-view">
           <div class="starters">
-            <div class="section-title">Starters <span style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span></div>
-            <div class="list-head">
-              <div class="h-slot"></div>
-              <div class="h-info">Season stats</div>
-              <div class="h-stat">Proj</div>
-              <div class="h-stat">Last gm</div>
-            </div>
+            <div class="section-title">Starters <span style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span><button class="xbtn" data-expand="roster" aria-label="Expand lineup to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
             <div id="starters-list"></div>
           </div>
           <div class="bench-section">
             <div class="section-title">Bench</div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
             <div id="bench-list"></div>
           </div>
         </section>
 
         <section class="view" id="fa-view" style="display:none;">
           <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
-          <div class="section-title">Top available <span style="opacity:0.7;">— compared with your lowest-projected player at the position</span></div>
+          <div class="section-title">Top available <span style="opacity:0.7;">— compared with your lowest-projected player at the position</span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
+          <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
         </section>
@@ -664,6 +794,7 @@
         <h2 class="hero-name" id="hero-name">—</h2>
         <div class="hero-meta" id="hero-meta">—</div>
       </div>
+      <button class="xbtn" id="hero-expand" data-expand="player" aria-label="Open full player page" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button>
     </div>
     <div class="hero-stats" id="hero-stats"></div>
     <div class="hero-slot-note" id="hero-slot-note"></div>
@@ -672,20 +803,17 @@
   </div>
 </div>
 
-<!-- Player Analysis: one player's full season, game by game. Separate from the focus panel (which compares slot options). -->
-<div class="overlay analysis-overlay" id="analysis-overlay">
-  <div class="focus-panel analysis-panel">
-    <button class="focus-close" id="analysis-close" aria-label="Close">&times;</button>
-    <div class="hero">
-      <img class="hero-avatar" id="an-avatar" src="" alt="" onerror="this.style.visibility='hidden'">
-      <div>
-        <h2 class="hero-name" id="an-name">—</h2>
-        <div class="hero-meta" id="an-meta">—</div>
-      </div>
+
+<!-- Full-screen layer: lineup / waivers tables and the full player page. Grows out of whatever you expanded. -->
+<div class="max" id="max" hidden>
+  <div class="max-bg"></div>
+  <div class="max-panel" role="dialog" aria-modal="true" aria-labelledby="max-title">
+    <div class="max-bar">
+      <button class="max-back" id="max-back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span id="max-back-label">Back</span></button>
+      <h2 id="max-title"></h2>
+      <div class="max-hint"><kbd>Esc</kbd> to go back</div>
     </div>
-    <div class="hero-stats" id="an-summary"></div>
-    <div class="focus-section-title">Game log</div>
-    <div class="gl-wrap" id="an-log"></div>
+    <div class="max-body" id="max-body"></div>
   </div>
 </div>
 
@@ -785,13 +913,6 @@
     faPosFilter: document.getElementById('fa-pos-filter'),
     faList: document.getElementById('fa-list'),
     faMore: document.getElementById('fa-more'),
-    anOverlay: document.getElementById('analysis-overlay'),
-    anClose: document.getElementById('analysis-close'),
-    anAvatar: document.getElementById('an-avatar'),
-    anName: document.getElementById('an-name'),
-    anMeta: document.getElementById('an-meta'),
-    anSummary: document.getElementById('an-summary'),
-    anLog: document.getElementById('an-log'),
     byeAlert: document.getElementById('bye-alert'),
   };
 
@@ -809,7 +930,6 @@
     faPos: 'QB',
     faLimit: FA_LIST_LIMIT,
     focusPid: null,       // player currently open in the focus panel (guards async history loads)
-    analysisPid: null,    // player currently open on the analysis screen
     nfl: null,            // nflverse.json contents, or null if unavailable
   };
 
@@ -1165,11 +1285,9 @@
   els.overlay.addEventListener('click', function(e){ if(e.target === els.overlay) closeFocus(); });
   els.compareBtn.addEventListener('click', function(){ setView('compare'); });
   els.cmpDone.addEventListener('click', function(){ setView('roster'); });
-  els.anClose.addEventListener('click', closeAnalysis);
-  els.anOverlay.addEventListener('click', function(e){ if(e.target === els.anOverlay) closeAnalysis(); });
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
-    if(els.anOverlay.classList.contains('open')){ closeAnalysis(); return; } // topmost first
+    if(maxOpen()){ backMax(); return; } // topmost first
     if(els.overlay.classList.contains('open')) closeFocus();
   });
   // Tapping a player's name or photo anywhere opens the Analysis screen. Capture phase so it wins over
@@ -1178,7 +1296,7 @@
     const t = e.target.closest && e.target.closest('[data-analyze]');
     if(!t) return;
     e.stopPropagation(); e.preventDefault();
-    openAnalysis(t.getAttribute('data-analyze'));
+    openAnalysis(t.getAttribute('data-analyze'), t.closest('.slot-row, .cand-card, .focus-panel') || t);
   }, true);
   function showOverlay(el){
     el.scrollTop = 0;
@@ -1187,7 +1305,7 @@
   }
   function hideOverlay(el){
     el.classList.remove('open');
-    if(!document.querySelector('.overlay.open')) document.body.classList.remove('no-scroll'); // another sheet may still be open underneath
+    if(!document.querySelector('.overlay.open') && document.getElementById('max').hidden) document.body.classList.remove('no-scroll'); // another sheet may still be open
   }
   // The player panel is one element that moves: into the right-hand pane on wide screens, into the pop-up sheet otherwise.
   const paneMQ = window.matchMedia('(min-width: 1200px)');
@@ -1242,7 +1360,6 @@
     if(!f || !focusVisible()) return;
     if(f.kind === 'fa') openFreeAgent(f.pid); else openFocus(f.pid, f.slot);
   }
-  function closeAnalysis(){ ctx.analysisPid = null; hideOverlay(els.anOverlay); }
 
   // ---- main load ----
   async function loadEverything(leagueId){
@@ -1319,7 +1436,7 @@
     if(ctx.view === 'compare') renderCompare();
     renderStatus();
     refreshFocus();
-    if(ctx.analysisPid && els.anOverlay.classList.contains('open')) renderAnalysis(ctx.analysisPid, !ctx.history[ctx.analysisPid]);
+    if(maxOpen()) renderMax(0);
   }
 
   // Completed weeks only, ascending, scored with this league's settings.
@@ -1414,17 +1531,32 @@
     return { last: last, dir: dir, recent: pts.slice(-3) };
   }
   function pct(v){ return typeof v === 'number' ? Math.round(v * 100) + '%' : '—'; }
+  function depthChipHTML(pid){
+    const p = ctx.players[pid];
+    if(!p || SKILL_POSITIONS.indexOf(p.position) === -1) return '';
+    const e = ctx.nfl && ctx.nfl.players ? ctx.nfl.players[pid] : null;
+    return '<span class="depth-chip" title="Depth chart">' + escapeHTML((e && e.d) || '—') + '</span>';
+  }
+  // Table-mode cells (desktop): opponent on its own, snap % with trend arrow.
+  function oppOnly(team){
+    const m = matchup(team, ctx.week);
+    return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '<span class="opp">—</span>';
+  }
+  function snapCell(pid){
+    const p = ctx.players[pid];
+    if(!p || SKILL_POSITIONS.indexOf(p.position) === -1) return '<span class="opp">—</span>';
+    const tr = snapTrend(pid);
+    return tr ? pct(tr.last) + ' <span class="trend ' + tr.dir + '">' + { up: '↑', down: '↓', flat: '→' }[tr.dir] + '</span>' : '<span class="opp">—</span>';
+  }
 
   // Compact signal line for roster / waiver rows. withShares adds target + air-yards share (pass catchers on the waiver list).
   function signalsHTML(pid, withShares){
     const p = ctx.players[pid];
     if(!p || SKILL_POSITIONS.indexOf(p.position) === -1) return '';
-    const e = ctx.nfl && ctx.nfl.players ? ctx.nfl.players[pid] : null;
     const tr = snapTrend(pid);
     const arrow = tr ? { up: '↑', down: '↓', flat: '→' }[tr.dir] : '';
     const trendTitle = tr ? tr.recent.map(function(x){ return 'Wk' + x.week + ' ' + pct(x.s); }).join(' → ') : 'No snap data';
     let html = '<div class="sig">' +
-      '<span class="depth-chip" title="Depth chart">' + escapeHTML((e && e.d) || '—') + '</span>' +
       '<span class="sig-item" title="Offensive snap share, ' + escapeHTML(trendTitle) + '"><span class="sig-k">Snap</span> ' + (tr ? pct(tr.last) : '—') +
         (tr ? ' <span class="trend ' + tr.dir + '">' + arrow + '</span>' : '') + '</span>';
     if(withShares && p.position !== 'QB'){
@@ -1433,6 +1565,15 @@
     }
     return html + '</div>';
   }
+
+  // Team colors for the headshot ring/glow and player headers. Brightened where the official primary is too dark to see in dark mode.
+  const TEAM_COLORS = {
+    ARI:'#97233F', ATL:'#A71930', BAL:'#6A45C8', BUF:'#00338D', CAR:'#0085CA', CHI:'#C83803', CIN:'#FB4F14', CLE:'#FF3C00',
+    DAL:'#003594', DEN:'#FB4F14', DET:'#0076B6', GB:'#2C7A4B', HOU:'#A71930', IND:'#1A5FB4', JAX:'#006778', KC:'#E31837',
+    LV:'#A5ACAF', LAC:'#0080C6', LAR:'#1B54C8', MIA:'#008E97', MIN:'#4F2683', NE:'#C60C30', NO:'#D3BC8D', NYG:'#1C3F9E',
+    NYJ:'#1B7F55', PHI:'#0B7C85', PIT:'#FFB612', SF:'#AA0000', SEA:'#69BE28', TB:'#D50A0A', TEN:'#4B92DB', WAS:'#A83232',
+  };
+  function teamColor(team){ return TEAM_COLORS[team] || 'var(--text-3)'; }
 
   // ---- rendering ----
   function posColor(pos){ return 'var(--pos-' + (pos || '').toUpperCase() + ', var(--muted))'; }
@@ -1587,15 +1728,18 @@
     return '' +
       '<div class="slot-row' + (isNewHere ? ' swapped' : '') + (byeStarter ? ' bye-start' : '') + '" data-player-id="' + escapeHTML(playerId) + '" data-slot-index="' + (slotIndex !== undefined ? slotIndex : '') + '">' +
         '<div class="slot-tag" style="color:' + color + '; border-color:' + color + ';">' + escapeHTML(slotLabel || pos) + '</div>' +
-        '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"' + analyzeAttr(playerId) + '>' +
-        '<div class="player-info" style="border-left-color:' + color + ';">' +
+        '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(playerId) + '>' +
+        '<div class="player-info">' +
           '<div class="player-name">' + analyzeName(playerId, name) + byeChip + statusChip + newChip + '</div>' +
-          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + matchupHTML(p.team) + '</div>' +
+          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + '</span> ' + depthChipHTML(playerId) + '</div>' +
           (keyStats ? '<div class="key-stats">' + keyStats + '</div>' : '') +
           signalsHTML(playerId, false) +
         '</div>' +
+        '<div class="col col-opp">' + oppOnly(p.team) + '</div>' +
+        '<div class="col col-snap">' + snapCell(playerId) + '</div>' +
         '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div></div>' +
         '<div class="stat-col"><div class="val">' + fmtPts(last) + '</div><div class="cap">last</div></div>' +
+        '<div class="col col-avg">' + fmtPts(seasonAvgPts(playerId)) + '</div>' +
       '</div>';
   }
 
@@ -1707,14 +1851,18 @@
       return '' +
         '<div class="slot-row" data-fa-id="' + escapeHTML(pid) + '">' +
           '<div class="slot-tag" style="color:' + color + '; border-color:' + color + ';">' + escapeHTML(p.position) + '</div>' +
-          '<img class="avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"' + analyzeAttr(pid) + '>' +
-          '<div class="player-info" style="border-left-color:' + color + ';">' +
+          '<img class="avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
+          '<div class="player-info">' +
             '<div class="player-name">' + analyzeName(pid, playerName(p)) + injuryChip(p.injury_status) + '</div>' +
-            '<div class="player-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team) + matchupHTML(p.team) + '</div>' +
+            '<div class="player-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team) + '<span class="m-opp">' + matchupHTML(p.team) + '</span> ' + depthChipHTML(pid) + '</div>' +
             faVsLine(pid, p.position) +
             signalsHTML(pid, true) +
           '</div>' +
+          '<div class="col col-opp">' + oppOnly(p.team) + '</div>' +
+          '<div class="col col-snap">' + snapCell(pid) + '</div>' +
+          '<div class="col col-tgt">' + (SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—') + '</div>' +
           '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div></div>' +
+          '<div class="col col-vs">' + faVsLine(pid, p.position).replace('class="fa-vs"', 'class="fa-vs-inline"') + '</div>' +
         '</div>';
     }).join('') || '<div class="empty-state">No available ' + escapeHTML(ctx.faPos) + ' found.</div>';
 
@@ -1779,6 +1927,8 @@
     const player = ctx.players[playerId];
     els.heroAvatar.style.visibility = '';
     els.heroAvatar.src = playerImageUrl(playerId);
+    els.heroAvatar.style.setProperty('--team', teamColor(player.team));
+    els.focusPanel.style.setProperty('--team', teamColor(player.team));
     els.heroAvatar.setAttribute('data-analyze', playerId);
     els.heroName.innerHTML = analyzeName(playerId, playerName(player));
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
@@ -1808,41 +1958,18 @@
     return ctx.history[pid];
   }
 
-  // ---- player analysis: one player's full season, game by game ----
-  async function openAnalysis(pid){
-    const p = ctx.players[pid];
-    if(!p) return;
-    ctx.analysisPid = pid;
-    els.anAvatar.style.visibility = '';
-    els.anAvatar.src = playerImageUrl(pid);
-    els.anName.textContent = playerName(p);
-    const loading = !ctx.history[pid];
-    renderAnalysis(pid, loading);
-    showOverlay(els.anOverlay);
-    if(loading){
-      await ensureHistory(pid);
-      if(ctx.analysisPid === pid) renderAnalysis(pid, false); // skip if they've moved on
-    }
+  // ---- player analysis: one player's full season, game by game (full-screen player page) ----
+  function openAnalysis(pid, fromEl){
+    if(!ctx.players[pid]) return;
+    openMax({ kind: 'player', pid: pid }, fromEl);
   }
 
-  function renderAnalysis(pid, loading){
+  // Game log table for one player (completed weeks, league scoring, nflverse columns). Used on the full player page.
+  function gameLogHTML(pid){
     const p = ctx.players[pid];
-    const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
-    els.anMeta.innerHTML = escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') +
-      (p.team ? ' · <span class="an-wk">Wk ' + ctx.week + '</span>' + matchupHTML(p.team).replace(/^ · /, ' ') : '') +
-      (p.injury_status && p.injury_status !== 'Healthy' ? ' · ' + escapeHTML(p.injury_status) : '') + (onRoster ? '' : ' · Available');
-
     const weeks = ctx.history[pid] || [];
     const total = weeks.reduce(function(a, w){ return a + w.pts; }, 0);
-    els.anSummary.innerHTML = [
-      ['Games', loading ? '…' : String(weeks.length)],
-      ['Proj this wk', fmtPts(ctx.projections[pid])],
-      ['Season avg', loading ? '…' : fmtPts(weeks.length ? total / weeks.length : null)],
-      ['Season total', loading ? '…' : fmtPts(weeks.length ? total : null)],
-    ].map(function(pair){ return '<div class="hs-block"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div></div>'; }).join('');
-
-    if(loading){ els.anLog.innerHTML = '<div class="empty-state">Loading game log…</div>'; return; }
-    if(!weeks.length){ els.anLog.innerHTML = '<div class="empty-state">No completed games this season.</div>'; return; }
+    if(!weeks.length) return '<div class="empty-state">No completed games this season.</div>';
 
     // Every stat that's non-zero in at least one week; all-empty columns are dropped.
     const keySet = {};
@@ -1911,7 +2038,7 @@
         nflAvg.map(function(v){ return '<td class="gl-nfl">' + pct(v) + '</td>'; }).join('') +       // season average of weekly shares
         totals.map(function(x){ return '<td>' + (x.a === null ? '—' : x.a.toFixed(1)) + '</td>'; }).join('') + '</tr>';
 
-    els.anLog.innerHTML = '<table class="gl-table"><thead>' + head + '</thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table>' +
+    return '<div class="gl-wrap"><table class="gl-table"><thead>' + head + '</thead><tbody>' + body + '</tbody><tfoot>' + foot + '</tfoot></table></div>' +
       (nflCols.length ? '<div class="gl-note">' + (ctx.nfl
         ? 'Snap % and share columns from nflverse (through week ' + ctx.nfl.stats_through_week + ').' + (nflWeeks(pid) ? '' : ' No nflverse match for this player.')
         : 'nflverse data unavailable — snap % and share columns show "—".') + '</div>' : '');
@@ -1946,7 +2073,7 @@
       const mp = ctx.players[id];
       return '' +
         '<div class="cand-card' + (id === worst ? ' is-current' : '') + '">' +
-          '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(id)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"' + analyzeAttr(id) + '>' +
+          '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(id)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(mp.team) + '"' + analyzeAttr(id) + '>' +
           '<div class="cand-info">' +
             '<div class="cand-name">' + analyzeName(id, playerName(mp)) + ' ' + injuryChip(mp.injury_status) + '</div>' +
             '<div class="cand-meta">' + escapeHTML(mp.position) + ' · ' + escapeHTML(mp.team || 'FA') + matchupHTML(mp.team) + '</div>' +
@@ -2022,7 +2149,7 @@
 
       html += '' +
         '<div class="cand-card' + (isCurrentStarter ? ' is-current' : '') + '">' +
-          '<img class="cand-avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"' + analyzeAttr(pid) + '>' +
+          '<img class="cand-avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
           '<div class="cand-info">' +
             '<div class="cand-name">' + analyzeName(pid, cname) + ' ' + statusChip + '</div>' +
             '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div>' +
@@ -2041,6 +2168,249 @@
     });
 
     showFocus();
+  }
+
+  // ---- full-screen views: lineup, waivers, and one player's full page ----
+  // Opening grows the layer out of the element you expanded (clip-path), closing shrinks it back. Back steps through a small stack.
+  const maxEl = document.getElementById('max'), maxPanel = maxEl.querySelector('.max-panel'), maxBg = maxEl.querySelector('.max-bg');
+  const maxBody = document.getElementById('max-body'), maxTitle = document.getElementById('max-title'), maxBackLabel = document.getElementById('max-back-label');
+  let maxStack = [];
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const FULL_CLIP = 'inset(0px 0px 0px 0px round 0px)';
+
+  function maxOpen(){ return !maxEl.hidden; }
+  function maxTitleFor(e){ return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Waivers · full view' : playerName(ctx.players[e.pid]); }
+  function insetOf(el){
+    if(!el || !el.isConnected || !el.getClientRects().length) return 'inset(12% 12% 12% 12% round 24px)';
+    const r = el.getBoundingClientRect();
+    return 'inset(' + Math.max(0, r.top) + 'px ' + Math.max(0, innerWidth - r.right) + 'px ' + Math.max(0, innerHeight - r.bottom) + 'px ' + Math.max(0, r.left) + 'px round 20px)';
+  }
+  function renderMax(dir){
+    const e = maxStack[maxStack.length - 1];
+    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : maxPlayerHTML(e.pid);
+    maxTitle.textContent = maxTitleFor(e);
+    maxBackLabel.textContent = maxStack.length > 1 ? maxTitleFor(maxStack[maxStack.length - 2]) : 'Back to ' + VIEW_TITLES[ctx.view];
+    if(dir && !reduceMotion.matches) maxBody.animate([{ opacity: 0, transform: 'translateX(' + (dir > 0 ? 28 : -28) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    // A player page needs their season history; fetch it once, then re-render if they're still on top.
+    if(e.kind === 'player' && !ctx.history[e.pid]){
+      ensureHistory(e.pid).then(function(){ if(maxOpen() && maxStack[maxStack.length - 1] === e) renderMax(0); });
+    }
+  }
+  let maxClosing = null; // pending cleanup from a close animation
+  function finishClose(){
+    if(!maxClosing) return;
+    clearTimeout(maxClosing); maxClosing = null;
+    maxEl.hidden = true; maxStack = [];
+    [maxPanel, maxBody, maxBg].forEach(function(el){ el.getAnimations().forEach(function(a){ a.cancel(); }); });
+    if(!document.querySelector('.overlay.open')) document.body.classList.remove('no-scroll');
+  }
+  function openMax(entry, fromEl){
+    finishClose(); // a close still animating must not wipe out what we're about to open
+    if(maxOpen()){ maxStack.push(entry); maxPanel.scrollTop = 0; renderMax(1); return; }
+    entry.from = fromEl || null;
+    maxStack = [entry];
+    renderMax(0);
+    maxPanel.scrollTop = 0;
+    maxEl.hidden = false;
+    document.body.classList.add('no-scroll');
+    if(reduceMotion.matches) return;
+    maxPanel.animate([{ clipPath: insetOf(fromEl) }, { clipPath: FULL_CLIP }], { duration: 540, easing: 'cubic-bezier(.2,.85,.25,1)' });
+    maxBg.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 });
+    maxBody.animate([{ opacity: 0, transform: 'translateY(14px) scale(.985)' }, { opacity: 1, transform: 'none' }], { duration: 460, delay: 130, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+  }
+  function closeMax(){
+    if(maxClosing || !maxOpen()) return;
+    const from = maxStack[0] && maxStack[0].from;
+    // Clean up on a timer rather than onfinish: animations can be paused (background tab) and fire late.
+    maxClosing = setTimeout(finishClose, reduceMotion.matches ? 0 : 430);
+    if(reduceMotion.matches) return;
+    maxBody.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: 'forwards' });
+    maxBg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 400, fill: 'forwards' });
+    maxPanel.animate([{ clipPath: FULL_CLIP }, { clipPath: insetOf(from) }], { duration: 420, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  }
+  function backMax(){ if(maxClosing) return; if(maxStack.length > 1){ maxStack.pop(); maxPanel.scrollTop = 0; renderMax(-1); } else closeMax(); }
+  document.getElementById('max-back').addEventListener('click', backMax);
+
+  // Expand buttons anywhere in the app (lineup / waivers sections, player panel).
+  document.addEventListener('click', function(e){
+    const x = e.target.closest && e.target.closest('[data-expand]');
+    if(!x || maxEl.contains(x)) return;
+    e.stopPropagation();
+    const kind = x.getAttribute('data-expand');
+    if(kind === 'player'){ if(ctx.focusPid) openMax({ kind: 'player', pid: ctx.focusPid }, x.closest('.focus-panel')); return; }
+    openMax({ kind: kind }, kind === 'roster' ? els.startersList : els.faList);
+  }, true);
+  // Inside the full-screen layer: rows open that player's page; swap buttons work like the panel's.
+  maxBody.addEventListener('click', function(e){
+    const sw = e.target.closest('[data-mx-swap]');
+    if(sw){ swapIntoSlot(Number(sw.getAttribute('data-slot')), sw.getAttribute('data-mx-swap')); renderMax(0); return; }
+    const row = e.target.closest('[data-open]');
+    const top = maxStack[maxStack.length - 1];
+    if(!top || maxClosing) return;
+    if(row && !(top.kind === 'player' && top.pid === row.getAttribute('data-open'))) openMax({ kind: 'player', pid: row.getAttribute('data-open') });
+  });
+
+  // ---- builders ----
+  function avatarTag(pid, cls){
+    const p = ctx.players[pid] || {};
+    return '<img class="' + cls + '" src="' + escapeHTML(playerImageUrl(pid)) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '">';
+  }
+  function depthChip(pid){
+    const e = ctx.nfl && ctx.nfl.players ? ctx.nfl.players[pid] : null;
+    return e && e.d ? '<span class="depth-chip">' + escapeHTML(e.d) + '</span>' : '';
+  }
+  function mxWho(pid, fresh){
+    const p = ctx.players[pid];
+    const bye = isOnBye(pid) ? '<span class="status-chip bye-tag">Bye</span>' : '';
+    return '<div class="mx-who">' + avatarTag(pid, 'mx-av') + '<div><div class="mx-nm">' + escapeHTML(playerName(p)) + bye + injuryChip(p.injury_status) +
+      (fresh ? '<span class="status-chip new-tag">New</span>' : '') + '</div><div class="mx-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + ' ' + depthChip(pid) + '</div></div></div>';
+  }
+  function oppCell(pid){
+    const p = ctx.players[pid], m = p && matchup(p.team, ctx.week);
+    return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '<span class="dim">—</span>';
+  }
+  function snapByWeek(pid){
+    const pts = (nflWeeks(pid) || []).filter(function(x){ return typeof x.s === 'number'; }).slice(-4);
+    if(!pts.length) return '<span class="dim">—</span>';
+    const tr = snapTrend(pid);
+    return pts.map(function(x){ return Math.round(x.s * 100); }).join(' → ') + '% <span class="trend ' + tr.dir + '">' + { up: '↑', down: '↓', flat: '→' }[tr.dir] + '</span>';
+  }
+  function byeCallouts(pids){
+    return pids.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; }).map(function(pid){
+      const p = ctx.players[pid], st = p.injury_status || '';
+      if(isOnBye(pid)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is on a bye in week ' + ctx.week + '.</b>&nbsp;' + (ctx.draftStarters.indexOf(pid) !== -1 ? 'That slot won&#39;t score.' : '') + '</div>';
+      if(/^(Out|IR|Doubtful|PUP|Sus)/i.test(st)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is listed ' + escapeHTML(st) + '.</b></div>';
+      if(/^Q/i.test(st)) return '<div class="callout warn"><b>' + escapeHTML(playerName(p)) + ' is questionable.</b>&nbsp;Check his status before kickoff.</div>';
+      return '';
+    }).join('');
+  }
+  function completedWeeks(){ const w = []; for(let i = 1; i < ctx.week; i++) w.push(i); return w; }
+
+  function maxRosterHTML(){
+    const weeks = completedWeeks();
+    const head = '<thead><tr><th class="l">Slot</th><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th><th>Tgt share</th><th>Proj</th>' +
+      weeks.map(function(w){ return '<th>Wk ' + w + '</th>'; }).join('') + '<th>Avg</th><th>Total</th></tr></thead>';
+    function row(pid, slotLabel, slotIndex, i){
+      if(!pid || pid === '0' || !ctx.players[pid]) return '<tr><td class="l slot">' + escapeHTML(slotLabel) + '</td><td class="l dim" colspan="' + (6 + weeks.length) + '">Empty</td></tr>';
+      const p = ctx.players[pid], hist = ctx.history[pid] || [];
+      const fresh = slotIndex != null && ctx.originalStarters[slotIndex] !== pid;
+      const cls = (slotIndex != null && isOnBye(pid) ? 'bye ' : '') + (fresh ? 'fresh' : '');
+      const byWeek = {}; hist.forEach(function(h){ byWeek[h.week] = h.pts; });
+      const t = SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '<span class="dim">—</span>';
+      return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '" class="' + cls + '"><td class="l slot">' + escapeHTML(slotLabel) + '</td><td class="l">' + mxWho(pid, fresh) + '</td>' +
+        '<td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td><td class="muted">' + t + '</td><td><span class="proj">' + fmtPts(ctx.projections[pid]) + '</span></td>' +
+        weeks.map(function(w){
+          if(byWeek[w] != null) return '<td class="muted">' + fmtPts(byWeek[w]) + '</td>';
+          const m = matchup(p.team, w); return '<td>' + (m && m.bye ? '<span class="wk-bye">BYE</span>' : '<span class="dim">—</span>') + '</td>';
+        }).join('') +
+        '<td class="muted">' + fmtPts(seasonAvgPts(pid)) + '</td><td class="muted">' + fmtPts(seasonTotalPts(pid)) + '</td></tr>';
+    }
+    const starterSet = new Set(ctx.draftStarters);
+    const bench = (ctx.myRoster.players || []).filter(function(pid){ return !starterSet.has(pid); });
+    return byeCallouts(ctx.draftStarters) +
+      '<div class="mx-scroll"><table class="mx-tbl">' + head + '<tbody class="stagger">' +
+      ctx.rosterPositions.map(function(slot, i){ return row(ctx.draftStarters[i], slot, i, i); }).join('') +
+      '<tr class="grp"><td colspan="' + (8 + weeks.length) + '">Bench</td></tr>' +
+      bench.map(function(pid, i){ return row(pid, (ctx.players[pid] && ctx.players[pid].position) || 'BN', null, ctx.rosterPositions.length + i); }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function maxWaiversHTML(){
+    const list = (ctx.freeAgents[ctx.faPos] || []).slice(0, ctx.faLimit);
+    const shares = SKILL_POSITIONS.indexOf(ctx.faPos) !== -1 && ctx.faPos !== 'QB';
+    return '<div class="mx-scroll"><table class="mx-tbl"><thead><tr><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th>' +
+      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">vs your weakest ' + escapeHTML(ctx.faPos) + '</th></tr></thead><tbody class="stagger">' +
+      list.map(function(pid, i){
+        const worst = weakestRostered(ctx.faPos), proj = ctx.projections[pid];
+        let vs = '<span class="dim">—</span>';
+        if(worst && typeof proj === 'number'){
+          const d = proj - ctx.projections[worst], flat = Math.abs(d) < 0.05;
+          vs = '<b class="' + (flat ? 'dim' : d > 0 ? 'trend up' : 'trend down') + '">' + (flat ? '±0.0' : (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1)) + '</b> <span class="muted">vs ' + escapeHTML(playerName(ctx.players[worst])) + '</span>';
+        }
+        return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
+          (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + pct(seasonShare(pid, 'a')) + '</td>' : '') +
+          '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      (list.length ? '' : '<div class="empty-state">No available ' + escapeHTML(ctx.faPos) + ' found.</div>');
+  }
+
+  function maxPlayerHTML(pid){
+    const p = ctx.players[pid];
+    if(!p) return '<div class="empty-state">Unknown player.</div>';
+    const loading = !ctx.history[pid];
+    const hist = ctx.history[pid] || [];
+    const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
+    const tr = snapTrend(pid), skill = SKILL_POSITIONS.indexOf(p.position) !== -1;
+    const m = matchup(p.team, ctx.week);
+    const stats = [
+      [fmtPts(ctx.projections[pid]), 'Proj wk ' + ctx.week],
+      [loading ? '…' : fmtPts(lastGamePts(pid)), 'Last'],
+      [loading ? '…' : fmtPts(seasonAvgPts(pid)), 'Avg'],
+      [loading ? '…' : fmtPts(seasonTotalPts(pid)), 'Total'],
+      [skill && tr ? pct(tr.last) : '—', 'Snap'],
+      [skill && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—', 'Tgt share'],
+    ];
+    const hero = '<div class="pf-hero" style="--team:' + teamColor(p.team) + '">' + avatarTag(pid, 'mx-av') +
+      '<div><div class="pf-name">' + escapeHTML(playerName(p)) + '</div>' +
+      '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + (m ? ' · Wk ' + ctx.week + ' <span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '') +
+        injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div></div>' +
+      '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
+
+    let left = '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
+      (loading ? '<div class="empty-state">Loading game log…</div>' : gameLogHTML(pid));
+    if(!loading && hist.length){
+      const maxPts = Math.max.apply(null, hist.map(function(h){ return h.pts; }).concat([ctx.projections[pid] || 0, 1]));
+      left += '<div class="pf-sec" style="margin-top:22px"><h3>Points by week</h3><span class="eyebrow">vs this week&#39;s projection</span></div><div class="bars">' +
+        hist.map(function(h, i){
+          const opp = h.opp ? (h.away === true ? '@ ' : h.away === false ? 'vs ' : '') + h.opp : '';
+          return '<div class="bar"><span class="lbl">Wk ' + h.week + ' ' + escapeHTML(opp) + '</span><div class="track"><div class="fill" style="--i:' + i + ';width:' + Math.max(0, h.pts / maxPts * 100) + '%"></div></div><b>' + fmtPts(h.pts) + '</b></div>';
+        }).join('') +
+        (typeof ctx.projections[pid] === 'number' ? '<div class="bar"><span class="lbl">Wk ' + ctx.week + ' proj</span><div class="track"><div class="fill proj" style="--i:' + hist.length + ';width:' + (ctx.projections[pid] / maxPts * 100) + '%"></div></div><b class="dim">' + fmtPts(ctx.projections[pid]) + '</b></div>' : '') +
+        '</div>';
+    }
+    const snaps = (nflWeeks(pid) || []).filter(function(x){ return typeof x.s === 'number'; });
+    if(snaps.length){
+      left += '<div class="pf-sec" style="margin-top:22px"><h3>Snap share by week</h3><span class="eyebrow">Role</span></div><div class="bars">' +
+        snaps.map(function(x, i){ return '<div class="bar"><span class="lbl">Wk ' + x.week + '</span><div class="track"><div class="fill snap" style="--i:' + i + ';width:' + (x.s * 100) + '%"></div></div><b>' + pct(x.s) + '</b></div>'; }).join('') + '</div>';
+    }
+    left += '</div>';
+    return byeCallouts([pid]) + hero + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
+  }
+
+  // Right-hand column: swap options for roster players, your players at the position for free agents.
+  function maxSideHTML(pid){
+    const p = ctx.players[pid];
+    const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
+    function card(id, right, current){
+      const q = ctx.players[id];
+      return '<div class="cand-card' + (current ? ' is-current' : '') + '" data-open="' + escapeHTML(id) + '" style="cursor:pointer">' + avatarTag(id, 'cand-avatar') +
+        '<div class="cand-info"><div class="cand-name">' + escapeHTML(playerName(q)) + ' ' + injuryChip(q.injury_status) + '</div>' +
+        '<div class="cand-meta">' + escapeHTML(q.position || '') + ' · ' + escapeHTML(q.team || 'FA') + matchupHTML(q.team) + '</div></div>' +
+        candidateStatsHTML(id) + right + '</div>';
+    }
+    if(!onRoster){
+      const worst = weakestRostered(p.position);
+      const mine = (ctx.myRoster.players || []).filter(function(id){ return ctx.players[id] && ctx.players[id].position === p.position; })
+        .sort(function(a, b){ return (ctx.projections[b] || -1) - (ctx.projections[a] || -1); });
+      return '<div class="pf-sec"><h3>Your ' + escapeHTML(p.position) + (p.position === 'DEF' ? '' : 's') + '</h3><span class="eyebrow">For comparison</span></div>' +
+        (mine.map(function(id){ return card(id, id === worst ? '<div class="current-tag">Lowest</div>' : '', false); }).join('') || '<div class="empty-state">None on your roster.</div>');
+    }
+    let slot = ctx.draftStarters.indexOf(pid);
+    if(slot === -1){
+      const elig = eligibleSlotIndexesForPosition(p.position);
+      elig.sort(function(a, b){ return (ctx.projections[ctx.draftStarters[a]] || -1) - (ctx.projections[ctx.draftStarters[b]] || -1); });
+      slot = elig.length ? elig[0] : -1;
+    }
+    if(slot === -1) return '<div class="pf-sec"><h3>Lineup</h3></div><div class="empty-state">No starting slot fits this position.</div>';
+    const label = ctx.rosterPositions[slot], group = groupForSlot(label, p.position), occ = ctx.draftStarters[slot];
+    const starterSet = new Set(ctx.draftStarters);
+    const bench = (ctx.myRoster.players || []).filter(function(id){ const q = ctx.players[id]; return q && !starterSet.has(id) && group.indexOf(q.position) !== -1; })
+      .sort(function(a, b){ return (ctx.projections[b] || -1) - (ctx.projections[a] || -1); });
+    const list = (occ && occ !== '0' && ctx.players[occ] ? [occ] : []).concat(bench);
+    return '<div class="pf-sec"><h3>Options for ' + escapeHTML(label) + '</h3><span class="eyebrow">Bench only</span></div>' +
+      list.map(function(id){
+        return card(id, id === occ ? '<div class="current-tag">Starting</div>' : '<button class="swap-btn" data-mx-swap="' + escapeHTML(id) + '" data-slot="' + slot + '">Swap in</button>', id === occ);
+      }).join('') + (bench.length ? '' : '<div class="empty-state">No bench players fit this slot.</div>');
   }
 
 })();
