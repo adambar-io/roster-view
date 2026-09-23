@@ -35,7 +35,9 @@ Files:
 - `sleeper-roster-view.html` — the app
 - `build_nflverse.py` — Python 3, standard library only. `python build_nflverse.py [--season 2026]` → writes `nflverse.json` (~50 KB in week 3). Skips rewriting if only the timestamp would change
 - `nflverse.json` — generated; commit/deploy it alongside the HTML
-- `.github/workflows/update-nflverse.yml` — optional daily GitHub Action (14:00 UTC + manual button) that re-runs the script and commits the JSON; only relevant if hosted from a GitHub repo (e.g. GitHub Pages)
+- `.github/workflows/update-nflverse.yml` — daily GitHub Action (14:00 UTC + manual "Run workflow" button) that re-runs the script and commits the JSON as `github-actions[bot]`
+
+**Hosting (live since Sept 23, 2026):** GitHub Pages from `adambar-io/roster-view`, branch `main`, root. App: https://adambar-io.github.io/roster-view/sleeper-roster-view.html (the bare `/roster-view/` URL 404s unless the HTML is renamed to `index.html`). Verified end to end: the Action's bot commit automatically triggers a "pages build and deployment" run, so the refreshed `nflverse.json` goes live with no manual step. Uploading through GitHub's web drag-and-drop **skips the `.github` folder** — the workflow file had to be created with "Add file → Create new file". Scheduled Actions are paused by GitHub after 60 days of no repo activity (likely in the off-season); re-enable from the Actions tab.
 
 Design language: dark "stadium at night" palette (`#12151A` background, turf green accent, amber "stadium light" highlight for the swap/new-lineup state). Deliberately avoided generic SaaS-card styling — see the CSS `:root` custom properties for the full token set if extending.
 
@@ -114,5 +116,4 @@ Every points value (`Proj`, `Last Gm`, `Season Avg`, `Season Total`) is computed
 - Charts on the Analysis screen (game log is a plain table for now)
 - Verify IDP stat handling
 - Mobile: a sticky lineup-diff bar at the bottom of the screen while a draft differs from Sleeper (on phones the compare bar scrolls out of view)
-- Hosting so it can be opened on a phone (it needs to be served over http(s); opening the .html from the iOS Files app won't run it properly)
 - Persist the draft lineup across page reloads (currently resets on refresh — everything is in-memory `ctx` state)
