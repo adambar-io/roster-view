@@ -558,6 +558,61 @@
     .max-hint{ display: none; }
   }
 
+
+  /* ============ step 4: motion polish ============ */
+  /* loading placeholders */
+  @keyframes shimmer{ from{ background-position: 150% 0; } to{ background-position: -50% 0; } }
+  .skel{ display: block; border-radius: 6px; color: transparent !important;
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+  .skel-row .avatar{ background: var(--surface-2); box-shadow: none; }
+  .shell.is-loading .kpi-big, .shell.is-loading .kpi-mid, .shell.is-loading .kpi-cap{
+    color: transparent; border-radius: 8px; width: 55%;
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+  .shell.is-loading .kpi-cap{ width: 75%; }
+  .shell.is-loading .pane-detail .focus-panel{ display: none; }
+  .shell.is-loading .pane-detail::before{ content: ''; display: block; margin: 22px; height: 420px; border-radius: var(--radius);
+    background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+  .shell.is-loading .league-txt b, .shell.is-loading .league-txt > span{ color: transparent; border-radius: 6px; background: var(--surface-2); }
+  .shell.is-loading .page-sub{ color: var(--text-3); }
+  .shell.is-loading .xbtn, .shell.is-loading .hint-mouse, .shell.is-loading .hint-touch{ visibility: hidden; }
+
+  /* busy button */
+  button.busy{ position: relative; color: transparent !important; }
+  button.busy::after{ content: ''; position: absolute; inset: 0; margin: auto; width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid var(--text-3); border-top-color: var(--text); animation: spin .7s linear infinite; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  /* lists fade in, staggered, on load / screen change */
+  @keyframes rowIn{ from{ opacity: 0; transform: translateY(6px); } to{ opacity: 1; transform: none; } }
+  .list-enter > *{ animation: rowIn .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 28ms); }
+
+  /* a swapped-in row slides into place */
+  @keyframes swapIn{ 0%{ opacity: 0; transform: translateX(-16px); } 100%{ opacity: 1; transform: none; } }
+  .slot-row.just-swapped{ animation: swapIn .55s var(--spring); }
+  @keyframes bump{ 0%{ transform: scale(1); } 40%{ transform: scale(1.06); } 100%{ transform: scale(1); } }
+  .bump{ display: inline-block; transform-origin: left center; animation: bump .45s var(--spring); }
+
+  /* bye warning collapses away once it's fixed */
+  .bye-alert{ max-height: 240px; overflow: hidden; transition: max-height .4s var(--ease), opacity .3s var(--ease), margin .4s var(--ease), padding .4s var(--ease); }
+  .bye-alert.gone{ max-height: 0; opacity: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; pointer-events: none; }
+
+  /* header actions fade in/out instead of popping */
+  .top-actions button{ transition: opacity .25s var(--ease), transform .35s var(--spring), visibility .25s, background .2s; }
+  .top-actions button.is-hidden{ opacity: 0; transform: scale(.92); visibility: hidden; pointer-events: none; }
+
+  /* sheets animate out too */
+  @keyframes fadeOut{ to{ opacity: 0; } }
+  @keyframes focusOut{ to{ opacity: 0; transform: translateY(10px) scale(.985); } }
+  .overlay.closing{ animation: fadeOut .2s var(--ease) forwards; }
+  .overlay.closing .focus-panel{ animation: focusOut .2s var(--ease) forwards; }
+  @media (max-width: 560px){
+    @keyframes sheetOut{ to{ opacity: 0; transform: translateY(32px); } }
+    .overlay.closing .focus-panel{ animation: sheetOut .22s var(--ease) forwards; }
+  }
+
+  /* theme switch crossfades (View Transitions API where supported) */
+  ::view-transition-old(root), ::view-transition-new(root){ animation-duration: .35s; animation-timing-function: ease; }
+
   .hint-touch{ display: none; }
   @media (hover: none){ .hint-touch{ display: inline; } .hint-mouse{ display: none; } }
 
@@ -704,8 +759,8 @@
         <div class="page-sub" id="page-sub"></div>
       </div>
       <div class="top-actions">
-        <button class="reset-btn" id="reset-btn" style="display:none;">Reset</button>
-        <button class="compare-btn" id="compare-btn" style="display:none;">Compare</button>
+        <button class="reset-btn is-hidden" id="reset-btn">Reset</button>
+        <button class="compare-btn is-hidden" id="compare-btn">Compare</button>
       </div>
     </header>
 
@@ -716,7 +771,7 @@
         <div class="kpi"><div class="eyebrow">Playing</div><div class="kpi-mid num" id="kpi-playing">—</div><div class="kpi-cap" id="kpi-playing-cap"></div></div>
         <div class="kpi"><div class="eyebrow">Record</div><div class="kpi-mid num" id="kpi-record">—</div><div class="kpi-cap" id="kpi-record-cap"></div></div>
       </div>
-      <div class="bye-alert" id="bye-alert" role="alert" style="display:none;"></div>
+      <div class="bye-alert gone" id="bye-alert" role="alert"></div>
     </div>
 
     <div class="panes" id="panes">
@@ -949,12 +1004,19 @@
   }
   document.addEventListener('click', function(e){
     const b = e.target.closest && e.target.closest('.theme-seg button');
-    if(b) applyTheme(b.getAttribute('data-theme-opt'));
+    if(!b) return;
+    const t = b.getAttribute('data-theme-opt');
+    if(document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(function(){ applyTheme(t); });
+    else applyTheme(t);
   });
   (function(){ let t = 'system'; try{ t = localStorage.getItem('rv-theme') || 'system'; }catch(e){} applyTheme(t); })();
 
   function setError(msg){ els.errorMsg.textContent = msg || ''; }
-  function setStatus(msg){ els.statusMsg.textContent = msg || ''; }
+  function setStatus(msg){
+    els.statusMsg.textContent = msg || '';
+    if(els.rosterScreen.classList.contains('is-loading') && msg) els.pageSub.textContent = msg; // shown under the loading placeholders
+  }
+  function setBusy(b){ els.loadBtn.disabled = b; els.loadBtn.classList.toggle('busy', b); }
   function escapeHTML(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
       return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
@@ -1232,7 +1294,7 @@
       return;
     }
 
-    els.loadBtn.disabled = true;
+    setBusy(true);
     setStatus('Looking up user…');
     try{
       const user = await resolveUser(uname);
@@ -1248,7 +1310,7 @@
         setStatus('No leagues found, trying ' + ctx.season + '…');
         leagues = await fetchLeagues(ctx.userId, ctx.season);
       }
-      if(!leagues.length){ setStatus(''); setError('No leagues found for this username.'); els.loadBtn.disabled = false; return; }
+      if(!leagues.length){ setStatus(''); setError('No leagues found for this username.'); setBusy(false); return; }
 
       ctx.pendingLeagues = leagues;
       els.leagueSelect.innerHTML = leagues.map(function(l){ return '<option value="' + l.league_id + '">' + escapeHTML(l.name) + '</option>'; }).join('');
@@ -1259,7 +1321,7 @@
       console.error(err);
       setError('Could not find that user. Check the spelling and try again.');
     }finally{
-      els.loadBtn.disabled = false;
+      setBusy(false);
     }
   });
 
@@ -1299,13 +1361,20 @@
     openAnalysis(t.getAttribute('data-analyze'), t.closest('.slot-row, .cand-card, .focus-panel') || t);
   }, true);
   function showOverlay(el){
+    clearTimeout(el._closeT); el.classList.remove('closing');
     el.scrollTop = 0;
     el.classList.add('open');
     document.body.classList.add('no-scroll'); // stop the roster scrolling behind the sheet on iOS
   }
   function hideOverlay(el){
-    el.classList.remove('open');
-    if(!document.querySelector('.overlay.open') && document.getElementById('max').hidden) document.body.classList.remove('no-scroll'); // another sheet may still be open
+    if(!el.classList.contains('open')) return;
+    const finish = function(){
+      el.classList.remove('open', 'closing');
+      if(!document.querySelector('.overlay.open') && document.getElementById('max').hidden) document.body.classList.remove('no-scroll'); // another sheet may still be open
+    };
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || paneMQ.matches){ finish(); return; }
+    el.classList.add('closing');
+    clearTimeout(el._closeT); el._closeT = setTimeout(finish, 220);
   }
   // The player panel is one element that moves: into the right-hand pane on wide screens, into the pop-up sheet otherwise.
   const paneMQ = window.matchMedia('(min-width: 1200px)');
@@ -1362,9 +1431,48 @@
   }
 
   // ---- main load ----
+  function skeletonRows(n){
+    let h = '';
+    for(let i = 0; i < n; i++){
+      h += '<div class="slot-row static skel-row"><div class="slot-tag"><span class="skel" style="width:22px;height:10px;margin:0 auto"></span></div>' +
+        '<span class="avatar"></span><div class="player-info"><span class="skel" style="width:' + (46 + (i * 17) % 30) + '%;height:13px"></span>' +
+        '<span class="skel" style="width:' + (24 + (i * 11) % 20) + '%;height:10px;margin-top:8px"></span></div>' +
+        '<div class="stat-col"><span class="skel" style="width:34px;height:15px;margin-left:auto"></span></div></div>';
+    }
+    return h;
+  }
+  // Show the app's real layout right away with shimmering placeholders; fill it in when the data lands.
+  function showLoadingShell(){
+    document.getElementById('setup-wrap').style.display = 'none';
+    els.rosterScreen.style.display = '';
+    els.rosterScreen.classList.add('is-loading');
+    ctx.view = null;
+    ['rosterView', 'faView', 'compareView', 'settingsView'].forEach(function(k){ els[k].style.display = k === 'rosterView' ? '' : 'none'; });
+    els.lineupTop.style.display = '';
+    els.panes.classList.remove('solo');
+    els.byeAlert.classList.add('gone');
+    els.resetBtn.classList.add('is-hidden'); els.compareBtn.classList.add('is-hidden');
+    els.pageEyebrow.textContent = 'Loading your league';
+    els.pageTitle.textContent = 'Lineup';
+    els.pageSub.textContent = 'Loading roster…';
+    els.teamName.textContent = 'Loading'; els.leagueName.textContent = 'League'; els.teamRecord.textContent = '0-0';
+    [els.kpiProj, els.kpiDelta, els.kpiPlaying, els.kpiRecord].forEach(function(el){ el.textContent = '—'; });
+    els.startersList.innerHTML = skeletonRows(9);
+    els.benchList.innerHTML = skeletonRows(5);
+    els.navBtns.forEach(function(t){ if(t.getAttribute('data-view') === 'roster') t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
+    requestAnimationFrame(moveNavThumbs);
+    window.scrollTo(0, 0);
+  }
+  function hideLoadingShell(){
+    els.rosterScreen.classList.remove('is-loading');
+    els.rosterScreen.style.display = 'none';
+    document.getElementById('setup-wrap').style.display = '';
+  }
+
   async function loadEverything(leagueId){
-    els.loadBtn.disabled = true;
+    setBusy(true);
     setError('');
+    showLoadingShell();
     setStatus('Loading roster…');
     const loadId = ctx.loadId = (ctx.loadId || 0) + 1;
     ctx.nfl = null;
@@ -1373,7 +1481,7 @@
       const [bundle, players] = await Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
       const { league, rosters, users, week } = bundle;
       const myRoster = rosters.find(function(r){ return r.owner_id === ctx.userId; });
-      if(!myRoster){ setError('Could not find your roster in this league.'); els.loadBtn.disabled = false; return; }
+      if(!myRoster){ hideLoadingShell(); setError('Could not find your roster in this league.'); setBusy(false); return; }
 
       ctx.week = week;
       ctx.league = league;
@@ -1407,6 +1515,8 @@
       ctx.freeAgents = computeFreeAgents(rosters);
       ctx.faLimit = FA_LIST_LIMIT;
       ctx.focus = null;
+      els.rosterScreen.classList.remove('is-loading');
+      els.kpiProj.textContent = '0.0'; // so the total counts up on first load
       renderAll();
       document.getElementById('setup-wrap').style.display = 'none';
       els.rosterScreen.style.display = '';
@@ -1424,9 +1534,10 @@
       });
     }catch(err){
       console.error(err);
+      hideLoadingShell();
       setError('Could not load that league. Try again.');
     }finally{
-      els.loadBtn.disabled = false;
+      setBusy(false);
     }
   }
 
@@ -1604,8 +1715,8 @@
   // Summary cards: projected total, change vs the Sleeper lineup, who's actually playing, record.
   function renderLineupCompare(){
     const isDirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
-    els.resetBtn.style.display = isDirty ? '' : 'none';
-    els.compareBtn.style.display = isDirty ? '' : 'none';
+    els.resetBtn.classList.toggle('is-hidden', !isDirty);
+    els.compareBtn.classList.toggle('is-hidden', !isDirty);
 
     const total = sumProj(ctx.draftStarters), diff = total - sumProj(ctx.originalStarters);
     countTo(els.kpiProj, total);
@@ -1759,12 +1870,11 @@
     els.benchList.innerHTML = benchHTML || '<div class="empty-state">Bench is empty.</div>';
 
     const byeStarters = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && isOnBye(pid); });
-    els.byeAlert.style.display = byeStarters.length ? '' : 'none';
-    els.byeAlert.innerHTML = byeStarters.length
-      ? '<div class="bye-text"><strong>' + byeStarters.length + ' starter' + (byeStarters.length > 1 ? 's are' : ' is') + ' on a bye in week ' + ctx.week + ':</strong> ' +
+    els.byeAlert.classList.toggle('gone', !byeStarters.length);
+    if(byeStarters.length) els.byeAlert.innerHTML = // left in place when fixed, so it can collapse away
+      '<div class="bye-text"><strong>' + byeStarters.length + ' starter' + (byeStarters.length > 1 ? 's are' : ' is') + ' on a bye in week ' + ctx.week + ':</strong> ' +
         byeStarters.map(function(pid){ const p = ctx.players[pid]; return escapeHTML(playerName(p)) + ' (' + escapeHTML(p.team) + ')'; }).join(', ') +
-        '. Swap them out so the slot scores.</div><button class="bye-fix" data-bye-fix="' + ctx.draftStarters.indexOf(byeStarters[0]) + '">Show options</button>'
-      : '';
+        '. Swap them out so the slot scores.</div><button class="bye-fix" data-bye-fix="' + ctx.draftStarters.indexOf(byeStarters[0]) + '">Show options</button>';
 
     document.querySelectorAll('.slot-row[data-player-id]').forEach(function(row){
       row.addEventListener('click', function(){
@@ -1784,6 +1894,13 @@
 
   // ---- available players (informational only — not part of the lineup builder) ----
   const VIEW_TITLES = { roster: 'Lineup', fa: 'Waivers', compare: 'Compare', settings: 'Settings' };
+  // Fade a list's rows in one after another (on load and when you switch screens, not on every re-render).
+  function staggerIn(list){
+    if(!list || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    Array.prototype.forEach.call(list.children, function(c, i){ c.style.setProperty('--i', Math.min(i, 14)); });
+    list.classList.remove('list-enter'); void list.offsetWidth; list.classList.add('list-enter');
+    clearTimeout(list._enterT); list._enterT = setTimeout(function(){ list.classList.remove('list-enter'); }, 1000);
+  }
   function setView(view){
     const changed = ctx.view !== view;
     ctx.view = view;
@@ -1812,6 +1929,8 @@
     if(view === 'settings') renderStatus();
     if(changed){
       [els.rosterView, els.faView, els.compareView, els.settingsView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
+      if(view === 'roster'){ staggerIn(els.startersList); staggerIn(els.benchList); }
+      if(view === 'fa') staggerIn(els.faList);
       if(!paneMode()) window.scrollTo(0, 0);
     }
     if(view === 'roster' || view === 'fa') selectDefaultFocus();
@@ -1819,8 +1938,15 @@
   function moveNavThumbs(){
     const side = els.sideNav.querySelector('[aria-current="page"]'), tab = els.tabNav.querySelector('[aria-current="page"]');
     const st = els.sideNav.querySelector('.nav-thumb'), tt = els.tabNav.querySelector('.tab-thumb');
-    if(side && side.offsetHeight){ st.style.top = side.offsetTop + 'px'; st.style.height = side.offsetHeight + 'px'; }
-    if(tab && tab.offsetWidth){ tt.style.left = tab.offsetLeft + 'px'; tt.style.width = tab.offsetWidth + 'px'; }
+    // First placement snaps into position; after that the highlight slides.
+    function place(el, props){
+      const first = !el.style[Object.keys(props)[1]];
+      if(first) el.style.transition = 'none';
+      for(const k in props) el.style[k] = props[k];
+      if(first){ void el.offsetWidth; el.style.transition = ''; }
+    }
+    if(side && side.offsetHeight) place(st, { top: side.offsetTop + 'px', height: side.offsetHeight + 'px' });
+    if(tab && tab.offsetWidth) place(tt, { left: tab.offsetLeft + 'px', width: tab.offsetWidth + 'px' });
   }
   window.addEventListener('resize', moveNavThumbs);
   els.navBtns.forEach(function(t){ t.addEventListener('click', function(){ setView(t.getAttribute('data-view')); }); });
@@ -1878,6 +2004,7 @@
     ctx.faPos = btn.getAttribute('data-fa-pos');
     ctx.faLimit = FA_LIST_LIMIT;
     renderFreeAgents();
+    staggerIn(els.faList);
     if(paneMode()){ const top = (ctx.freeAgents[ctx.faPos] || [])[0]; if(top) openFreeAgent(top); }
   });
   els.faMore.addEventListener('click', function(){ ctx.faLimit += FA_LIST_LIMIT; renderFreeAgents(); });
@@ -1907,6 +2034,12 @@
     }
     ctx.draftStarters[targetSlotIndex] = newPid;
     renderAll();
+    const moved = [targetSlotIndex].concat(existingIdx !== -1 && existingIdx !== targetSlotIndex ? [existingIdx] : []);
+    moved.forEach(function(i){
+      const row = els.startersList.querySelector('[data-slot-index="' + i + '"]');
+      if(row){ row.classList.add('just-swapped'); row.addEventListener('animationend', function(){ row.classList.remove('just-swapped'); }, { once: true }); }
+    });
+    [els.kpiProj, els.kpiDelta].forEach(function(el){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); });
     if(paneMode()) openFocus(newPid, targetSlotIndex); // keep the panel on the slot you just changed
     else closeFocus();
   }
@@ -2357,7 +2490,7 @@
       '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
 
     let left = '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
-      (loading ? '<div class="empty-state">Loading game log…</div>' : gameLogHTML(pid));
+      (loading ? '<div style="display:grid;gap:10px;padding:6px 0 4px">' + [80, 100, 100, 70].map(function(w){ return '<span class="skel" style="height:14px;width:' + w + '%"></span>'; }).join('') + '</div>' : gameLogHTML(pid));
     if(!loading && hist.length){
       const maxPts = Math.max.apply(null, hist.map(function(h){ return h.pts; }).concat([ctx.projections[pid] || 0, 1]));
       left += '<div class="pf-sec" style="margin-top:22px"><h3>Points by week</h3><span class="eyebrow">vs this week&#39;s projection</span></div><div class="bars">' +
