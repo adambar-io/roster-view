@@ -1,4 +1,4 @@
-# Sleeper Roster View — Project Context
+# sleepa (formerly "Roster View") — Project Context
 
 A single-file local web app for viewing a Sleeper fantasy football roster with clearer stats/projections and a local (non-syncing) lineup planner. Built iteratively in Claude chat; handing off to Claude Code from here.
 
@@ -35,6 +35,14 @@ A single-file local web app for viewing a Sleeper fantasy football roster with c
   - **Target share / air-yards share** (RB/WR/TE): per-week columns + season average in the game log; season averages on waiver rows. Air-yards share can be negative for RBs (targets behind the line) — that's real data
   - **Depth chart** ("RB2" chip) on roster + waiver rows, from the latest nflverse snapshot
   - Analysis game log also inserts **BYE rows** for byes already played (based on the player's *current* team)
+
+## Brand: sleepa
+
+- **Name**: *sleepa* (lowercase), tagline "Your Sleeper lineup, sharper." It riffs on Sleeper, so Settings → About carries a disclaimer: unofficial, fan-made, not affiliated with or endorsed by Sleeper. Keep that line.
+- **Mark**: a robot bunny with a visor and glowing teal eyes (`#2dd4bf` glow, `#a7f3d0` eyes). We use the **"4a" neutral charcoal/zinc** colorway, because the "visor" set's blue-slate tint clashes slightly with the app's neutral palette. Source files from the designer are in `brand/source/`.
+- **In the app**: the mark is an inline SVG `<symbol id="sleepa-mark">` (sprite right after `<body>`) reused via `<use>`; body/ear/visor colors come from theme tokens `--mark-body/--mark-ear/--mark-visor` (charcoal in light mode, white in dark). Style the symbol's parts directly (`.m-body`, `.m-eyes`…), since selectors don't cross into `<use>` copies. The eyes blink every ~6s (`@keyframes blink`, off under reduced motion). Shown on the setup screen, the desktop sidebar, and a small header on phones (`.m-brand`, hidden ≥1024px).
+- **Wordmark**: real text in **Poppins 700**, letter-spacing −0.035em (loaded with Inter from Google Fonts). The designer's wordmark SVGs `@import` Poppins inside the SVG, which browsers block when an SVG is used as an image, so they fall back to a generic font. Don't use them as `<img>`.
+- **Icons**: `brand/sleepa-mark.svg` is the favicon and switches colors with the browser's light/dark setting via an internal media query; `brand/favicon-64.png` is the PNG fallback; `brand/apple-touch-icon.png` (180×180, white bunny on near-black with a teal glow) is the iPhone home-screen icon. The PNGs were rendered from the SVG in a browser canvas. The tab title is "sleepa · your Sleeper lineup, sharper"; `apple-mobile-web-app-title` is "sleepa".
 
 ## Architecture
 
