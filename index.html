@@ -680,8 +680,15 @@
   @keyframes vtAppClose{ to{ opacity: 0; transform: scale(.9); filter: blur(10px); } }
   @keyframes vtSetupIn{ from{ opacity: 0; transform: scale(1.06); filter: blur(10px); } to{ opacity: 1; transform: none; filter: blur(0); } }
   /* browsers without View Transitions: a simpler zoom-in */
-  .shell.entering{ animation: shellIn 1s cubic-bezier(.16,1,.3,1); }
-  @keyframes shellIn{ from{ opacity: 0; transform: scale(.97); filter: blur(8px); } to{ opacity: 1; transform: none; filter: blur(0); } }
+  /* Fallback when a browser can't (or won't) run the view transition, e.g. iOS < 18 or a skipped transition:
+     the same "open from the button" feel with plain CSS. Animate .main/.side, never .shell itself — a transform on
+     .shell would drag the position:fixed tab bar along with it. The tab bar slides up on its own. */
+  .shell.entering .main, .shell.entering .side{ animation: shellOpen 1s cubic-bezier(.16,1,.3,1) both; transform-origin: var(--vt-ox, 50%) var(--vt-oy, 40%); }
+  .shell.entering .tabbar{ animation: tabIn .8s cubic-bezier(.16,1,.3,1) .35s both; }
+  @keyframes shellOpen{ from{ opacity: 0; transform: scale(.86); border-radius: 28px; } 40%{ opacity: 1; } to{ opacity: 1; transform: none; border-radius: 0; } }
+  @keyframes tabIn{ from{ opacity: 0; transform: translateY(120%); } to{ opacity: 1; transform: none; } }
+  .setup-wrap-in{ animation: setupFallbackIn .8s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes setupFallbackIn{ from{ opacity: 0; transform: scale(1.05); } to{ opacity: 1; transform: none; } }
 
 
   /* ============ brand: sleepa (robot bunny mark + Poppins wordmark) ============ */
@@ -798,7 +805,12 @@
   @keyframes sheetIn{ from{ opacity: 0; transform: translateY(24px); } to{ opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after{ animation-duration: 0s !important; transition-duration: 0s !important; }
+    /* Reduce Motion still gets a gentle dissolve between screens (what iOS itself does), just no zoom or slide. */
+    .rm-fade{ animation: rmFade .35s ease both !important; animation-duration: .35s !important; }
   }
+  @keyframes rmFade{ from{ opacity: 0; } to{ opacity: 1; } }
+  .vt-debug{ position: fixed; z-index: 200; left: 12px; right: 12px; bottom: calc(90px + env(safe-area-inset-bottom)); margin: 0 auto; max-width: 520px;
+    background: var(--text); color: var(--bg); font-size: 12px; line-height: 1.4; padding: 10px 12px; border-radius: 12px; box-shadow: var(--shadow-lg); white-space: pre-wrap; }
 </style>
 </head>
 <body>
@@ -1601,27 +1613,77 @@
   // so callers can safely render data afterwards (startViewTransition applies the change a frame later).
   function switchScreens(kind, update, fromEl){
     const html = document.documentElement;
-    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ update(); return Promise.resolve(); }
-    if(!document.startViewTransition){
-      update();
-      if(kind === 'enter'){ els.rosterScreen.classList.add('entering'); setTimeout(function(){ els.rosterScreen.classList.remove('entering'); }, 1100); }
-      return Promise.resolve();
-    }
-    if(fromEl && fromEl.getClientRects().length){
-      const r = fromEl.getBoundingClientRect();
-      html.style.setProperty('--vt-from', 'inset(' + r.top + 'px ' + (innerWidth - r.right) + 'px ' + (innerHeight - r.bottom) + 'px ' + r.left + 'px round ' + (r.height / 2) + 'px)');
-      html.style.setProperty('--vt-ox', (r.left + r.width / 2) + 'px');
-      html.style.setProperty('--vt-oy', (r.top + r.height / 2) + 'px');
-    }
-    html.classList.add(kind === 'enter' ? 'vt-enter' : 'vt-exit');
-    const t = document.startViewTransition(update);
-    t.ready.catch(function(){}); // browsers skip transitions in background tabs; the page still switches, so ignore
-    ctx.vtRunning = true;
-    t.finished.finally(function(){
-      html.classList.remove('vt-enter', 'vt-exit'); ctx.vtRunning = false;
-      if(ctx.afterVt){ const f = ctx.afterVt; ctx.afterVt = null; f(); }
+    let rect = fromEl && fromEl.getClientRects().length ? fromEl.getBoundingClientRect() : null; // measure before anything moves
+    return settleViewport().then(function(){
+      if(fromEl && fromEl.getClientRects().length) rect = fromEl.getBoundingClientRect(); // the keyboard may have moved it
+      if(window.scrollY) window.scrollTo(0, 0);
+      if(rect){
+        html.style.setProperty('--vt-from', 'inset(' + rect.top + 'px ' + (innerWidth - rect.right) + 'px ' + (innerHeight - rect.bottom) + 'px ' + rect.left + 'px round ' + (rect.height / 2) + 'px)');
+        html.style.setProperty('--vt-ox', (rect.left + rect.width / 2) + 'px');
+        html.style.setProperty('--vt-oy', (rect.top + rect.height / 2) + 'px');
+      }
+      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        update(); dissolveIn(kind); vtDebug(kind + ': Reduce Motion is on → gentle fade');
+        return;
+      }
+      if(!document.startViewTransition){
+        update(); cssFallback(kind); vtDebug(kind + ': View Transitions not supported here → CSS fallback');
+        return;
+      }
+      html.classList.add(kind === 'enter' ? 'vt-enter' : 'vt-exit');
+      const t = document.startViewTransition(update);
+      ctx.vtRunning = true;
+      // If the browser skips the transition (hidden tab, a viewport resize mid-way, …) the screens still switch —
+      // play the CSS version instead so it never just cuts.
+      t.ready.then(function(){ vtDebug(kind + ': view transition running'); }, function(err){
+        cssFallback(kind); vtDebug(kind + ': view transition skipped (' + (err && err.message) + ') → CSS fallback');
+      });
+      t.finished.finally(function(){
+        html.classList.remove('vt-enter', 'vt-exit'); ctx.vtRunning = false;
+        if(ctx.afterVt){ const f = ctx.afterVt; ctx.afterVt = null; f(); }
+      });
+      return t.updateCallbackDone.catch(function(){});
     });
-    return t.updateCallbackDone.catch(function(){});
+  }
+  // Tapping View team on a phone usually leaves the username box or league picker focused. Dismissing the keyboard
+  // resizes the visible area, and Safari cancels a view transition when that happens mid-way — so dismiss it first
+  // and wait for the screen to stop moving (at most ~0.6s).
+  function settleViewport(){
+    const ae = document.activeElement, vv = window.visualViewport;
+    const typing = ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName);
+    if(typing) ae.blur();
+    if(!typing || !vv) return Promise.resolve();
+    return new Promise(function(resolve){
+      let quiet;
+      const finish = function(){ vv.removeEventListener('resize', onResize); clearTimeout(quiet); clearTimeout(cap); resolve(); };
+      const onResize = function(){ clearTimeout(quiet); quiet = setTimeout(finish, 140); };
+      vv.addEventListener('resize', onResize);
+      quiet = setTimeout(finish, 220);
+      const cap = setTimeout(finish, 650);
+    });
+  }
+  function cssFallback(kind){
+    const el = kind === 'enter' ? els.rosterScreen : document.getElementById('setup-wrap');
+    const cls = kind === 'enter' ? 'entering' : 'setup-wrap-in';
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+    setTimeout(function(){ el.classList.remove(cls); }, 1300);
+  }
+  function dissolveIn(kind){
+    const el = kind === 'enter' ? els.rosterScreen : document.getElementById('setup-wrap');
+    el.classList.remove('rm-fade'); void el.offsetWidth; el.classList.add('rm-fade');
+    setTimeout(function(){ el.classList.remove('rm-fade'); }, 500);
+  }
+  // Add ?vtdebug=1 to the address to see which transition path ran (for checking on a phone).
+  const VT_DEBUG = /[?&]vtdebug=1/.test(location.search);
+  function vtDebug(msg){
+    if(!VT_DEBUG) return;
+    let el = document.querySelector('.vt-debug');
+    if(!el){ el = document.createElement('div'); el.className = 'vt-debug'; document.body.appendChild(el); }
+    const ua = navigator.userAgent.match(/OS (\d+)_(\d+)/);
+    el.textContent = msg + '\n' + (ua ? 'iOS ' + ua[1] + '.' + ua[2] : navigator.userAgent.slice(0, 60)) +
+      ' · View Transitions: ' + (document.startViewTransition ? 'yes' : 'no') +
+      ' · Reduce Motion: ' + (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'on' : 'off');
+    clearTimeout(el._t); el._t = setTimeout(function(){ el.remove(); }, 6000);
   }
 
   function hideLoadingShell(){
