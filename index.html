@@ -506,6 +506,11 @@
   .opt-note .on-txt{ flex: 1 1 200px; }
   .opt-note b{ font-weight: 600; }
   .opt-note .up{ color: var(--accent); font-weight: 700; }
+  .opt-why{ order: 3; flex: 1 1 100%; margin: 2px 0 4px; padding-left: 18px; font-size: 12.5px; line-height: 1.45; color: var(--text-2); }
+  .opt-why li + li{ margin-top: 2px; }
+  .opt-why .warn-txt{ color: var(--warn); font-weight: 600; }
+  .status-chip.lock-tag{ background: var(--surface-3); color: var(--text-2); }
+  .status-chip.te-flex-tag{ background: var(--warn-soft); color: var(--warn); }
   .opt-note button{ border: none; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 6px 8px; min-height: 36px; }
   @keyframes optNoteIn{ from{ opacity: 0; transform: translateY(-6px); } to{ opacity: 1; transform: none; } }
   .list-head{ display: none; }
@@ -1741,73 +1746,132 @@
   }
 
   // ---- Optimal lineup ----
-  // The best total projection over every legal lineup, not greedy slot-by-slot filling (greedy can put your RB2 in
-  // FLEX and leave a better WR on the bench). It's an assignment problem: starting slots x your players, solved exactly
-  // with the Hungarian algorithm. A lineup has ~10 slots and ~15-40 players, so it's instant.
-  const CANT_PLAY = /^(Out|IR|PUP|Sus)/i;
+  // 1. Locked players (their team has kicked off) stay exactly where Sleeper has them; everyone else can move.
+  // 2. Dedicated slots (QB, RB, WR, TE, K, DEF, IDP) get the highest-projected eligible player at that position.
+  // 3. Flex slots are filled last from whoever is left, most restrictive flex first (fewest eligible positions).
+  //    PPR preference: a WR takes a flex spot unless an RB projects at least RB_OVER_WR more than the best WR,
+  //    or a TE at least TE_OVER_WR_RB more than the best WR or RB. Positions outside RB/WR/TE that a flex allows
+  //    (QB in SUPER_FLEX, IDP) compete on projection alone.
+  const FLEX_PREFERENCE = { RB_OVER_WR: 1.0, TE_OVER_WR_RB: 1.5 }; // points; adjust here
+  // Not startable: Out, IR, Doubtful, PUP, suspended (Questionable is fine), on bye, or no projection.
+  const OPT_SKIP = /^(Out|IR|Doubtful|PUP|Sus)/i;
+
+  function kickoff(team, week){
+    const k = ctx.nfl && ctx.nfl.kick && ctx.nfl.kick[team];
+    const t = k && k[String(week)] ? Date.parse(k[String(week)]) : NaN;
+    return isNaN(t) ? null : t;
+  }
+  // Locked once their team has kicked off this week (Sleeper won't let them move). Kickoffs come from nflverse.json.
+  function isLocked(pid){ const p = ctx.players[pid]; const t = p && kickoff(p.team, ctx.week); return !!t && t <= Date.now(); }
+  function isFlexSlot(label){ return !!FLEX_GROUPS[label] && FLEX_GROUPS[label].length > 1; }
+
+  // One flex slot. cands: [{ pid, pos, proj }] already limited to the slot's positions and still available.
+  // Returns { pick, over }: over is a higher-projected candidate the WR/RB preference passed over (for the note).
+  function pickFlex(cands){
+    const best = {};
+    cands.forEach(function(c){ if(!best[c.pos] || c.proj > best[c.pos].proj) best[c.pos] = c; });
+    const wr = best.WR, rb = best.RB, te = best.TE;
+    let pick = null;
+    if(wr || rb) pick = rb && (!wr || rb.proj >= wr.proj + FLEX_PREFERENCE.RB_OVER_WR - 1e-9) ? rb : wr;
+    if(te){
+      const bar = Math.max(wr ? wr.proj : -Infinity, rb ? rb.proj : -Infinity);
+      if(!pick || te.proj >= bar + FLEX_PREFERENCE.TE_OVER_WR_RB - 1e-9) pick = te;
+    }
+    cands.forEach(function(c){ if(['WR', 'RB', 'TE'].indexOf(c.pos) === -1 && (!pick || c.proj > pick.proj)) pick = c; });
+    const top = cands.reduce(function(m, c){ return !m || c.proj > m.proj ? c : m; }, null);
+    return { pick: pick, over: top && pick && top !== pick && top.proj > pick.proj ? top : null };
+  }
+
+  // Returns { starters, notes: [{ slot, pick, over }], locked: [pid] }.
   function optimalStarters(){
-    const slots = ctx.rosterPositions, n = slots.length;
+    const slots = ctx.rosterPositions, orig = ctx.originalStarters;
+    const out = slots.map(function(){ return null; });
+    const locked = [];
+    slots.forEach(function(label, i){
+      const pid = orig[i];
+      if(pid && pid !== '0' && ctx.players[pid] && isLocked(pid)){ out[i] = pid; locked.push(pid); }
+    });
     const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
     const pool = (ctx.myRoster.players || []).filter(function(pid){
-      const p = ctx.players[pid];
-      const st = effectiveStatus(pid);
-      return p && !parked.has(pid) && !isOnBye(pid) && !(st && CANT_PLAY.test(st));
+      const p = ctx.players[pid], st = effectiveStatus(pid);
+      return p && !parked.has(pid) && !isLocked(pid) && !isOnBye(pid) && !(st && OPT_SKIP.test(st)) && typeof ctx.projections[pid] === 'number';
     });
-    // One "leave it empty" column per slot, so every slot always has a legal choice. Its cost is far above any
-    // player's, so a slot is only left empty when nobody eligible is available.
-    const cols = pool.length + n, NOPE = 1e9;
-    const cost = slots.map(function(label, i){
-      const row = [];
-      for(let j = 0; j < cols; j++){
-        if(j >= pool.length){ row.push(1000); continue; }
-        const pid = pool[j], pos = ctx.players[pid].position;
-        if(groupForSlot(label, pos).indexOf(pos) === -1){ row.push(NOPE); continue; }
-        const proj = ctx.projections[pid];
-        // Hungarian minimises, so cost = -projection. Ties go to whoever is already in the slot, so nothing moves for no gain.
-        row.push(-(typeof proj === 'number' ? proj : 0) - (ctx.draftStarters[i] === pid ? 1e-4 : 0));
-      }
-      return row;
+    const used = new Set();
+    // ties keep whoever is starting now, so nothing moves for no gain
+    const byProj = function(x, y){ return ctx.projections[y] - ctx.projections[x] || (ctx.draftStarters.indexOf(y) !== -1) - (ctx.draftStarters.indexOf(x) !== -1); };
+    // Put chosen players in slots so that anyone already in one of those slots stays in it (no pointless WR1/WR2 swaps).
+    const place = function(idx, chosen){
+      const rest = chosen.slice();
+      idx.forEach(function(i){ const k = rest.indexOf(ctx.draftStarters[i]); if(k !== -1){ out[i] = rest[k]; rest.splice(k, 1); } });
+      idx.forEach(function(i){ if(!out[i] && rest.length) out[i] = rest.shift(); });
+    };
+    const dedicated = {};
+    slots.forEach(function(label, i){
+      if(out[i] || isFlexSlot(label)) return;
+      const pos = groupForSlot(label, null)[0];
+      (dedicated[pos] = dedicated[pos] || []).push(i);
     });
-    return hungarian(cost).map(function(j){ return j < pool.length ? pool[j] : '0'; });
+    Object.keys(dedicated).forEach(function(pos){
+      const idx = dedicated[pos];
+      const chosen = pool.filter(function(pid){ return !used.has(pid) && ctx.players[pid].position === pos; }).sort(byProj).slice(0, idx.length);
+      chosen.forEach(function(pid){ used.add(pid); });
+      place(idx, chosen);
+    });
+    const notes = [];
+    slots.map(function(l, i){ return i; })
+      .filter(function(i){ return !out[i] && isFlexSlot(slots[i]); })
+      .sort(function(x, y){ return FLEX_GROUPS[slots[x]].length - FLEX_GROUPS[slots[y]].length || x - y; })
+      .forEach(function(i){
+        const group = FLEX_GROUPS[slots[i]];
+        const cands = pool.filter(function(pid){ return !used.has(pid) && group.indexOf(ctx.players[pid].position) !== -1; }).sort(byProj)
+          .map(function(pid){ return { pid: pid, pos: ctx.players[pid].position, proj: ctx.projections[pid] }; });
+        const r = pickFlex(cands);
+        if(!r.pick) return;
+        out[i] = r.pick.pid; used.add(r.pick.pid);
+        if(r.over) notes.push({ slot: slots[i], pick: r.pick, over: r.over });
+      });
+    // same no-churn rule across flex slots of the same kind (two FLEX slots)
+    const flexByLabel = {};
+    slots.forEach(function(label, i){ if(isFlexSlot(label) && out[i] && locked.indexOf(out[i]) === -1) (flexByLabel[label] = flexByLabel[label] || []).push(i); });
+    Object.keys(flexByLabel).forEach(function(label){
+      const idx = flexByLabel[label];
+      if(idx.length < 2) return;
+      const chosen = idx.map(function(i){ return out[i]; });
+      idx.forEach(function(i){ out[i] = null; });
+      place(idx, chosen);
+    });
+    return { starters: out.map(function(x){ return x || '0'; }), notes: notes, locked: locked };
   }
-  // Min-cost assignment of every row to a distinct column (rows <= columns). Returns the chosen column for each row.
-  function hungarian(cost){
-    const n = cost.length, m = cost[0].length;
-    const u = new Array(n + 1).fill(0), v = new Array(m + 1).fill(0), p = new Array(m + 1).fill(0), way = new Array(m + 1).fill(0);
-    for(let i = 1; i <= n; i++){
-      p[0] = i;
-      let j0 = 0;
-      const minv = new Array(m + 1).fill(Infinity), used = new Array(m + 1).fill(false);
-      do{
-        used[j0] = true;
-        const i0 = p[j0];
-        let delta = Infinity, j1 = 0;
-        for(let j = 1; j <= m; j++){
-          if(used[j]) continue;
-          const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
-          if(cur < minv[j]){ minv[j] = cur; way[j] = j0; }
-          if(minv[j] < delta){ delta = minv[j]; j1 = j; }
-        }
-        for(let j = 0; j <= m; j++){
-          if(used[j]){ u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
-        }
-        j0 = j1;
-      }while(p[j0] !== 0);
-      do{ const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; }while(j0);
-    }
-    const res = new Array(n);
-    for(let j = 1; j <= m; j++) if(p[j]) res[p[j] - 1] = j - 1;
-    return res;
+  // Flex slots currently holding a tight end (flagged on the row and in the optimizer note).
+  function teInFlex(starters){
+    return ctx.rosterPositions.map(function(l, i){ return i; }).filter(function(i){
+      const pid = starters[i];
+      return isFlexSlot(ctx.rosterPositions[i]) && pid && pid !== '0' && ctx.players[pid] && ctx.players[pid].position === 'TE';
+    });
+  }
+  function optWhyHTML(res){
+    const nm = function(pid){ return escapeHTML(playerName(ctx.players[pid])); };
+    const li = res.notes.map(function(n){
+      const margin = n.over.pos === 'TE' ? FLEX_PREFERENCE.TE_OVER_WR_RB : FLEX_PREFERENCE.RB_OVER_WR;
+      return escapeHTML(n.slot) + ': chose ' + n.pick.pos + ' ' + nm(n.pick.pid) + ' over ' + n.over.pos + ' ' + nm(n.over.pid) + ', ' +
+        (n.over.proj - n.pick.proj).toFixed(1) + '-pt difference (' + n.over.pos + 's need +' + margin.toFixed(1) + ').';
+    });
+    teInFlex(res.starters).forEach(function(i){
+      li.push('<span class="warn-txt">Heads-up: ' + nm(res.starters[i]) + ' (TE) is in your ' + escapeHTML(ctx.rosterPositions[i]) + '.</span>');
+    });
+    if(res.locked.length) li.push('Locked (game started), left in place: ' + res.locked.map(nm).join(', ') + '.');
+    if(!ctx.nfl || !ctx.nfl.kick) li.push('Kickoff times aren’t loaded yet, so no one is treated as locked.');
+    return li.length ? '<ul class="opt-why">' + li.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ul>' : '';
   }
   function runOptimal(){
     if(!ctx.myRoster || !ctx.rosterPositions) return;
     const before = ctx.draftStarters.slice();
-    const best = optimalStarters();
+    const res = optimalStarters(), best = res.starters, why = optWhyHTML(res);
     const changed = best.map(function(pid, i){ return pid !== before[i] ? i : -1; }).filter(function(i){ return i !== -1; });
     const btn = document.getElementById('opt-btn');
     btn.classList.remove('working'); void btn.offsetWidth; btn.classList.add('working');
     if(!changed.length){
-      showOptNote('<span class="on-txt"><b>Already optimal.</b> No lineup projects higher than this one.' + stillEmptyNote(before) + '</span>', null);
+      showOptNote('<span class="on-txt"><b>Already optimal.</b> Nothing to change under your lineup rules.' + stillEmptyNote(before) + '</span>' + why, null);
       return;
     }
     ctx.draftStarters = best;
@@ -1824,7 +1888,7 @@
     showOptNote('<span class="on-txt"><b>Optimal lineup set</b> · ' + changed.length + ' slot' + (changed.length > 1 ? 's' : '') + ' changed. ' +
       'Sleeper lineup ' + orig.toFixed(1) + ' → <b>' + now.toFixed(1) + '</b> ' +
       '<span class="' + (d > 0.05 ? 'up' : '') + '">(' + (Math.abs(d) < 0.05 ? '±0.0' : (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1)) + ')</span>' +
-      stillEmptyNote(best) + '</span>', before);
+      stillEmptyNote(best) + '</span>' + why, before);
     // keep the side panel honest: show whoever is now in the slot it was showing
     const f = ctx.focus;
     if(paneMode() && f && f.kind !== 'fa'){
@@ -2705,7 +2769,9 @@
     const color = posColor(pos);
     const isNewHere = slotIndex !== undefined && ctx.originalStarters[slotIndex] !== ctx.draftStarters[slotIndex];
     const statusChip = injuryChip(p.injury_status);
-    const newChip = isNewHere ? '<span class="status-chip new-tag">New</span>' : '';
+    const newChip = (isNewHere ? '<span class="status-chip new-tag">New</span>' : '') +
+      (isLocked(playerId) ? '<span class="status-chip lock-tag" title="Game has started">Locked</span>' : '') +
+      (slotIndex !== undefined && pos === 'TE' && isFlexSlot(ctx.rosterPositions[slotIndex]) ? '<span class="status-chip te-flex-tag" title="A tight end is in your flex slot">TE in ' + escapeHTML(ctx.rosterPositions[slotIndex]) + '</span>' : '');
     const avatarUrl = playerImageUrl(playerId);
     const proj = ctx.projections[playerId];
     const last = lastGamePts(playerId);

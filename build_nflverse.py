@@ -82,6 +82,17 @@ def us_eastern(dt_utc):
     return naive - datetime.timedelta(hours=4 if start <= naive < end else 5)
 
 
+def eastern_to_utc(naive_et):
+    """Naive US Eastern datetime -> UTC string 'YYYY-MM-DDTHH:MM:00Z' (DST from 2am on the 2nd Sunday of March
+    to 2am on the 1st Sunday of November, local time)."""
+    y = naive_et.year
+    def nth_sunday(month, n):
+        d = datetime.date(y, month, 1)
+        return d + datetime.timedelta(days=(6 - d.weekday()) % 7 + 7 * (n - 1))
+    dst = datetime.datetime.combine(nth_sunday(3, 2), datetime.time(2)) <= naive_et < datetime.datetime.combine(nth_sunday(11, 1), datetime.time(2))
+    return (naive_et + datetime.timedelta(hours=4 if dst else 5)).strftime('%Y-%m-%dT%H:%M:00Z')
+
+
 def practice_days(game_date):
     """The three practice-report days before a game: Wed/Thu/Fri for Sunday, Thu/Fri/Sat for Monday,
     Mon/Tue/Wed for Thursday (short week), Wed/Thu/Fri for Saturday. Mirrored in index.html (practiceDays)."""
@@ -101,7 +112,7 @@ def build(season, previous=None):
     print(f'Building nflverse.json for {season}', file=sys.stderr)
 
     # --- schedule: opponent per team per regular-season week (a missing week = bye) ---
-    sched, max_week, game_dates = {}, 0, {}
+    sched, max_week, game_dates, kick = {}, 0, {}, {}
     for r in csv_rows(SOURCES['schedule']):
         if r['season'] != str(season) or r['game_type'] != 'REG':
             continue
@@ -112,6 +123,11 @@ def build(season, previous=None):
             gd = datetime.date.fromisoformat(r['gameday'])
             game_dates.setdefault(home, {})[int(w)] = gd
             game_dates.setdefault(away, {})[int(w)] = gd
+            if r.get('gametime'):   # kickoff, ET -> UTC; the app treats a player as locked once his team has kicked off
+                hh, mm = (int(x) for x in r['gametime'].split(':')[:2])
+                k = eastern_to_utc(datetime.datetime.combine(gd, datetime.time(hh, mm)))
+                kick.setdefault(home, {})[w] = k
+                kick.setdefault(away, {})[w] = k
         max_week = max(max_week, int(w))
     if not sched:
         sys.exit(f'No {season} regular-season games in the schedule — is the season right?')
@@ -271,6 +287,7 @@ def build(season, previous=None):
         'depth_as_of': depth_as_of,
         'sched_weeks': max_week,
         'sched': sched,
+        'kick': kick,
         'players': players,
         'inj': inj,
         'inj_as_of': inj_updated.strftime('%Y-%m-%dT%H:%MZ'),
