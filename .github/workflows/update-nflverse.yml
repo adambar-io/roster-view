@@ -1,0 +1,27 @@
+# Optional: only used if this folder is a GitHub repo (e.g. hosted on GitHub Pages).
+# Rebuilds nflverse.json every morning and commits it when the data changed.
+name: Update nflverse data
+
+on:
+  schedule:
+    - cron: '0 14 * * *'   # daily, 14:00 UTC — after nflverse's morning refresh
+  workflow_dispatch:        # "Run workflow" button for a manual refresh
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python build_nflverse.py
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add nflverse.json
+          if git diff --cached --quiet; then echo "No changes"; else git commit -m "Update nflverse data" && git push; fi
