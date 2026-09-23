@@ -490,6 +490,24 @@
   .fa-vs-inline .who{ color: var(--text-2); }
   .section-title{ display: flex; align-items: baseline; gap: 6px; }
   .section-title .xbtn{ margin-left: auto; align-self: center; }
+  .section-title .opt-btn{ margin-left: auto; align-self: center; }
+  .section-title .opt-btn + .xbtn{ margin-left: 0; }
+  .opt-btn{ display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 14px; border-radius: 999px; border: none; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent); font: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0; white-space: nowrap;
+    transition: transform .3s var(--spring), background .2s; -webkit-tap-highlight-color: transparent; }
+  .opt-btn svg{ width: 15px; height: 15px; }
+  .opt-btn:active{ transform: scale(.95); }
+  .opt-btn.working svg{ animation: optSpin .6s var(--ease); }
+  @keyframes optSpin{ from{ transform: rotate(0) scale(1); } 50%{ transform: rotate(90deg) scale(1.25); } to{ transform: rotate(180deg) scale(1); } }
+  @media (max-width: 560px){ .section-title .st-hint{ display: none; } } /* phones: room for the button */
+  .opt-note{ display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin: -2px 2px 12px; padding: 8px 8px 8px 14px; border-radius: 14px;
+    background: var(--accent-soft); color: var(--text); font-size: 13.5px; line-height: 1.4; animation: optNoteIn .45s var(--spring); }
+  .opt-note[hidden]{ display: none; }
+  .opt-note .on-txt{ flex: 1 1 200px; }
+  .opt-note b{ font-weight: 600; }
+  .opt-note .up{ color: var(--accent); font-weight: 700; }
+  .opt-note button{ border: none; background: none; color: var(--accent); font: inherit; font-weight: 600; cursor: pointer; padding: 6px 8px; min-height: 36px; }
+  @keyframes optNoteIn{ from{ opacity: 0; transform: translateY(-6px); } to{ opacity: 1; transform: none; } }
   .list-head{ display: none; }
   .pane-main{ container-type: inline-size; container-name: list; }
   @container list (min-width: 600px){
@@ -925,7 +943,8 @@
       <div class="pane-main">
         <section class="view" id="roster-view">
           <div class="starters">
-            <div class="section-title">Starters <span style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span><button class="xbtn" data-expand="roster" aria-label="Expand lineup to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
+            <div class="section-title">Starters <span class="st-hint" style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span><button class="opt-btn" id="opt-btn" title="Fill your starters with the highest projected lineup"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>Optimal lineup</button><button class="xbtn" data-expand="roster" aria-label="Expand lineup to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
+            <div class="opt-note" id="opt-note" role="status" aria-live="polite" hidden></div>
             <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
             <div id="starters-list"></div>
           </div>
@@ -1495,8 +1514,117 @@
 
   function resetLineup(){
     ctx.draftStarters = ctx.originalStarters.slice();
+    hideOptNote();
     renderAll();
   }
+
+  // ---- Optimal lineup ----
+  // The best total projection over every legal lineup, not greedy slot-by-slot filling (greedy can put your RB2 in
+  // FLEX and leave a better WR on the bench). It's an assignment problem: starting slots x your players, solved exactly
+  // with the Hungarian algorithm. A lineup has ~10 slots and ~15-40 players, so it's instant.
+  const CANT_PLAY = /^(Out|IR|PUP|Sus)/i;
+  function optimalStarters(){
+    const slots = ctx.rosterPositions, n = slots.length;
+    const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
+    const pool = (ctx.myRoster.players || []).filter(function(pid){
+      const p = ctx.players[pid];
+      return p && !parked.has(pid) && !isOnBye(pid) && !(p.injury_status && CANT_PLAY.test(p.injury_status));
+    });
+    // One "leave it empty" column per slot, so every slot always has a legal choice. Its cost is far above any
+    // player's, so a slot is only left empty when nobody eligible is available.
+    const cols = pool.length + n, NOPE = 1e9;
+    const cost = slots.map(function(label, i){
+      const row = [];
+      for(let j = 0; j < cols; j++){
+        if(j >= pool.length){ row.push(1000); continue; }
+        const pid = pool[j], pos = ctx.players[pid].position;
+        if(groupForSlot(label, pos).indexOf(pos) === -1){ row.push(NOPE); continue; }
+        const proj = ctx.projections[pid];
+        // Hungarian minimises, so cost = -projection. Ties go to whoever is already in the slot, so nothing moves for no gain.
+        row.push(-(typeof proj === 'number' ? proj : 0) - (ctx.draftStarters[i] === pid ? 1e-4 : 0));
+      }
+      return row;
+    });
+    return hungarian(cost).map(function(j){ return j < pool.length ? pool[j] : '0'; });
+  }
+  // Min-cost assignment of every row to a distinct column (rows <= columns). Returns the chosen column for each row.
+  function hungarian(cost){
+    const n = cost.length, m = cost[0].length;
+    const u = new Array(n + 1).fill(0), v = new Array(m + 1).fill(0), p = new Array(m + 1).fill(0), way = new Array(m + 1).fill(0);
+    for(let i = 1; i <= n; i++){
+      p[0] = i;
+      let j0 = 0;
+      const minv = new Array(m + 1).fill(Infinity), used = new Array(m + 1).fill(false);
+      do{
+        used[j0] = true;
+        const i0 = p[j0];
+        let delta = Infinity, j1 = 0;
+        for(let j = 1; j <= m; j++){
+          if(used[j]) continue;
+          const cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+          if(cur < minv[j]){ minv[j] = cur; way[j] = j0; }
+          if(minv[j] < delta){ delta = minv[j]; j1 = j; }
+        }
+        for(let j = 0; j <= m; j++){
+          if(used[j]){ u[p[j]] += delta; v[j] -= delta; } else minv[j] -= delta;
+        }
+        j0 = j1;
+      }while(p[j0] !== 0);
+      do{ const j1 = way[j0]; p[j0] = p[j1]; j0 = j1; }while(j0);
+    }
+    const res = new Array(n);
+    for(let j = 1; j <= m; j++) if(p[j]) res[p[j] - 1] = j - 1;
+    return res;
+  }
+  function runOptimal(){
+    if(!ctx.myRoster || !ctx.rosterPositions) return;
+    const before = ctx.draftStarters.slice();
+    const best = optimalStarters();
+    const changed = best.map(function(pid, i){ return pid !== before[i] ? i : -1; }).filter(function(i){ return i !== -1; });
+    const btn = document.getElementById('opt-btn');
+    btn.classList.remove('working'); void btn.offsetWidth; btn.classList.add('working');
+    if(!changed.length){
+      showOptNote('<span class="on-txt"><b>Already optimal.</b> No lineup projects higher than this one.' + stillEmptyNote(before) + '</span>', null);
+      return;
+    }
+    ctx.draftStarters = best;
+    renderAll();
+    changed.forEach(function(i, k){
+      const row = els.startersList.querySelector('[data-slot-index="' + i + '"]');
+      if(!row) return;
+      row.style.animationDelay = (k * 60) + 'ms';
+      row.classList.add('just-swapped');
+      row.addEventListener('animationend', function(){ row.classList.remove('just-swapped'); row.style.animationDelay = ''; }, { once: true });
+    });
+    [els.kpiProj, els.kpiDelta].forEach(function(el){ el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); });
+    const orig = sumProj(ctx.originalStarters), now = sumProj(best), d = now - orig;
+    showOptNote('<span class="on-txt"><b>Optimal lineup set</b> · ' + changed.length + ' slot' + (changed.length > 1 ? 's' : '') + ' changed. ' +
+      'Sleeper lineup ' + orig.toFixed(1) + ' → <b>' + now.toFixed(1) + '</b> ' +
+      '<span class="' + (d > 0.05 ? 'up' : '') + '">(' + (Math.abs(d) < 0.05 ? '±0.0' : (d > 0 ? '+' : '−') + Math.abs(d).toFixed(1)) + ')</span>' +
+      stillEmptyNote(best) + '</span>', before);
+    // keep the side panel honest: show whoever is now in the slot it was showing
+    const f = ctx.focus;
+    if(paneMode() && f && f.kind !== 'fa'){
+      if(f.slot != null){ const pid = ctx.draftStarters[f.slot]; if(pid && pid !== '0') openFocus(pid, f.slot); else openEmptySlot(f.slot); }
+      else if(f.pid){ const i = ctx.draftStarters.indexOf(f.pid); openFocus(f.pid, i === -1 ? null : i); }
+    }
+  }
+  function stillEmptyNote(starters){
+    const labels = ctx.rosterPositions.filter(function(l, i){ return !starters[i] || starters[i] === '0'; });
+    return labels.length ? ' <span style="color:var(--danger)">' + escapeHTML(labels.join(', ')) + ' left empty: no one eligible is available.</span>' : '';
+  }
+  function showOptNote(html, undoTo){
+    const el = document.getElementById('opt-note');
+    el.innerHTML = html + (undoTo ? '<button type="button" data-opt-undo>Undo</button>' : '') + '<button type="button" data-opt-close aria-label="Dismiss">✕</button>';
+    el.hidden = false;
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    el.onclick = function(e){
+      if(e.target.closest('[data-opt-undo]')){ ctx.draftStarters = undoTo; hideOptNote(); renderAll(); }
+      else if(e.target.closest('[data-opt-close]')) hideOptNote();
+    };
+  }
+  function hideOptNote(){ const el = document.getElementById('opt-note'); if(el) el.hidden = true; }
+  document.getElementById('opt-btn').addEventListener('click', runOptimal);
   els.resetBtn.addEventListener('click', resetLineup);
   els.cmpReset.addEventListener('click', function(){ resetLineup(); setView('roster'); }); // nothing left to compare after a reset
 
@@ -1614,7 +1742,7 @@
     els.lineupTop.style.display = '';
     els.panes.classList.remove('solo');
     els.byeAlert.classList.add('gone');
-    els.resetBtn.classList.add('is-hidden'); els.compareBtn.classList.add('is-hidden');
+    els.resetBtn.classList.add('is-hidden'); els.compareBtn.classList.add('is-hidden'); hideOptNote();
     const picked = (ctx.pendingLeagues || []).find(function(l){ return l.league_id === ctx.loadingLeagueId; });
     els.pageEyebrow.textContent = picked ? 'Opening ' + picked.name : 'Loading your league';
     els.pageTitle.textContent = 'Lineup';
@@ -1981,7 +2109,7 @@
     setDiff(els.kpiDelta, diff);
     els.kpiDelta.className = 'kpi-mid num ' + els.kpiDelta.className.replace('lc-diff', '').trim();
     const changed = ctx.draftStarters.filter(function(pid, i){ return pid !== ctx.originalStarters[i]; }).length;
-    els.kpiDeltaCap.textContent = changed ? changed + ' slot' + (changed > 1 ? 's' : '') + ' changed' : 'No changes yet';
+    els.kpiDeltaCap.textContent = changed ? changed + ' slot' + (changed > 1 ? 's' : '') + ' changed · was ' + sumProj(ctx.originalStarters).toFixed(1) : 'No changes yet';
 
     const filled = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
     const bye = filled.filter(isOnBye).length;
@@ -2007,9 +2135,15 @@
   function countTo(el, to){
     const from = parseFloat(el.textContent);
     // No animation frames run in a background tab, so just show the number.
-    if(isNaN(from) || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(from - to) < 0.05){ el.textContent = to.toFixed(1); return; }
+    if(isNaN(from) || document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches || Math.abs(from - to) < 0.05){ el._countRun = (el._countRun || 0) + 1; el.textContent = to.toFixed(1); return; }
+    // Only the newest count on this element may write (quick taps overlap), and a timer lands the final number
+    // even if the browser pauses animation frames part-way (backgrounded tab, iOS Low Power Mode).
+    const run = el._countRun = (el._countRun || 0) + 1;
     const t0 = performance.now(), dur = 650;
+    clearTimeout(el._countEnd);
+    el._countEnd = setTimeout(function(){ if(el._countRun === run) el.textContent = to.toFixed(1); }, dur + 120);
     (function tick(now){
+      if(el._countRun !== run) return;
       const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
       el.textContent = (from + (to - from) * e).toFixed(1);
       if(k < 1) requestAnimationFrame(tick);
@@ -2427,6 +2561,7 @@
   }
 
   function swapIntoSlot(targetSlotIndex, newPid){
+    hideOptNote();
     const oldPid = ctx.draftStarters[targetSlotIndex];
     const existingIdx = ctx.draftStarters.indexOf(newPid);
     if(existingIdx !== -1 && existingIdx !== targetSlotIndex){
