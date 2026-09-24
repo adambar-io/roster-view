@@ -747,6 +747,44 @@
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
   .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
+  /* ---- add/drop + trending (waivers) ---- */
+  .ad-card, .tr-card{ padding: 12px 14px; margin-bottom: 22px; }
+  .ad-verdict{ font-size: 13.5px; color: var(--text-2); padding: 2px 2px 10px; border-bottom: 1px solid var(--hair); margin-bottom: 8px; }
+  .ad-verdict.up{ color: var(--text); } .ad-verdict b{ font-weight: 700; } .ad-verdict.up b:last-child{ color: var(--accent); }
+  .ad-cols{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .ad-h{ margin: 6px 0 4px; }
+  .ad-item{ display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--hair); cursor: pointer; }
+  .ad-h + .ad-item{ border-top: none; }
+  .ad-av{ width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .ad-info{ flex: 1; min-width: 0; }
+  .ad-name{ font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ad-meta{ font-size: 12px; color: var(--text-3); }
+  .ad-bits{ font-size: 12px; color: var(--text-2); line-height: 1.45; }
+  .ad-bits b{ color: var(--text); font-variant-numeric: tabular-nums; }
+  .ad-none{ font-size: 13px; color: var(--text-3); padding: 8px 0; }
+  .ad-foot{ font-size: 11.5px; color: var(--text-3); margin-top: 8px; }
+  .tr-top{ display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .seg{ display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); }
+  .seg button{ border: none; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-2); padding: 6px 12px; min-height: 32px; border-radius: 999px; cursor: pointer; }
+  .seg button[aria-selected="true"]{ background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .tr-avail{ display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; min-height: 32px; }
+  .tr-row{ display: grid; grid-template-columns: 18px 36px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--hair); cursor: pointer; }
+  .tr-rank{ font-size: 12px; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
+  .tr-av{ width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+  .tr-name{ font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tr-meta{ font-size: 12px; color: var(--text-3); }
+  .tr-proj{ text-align: right; } .tr-proj .val{ font-weight: 700; font-variant-numeric: tabular-nums; } .tr-proj .cap{ font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+  .tr-badge{ font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+  .tr-badge.free{ background: var(--accent-soft); color: var(--accent); }
+  .tr-badge.mine{ background: var(--surface-3); color: var(--text); }
+  .tr-badge.taken{ background: var(--surface-2); color: var(--text-3); }
+  @media (max-width: 560px){
+    .ad-cols{ grid-template-columns: 1fr; gap: 4px; }
+    .tr-row{ grid-template-columns: 16px 32px minmax(0, 1fr) auto; gap: 8px; }
+    .tr-av{ width: 32px; height: 32px; }
+    .tr-badge{ grid-column: 3 / 5; justify-self: start; margin-top: -4px; }
+  }
+
   /* ---- floor/ceiling, matchup difficulty, bye planner ---- */
   .rng{ font-size: 10.5px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; margin-top: 1px; }
   .rng.early{ font-style: italic; }
@@ -1172,6 +1210,8 @@
 
         <section class="view" id="fa-view" style="display:none;">
           <div class="pos-filter" id="fa-pos-filter" role="tablist"></div>
+          <div id="add-drop"></div>
+          <div id="trending"></div>
           <div class="section-title">Top available <span style="opacity:0.7;" id="fa-sub">— compared with your lowest-projected player at the position</span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
           <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
           <div id="fa-list"></div>
@@ -2460,6 +2500,7 @@
       if(loadId !== ctx.loadId) return;
       if(nfl && applyNfl(nfl)) changed = true;
       ctx.updatedAt = Date.now();
+      if(opts.manual){ ctx.rosTs = 0; ctx.trending = null; }
       if(changed){
         rerenderEverything();
         if(!ctx.focus) selectDefaultFocus();
@@ -3365,6 +3406,138 @@
   els.navBtns.forEach(function(t){ t.addEventListener('click', function(){ setView(t.getAttribute('data-view')); }); });
 
   const WAIVER_FILTERS = ['QB', 'RB', 'WR', 'TE', 'FLEX', 'K', 'DEF'];
+
+  // ---- rest-of-season projections (ros.json from the GitHub Action: raw stats summed this week..week 17) ----
+  const ROS_URL = 'ros.json';
+  async function loadRos(){
+    if(ctx.ros && ctx.ros.season === ctx.season && Date.now() - (ctx.rosTs || 0) < 30 * 60 * 1000) return ctx.ros;
+    try{
+      const res = await fetch(ROS_URL, { cache: 'no-cache' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      if(j.season !== ctx.season || !j.players) throw new Error('ros.json is for ' + j.season);
+      ctx.ros = j; ctx.rosTs = Date.now(); rosMemo = {};
+    }catch(e){ console.warn('Rest-of-season projections unavailable:', e.message); }
+    return ctx.ros || null;
+  }
+  let rosMemo = {};
+  // { pts, weeks } in this league's scoring, or null when the player has no projection left this season.
+  function rosValue(pid){
+    if(!ctx.ros || !ctx.ros.players) return null;
+    if(pid in rosMemo) return rosMemo[pid];
+    const r = ctx.ros.players[pid];
+    return (rosMemo[pid] = r ? { pts: calcPoints(r.s, ctx.league.scoring_settings || {}) || 0, weeks: r.w } : null);
+  }
+  function recentTrend(pid){
+    const h = ctx.history[pid];
+    if(!h || h.length < 3) return null;
+    const last3 = h.slice(-3).reduce(function(a, w){ return a + w.pts; }, 0) / 3, avg = seasonAvgPts(pid);
+    return { last3: last3, avg: avg, dir: last3 - avg >= 2 ? 'up' : last3 - avg <= -2 ? 'down' : 'flat' };
+  }
+
+  // ---- add / drop: my weakest bench players next to the best available at the same position ----
+  // Value = rest-of-season projected points in league scoring (bye weeks already excluded, so a good player on bye
+  // this week isn't flagged). Recent form and floor/ceiling are shown alongside to judge more than one number.
+  function addDropPositions(){ return ctx.faPos === 'FLEX' ? ['RB', 'WR', 'TE'] : [ctx.faPos]; }
+  function renderAddDrop(){
+    const el = document.getElementById('add-drop');
+    if(!el) return;
+    const posList = addDropPositions(), fits = function(pid){ return fantasyPositions(pid).some(function(x){ return posList.indexOf(x) !== -1; }); };
+    if(!ctx.ros){ el.innerHTML = ''; return; }
+    const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || []));
+    const starters = new Set(ctx.draftStarters);
+    const val = function(pid){ const v = rosValue(pid); return v ? v.pts : 0; };
+    const bench = (ctx.myRoster.players || []).filter(function(pid){ return ctx.players[pid] && !starters.has(pid) && !parked.has(pid) && fits(pid); })
+      .sort(function(a, b){ return val(a) - val(b); }).slice(0, 2);
+    const pool = [].concat.apply([], posList.map(function(pos){ return ctx.freeAgents[pos] || []; }));
+    const avail = pool.filter(function(pid){ return rosValue(pid); }).sort(function(a, b){ return val(b) - val(a); }).slice(0, 3);
+    const label = ctx.faPos === 'FLEX' ? 'RB/WR/TE' : ctx.faPos;
+    if(!bench.length && !avail.length){ el.innerHTML = ''; return; }
+    // recent form for the best available needs their history (not prefetched for free agents)
+    const missing = avail.filter(function(pid){ return !ctx.history[pid]; });
+    if(missing.length && !renderAddDrop.pending){
+      renderAddDrop.pending = true;
+      Promise.all(missing.map(ensureHistory)).then(function(){ renderAddDrop.pending = false; if(ctx.view === 'fa') renderAddDrop(); });
+    }
+    const item = function(pid, mine){
+      const p = ctx.players[pid], v = rosValue(pid), tr = recentTrend(pid), r = weekRange(pid), bye = isOnBye(pid);
+      const bits = [];
+      bits.push(v ? '<b>' + v.pts.toFixed(0) + '</b> pts rest of season · ' + v.weeks + ' wk' + (v.weeks === 1 ? '' : 's') : '<b>—</b> no projection left');
+      if(tr) bits.push('last 3: ' + tr.last3.toFixed(1) + ' <span class="trend ' + tr.dir + '">' + { up: '↑', down: '↓', flat: '→' }[tr.dir] + '</span> vs ' + tr.avg.toFixed(1) + ' avg');
+      else if(ctx.history[pid]) bits.push((ctx.history[pid].length || 0) + ' game' + (ctx.history[pid].length === 1 ? '' : 's') + ' played');
+      if(r && r.ok) bits.push('range ' + Math.round(r.floor) + '–' + Math.round(r.ceil) + (r.early ? ' (early)' : ''));
+      return '<div class="ad-item" ' + (mine ? 'data-player-id-open="' + escapeHTML(pid) + '"' : 'data-fa-open="' + escapeHTML(pid) + '"') + ' role="button" tabindex="0">' +
+        avatarTag(pid, 'ad-av') + '<div class="ad-info"><div class="ad-name">' + escapeHTML(playerName(p)) + ' ' + injuryChip(p.injury_status) +
+        (bye ? '<span class="status-chip bye-tag">Bye wk ' + ctx.week + '</span>' : '') + '</div>' +
+        '<div class="ad-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + '</div><div class="ad-bits">' + bits.join(' · ') + '</div></div>' + vsBtn(pid) + '</div>';
+    };
+    const worst = bench[0], best = avail[0];
+    let verdict = '';
+    if(worst && best){
+      const d = val(best) - val(worst);
+      verdict = d > 5
+        ? '<div class="ad-verdict up">Adding <b>' + escapeHTML(playerName(ctx.players[best])) + '</b> for <b>' + escapeHTML(playerName(ctx.players[worst])) + '</b> projects <b>+' + d.toFixed(0) + '</b> points over the rest of the season.</div>'
+        : '<div class="ad-verdict">Your bench ' + label + ' projects about as well as or better than what’s available (' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' pts rest of season).</div>';
+    }
+    el.innerHTML = '<div class="section-title">Add / drop · ' + escapeHTML(label) + ' <span style="opacity:0.7;">— rest-of-season outlook</span></div>' +
+      '<div class="card ad-card">' + verdict +
+        '<div class="ad-cols"><div><div class="eyebrow ad-h">Your weakest bench ' + escapeHTML(label) + '</div>' + (bench.map(function(pid){ return item(pid, true); }).join('') || '<div class="ad-none">No bench ' + escapeHTML(label) + '.</div>') + '</div>' +
+        '<div><div class="eyebrow ad-h">Best available</div>' + (avail.map(function(pid){ return item(pid, false); }).join('') || '<div class="ad-none">Nobody with a projection left.</div>') + '</div></div>' +
+        '<div class="ad-foot">Projections from Sleeper for week ' + ctx.ros.from_week + '–' + ctx.ros.through_week + ', scored with your league’s settings; bye weeks count as zero. An estimate, not a verdict.</div>' +
+      '</div>';
+  }
+
+  // ---- trending on Sleeper (official /players/nfl/trending/{add|drop}, last 24 hours) ----
+  async function loadTrending(){
+    if(ctx.trending && Date.now() - ctx.trending.ts < 30 * 60 * 1000) return ctx.trending;
+    const get = function(kind){ return fetchJSON(API + '/players/nfl/trending/' + kind + '?lookback_hours=24&limit=25').catch(function(e){ console.warn('Trending ' + kind + ' unavailable', e); return null; }); };
+    const both = await Promise.all([get('add'), get('drop')]);
+    ctx.trending = { ts: Date.now(), add: both[0], drop: both[1] };
+    return ctx.trending;
+  }
+  function fmtCount(n){ return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n); }
+  function renderTrending(){
+    const el = document.getElementById('trending');
+    if(!el) return;
+    const t = ctx.trending;
+    if(!t){ el.innerHTML = ''; return; }
+    const kind = ctx.trendKind || 'add', list = (t[kind] || []).filter(function(x){ return ctx.players[x.player_id]; });
+    const rostered = new Set();
+    (ctx.lastRosters || []).forEach(function(r){ (r.players || []).forEach(function(pid){ rostered.add(pid); }); });
+    const mine = new Set(ctx.myRoster.players || []);
+    const onlyAvail = !!ctx.trendAvail;
+    const rows = list.filter(function(x){ return !onlyAvail || !rostered.has(x.player_id); }).slice(0, ctx.trendAll ? 25 : 8);
+    el.innerHTML = '<div class="section-title">Trending on Sleeper <span style="opacity:0.7;">— last 24 hours</span></div>' +
+      '<div class="card tr-card"><div class="tr-top"><div class="seg" role="tablist">' +
+        '<button type="button" data-trend-kind="add" aria-selected="' + (kind === 'add') + '">Most added</button>' +
+        '<button type="button" data-trend-kind="drop" aria-selected="' + (kind === 'drop') + '">Most dropped</button></div>' +
+        '<label class="tr-avail"><input type="checkbox" data-trend-avail' + (onlyAvail ? ' checked' : '') + '> Available only</label></div>' +
+      (t[kind] ? rows.map(function(x, i){
+        const pid = x.player_id, p = ctx.players[pid];
+        const status = mine.has(pid) ? '<span class="tr-badge mine">Yours</span>' : rostered.has(pid) ? '<span class="tr-badge taken">Rostered</span>' : '<span class="tr-badge free">Available</span>';
+        return '<div class="tr-row" data-trend-pid="' + escapeHTML(pid) + '" role="button" tabindex="0"><span class="tr-rank">' + (i + 1) + '</span>' + avatarTag(pid, 'tr-av') +
+          '<div class="tr-info"><div class="tr-name">' + escapeHTML(playerName(p)) + ' ' + injuryChip(p.injury_status) + '</div>' +
+          '<div class="tr-meta"><span style="color:' + posColor(p.position) + ';font-weight:700">' + escapeHTML(p.position) + '</span> · ' + escapeHTML(p.team || 'FA') + ' · ' +
+            (kind === 'add' ? '+' : '−') + fmtCount(x.count) + '</div></div>' +
+          '<div class="tr-proj"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div></div>' + status + '</div>';
+      }).join('') + (rows.length ? '' : '<div class="ad-none">None available in your league right now.</div>') +
+        ((t[kind].length > 8 && !ctx.trendAll) ? '<button type="button" class="fa-more" data-trend-all>Show all 25</button>' : '')
+      : '<div class="ad-none">Trending data didn’t load. It’ll try again next time you open Waivers.</div>') + '</div>';
+  }
+  document.addEventListener('click', function(e){
+    const k = e.target.closest && e.target.closest('[data-trend-kind]');
+    if(k){ ctx.trendKind = k.getAttribute('data-trend-kind'); ctx.trendAll = false; renderTrending(); return; }
+    if(e.target.closest && e.target.closest('[data-trend-all]')){ ctx.trendAll = true; renderTrending(); return; }
+    const row = e.target.closest && e.target.closest('[data-trend-pid], [data-fa-open], [data-player-id-open]');
+    if(!row || e.target.closest('[data-vs]')) return;
+    const pid = row.getAttribute('data-trend-pid') || row.getAttribute('data-fa-open') || row.getAttribute('data-player-id-open');
+    if((ctx.myRoster.players || []).indexOf(pid) !== -1){ const i = ctx.draftStarters.indexOf(pid); openFocus(pid, i === -1 ? null : i); }
+    else if(Object.keys(ctx.freeAgents).some(function(pos){ return (ctx.freeAgents[pos] || []).indexOf(pid) !== -1; })) openFreeAgent(pid);
+    else openAnalysis(pid, row);
+  });
+  document.addEventListener('change', function(e){
+    if(e.target.matches && e.target.matches('[data-trend-avail]')){ ctx.trendAvail = e.target.checked; renderTrending(); }
+  });
   // FLEX = the best available RB/WR/TE together, by projection.
   function faList(){
     if(ctx.faPos !== 'FLEX') return ctx.freeAgents[ctx.faPos] || [];
@@ -3405,6 +3578,9 @@
   }
 
   function renderFreeAgents(){
+    renderAddDrop(); renderTrending();
+    if(!ctx.ros) loadRos().then(function(r){ if(r && ctx.view === 'fa') renderAddDrop(); });
+    if(!ctx.trending || Date.now() - ctx.trending.ts > 30 * 60 * 1000) loadTrending().then(function(){ if(ctx.view === 'fa') renderTrending(); });
     els.faPosFilter.innerHTML = WAIVER_FILTERS.map(function(pos){
       const on = pos === ctx.faPos;
       return '<button class="pos-pill' + (on ? ' active' : '') + '" role="tab" aria-selected="' + on + '" data-fa-pos="' + pos + '" style="--pill-color:' + posColor(pos) + ';">' + pos + '</button>';
