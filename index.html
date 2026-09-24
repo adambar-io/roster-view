@@ -747,6 +747,35 @@
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
   .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
+  /* ---- floor/ceiling, matchup difficulty, bye planner ---- */
+  .rng{ font-size: 10.5px; font-weight: 600; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; margin-top: 1px; }
+  .rng.early{ font-style: italic; }
+  .dvp-chip{ display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 6px; white-space: nowrap; vertical-align: 1px;
+    background: var(--surface-2); color: var(--text-2); cursor: help; }
+  .dvp-chip.easy{ background: var(--accent-soft); color: var(--accent); }
+  .dvp-chip.hard{ background: var(--danger-soft); color: var(--danger); }
+  .dvp-chip.early{ background: none; box-shadow: inset 0 0 0 1px var(--hair); color: var(--text-3); }
+  .col-opp .dvp-chip{ display: block; width: fit-content; margin-top: 2px; }
+  .player-meta .dvp-chip{ white-space: normal; max-width: 100%; } /* narrow rows: wrap instead of pushing into the numbers */
+  .range-card{ background: var(--surface); border-radius: var(--radius); padding: 12px 16px; margin: 0 0 12px; box-shadow: var(--shadow); }
+  .rg-head{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .rg-basis{ font-size: 12px; color: var(--text-3); }
+  .rg-bar{ position: relative; height: 8px; border-radius: 999px; background: var(--surface-2); margin: 12px 0 8px; }
+  .rg-fill{ position: absolute; top: 0; bottom: 0; border-radius: 999px; background: color-mix(in srgb, var(--accent) 45%, transparent); }
+  .rg-proj{ position: absolute; top: -4px; width: 3px; height: 16px; margin-left: -1.5px; border-radius: 2px; background: var(--text); }
+  .rg-legend{ display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+  .rg-legend b{ color: var(--text); font-variant-numeric: tabular-nums; }
+  .dvp-line{ font-size: 13px; color: var(--text-2); margin: -4px 2px 14px; line-height: 1.5; }
+  .bye-plan{ margin-top: 22px; }
+  .bp-card{ padding: 6px 16px 12px; }
+  .bp-week{ display: grid; grid-template-columns: 70px 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--hair); font-size: 13.5px; }
+  .bp-week:first-child, .bp-all + .bp-week{ border-top: none; }
+  .bp-wk{ font-weight: 700; }
+  .bp-week.ok .bp-txt{ color: var(--text-3); }
+  .bp-week.bad .bp-wk, .bp-week.bad b{ color: var(--danger); }
+  .bp-all{ padding: 10px 0 4px; color: var(--accent); font-weight: 600; font-size: 13.5px; }
+  .bp-note{ font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
+
   /* ---- matchup card, opponent view, standings ---- */
   .mu-card{ display: block; width: 100%; text-align: left; border: none; font: inherit; color: var(--text); cursor: pointer; margin: 0 0 12px;
     padding: 14px 16px; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); -webkit-tap-highlight-color: transparent;
@@ -1138,6 +1167,7 @@
             <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
             <div id="bench-list"></div>
           </div>
+          <div class="bye-plan" id="bye-plan" hidden></div>
         </section>
 
         <section class="view" id="fa-view" style="display:none;">
@@ -1973,8 +2003,29 @@
       idx.forEach(function(i){ out[i] = null; });
       place(idx, chosen);
     });
-    return { starters: out.map(function(x){ return x || '0'; }), notes: notes, locked: locked };
+    // Late-game flex: same starters, same total. Put the latest kickoff in each flex slot, so if a late player is
+    // ruled out the flex can still be swapped for anyone eligible. Only swaps between a flex and a dedicated slot where
+    // both players fit both slots; never touches a locked player.
+    const lateFlex = [];
+    slots.forEach(function(label, fi){
+      const fp = out[fi];
+      if(!isFlexSlot(label) || !fp || locked.indexOf(fp) !== -1) return;
+      let best = { i: fi, t: kickoff(ctx.players[fp].team, ctx.week) || 0 };
+      slots.forEach(function(l2, di){
+        const dp = out[di];
+        if(di === fi || !dp || isFlexSlot(l2) || locked.indexOf(dp) !== -1) return;
+        if(!canFill(dp, label) || !canFill(fp, l2)) return;
+        const t = kickoff(ctx.players[dp].team, ctx.week) || 0;
+        if(t > best.t) best = { i: di, t: t };
+      });
+      if(best.i === fi) return;
+      const dp = out[best.i];
+      lateFlex.push({ flex: label, late: dp, lateT: best.t, early: fp, earlyT: kickoff(ctx.players[fp].team, ctx.week), slot: slots[best.i] });
+      out[fi] = dp; out[best.i] = fp;
+    });
+    return { starters: out.map(function(x){ return x || '0'; }), notes: notes, locked: locked, lateFlex: lateFlex };
   }
+  function kickText(t){ return t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'time TBD'; }
   // Flex slots currently holding a tight end (flagged on the row and in the optimizer note).
   function teInFlex(starters){
     return ctx.rosterPositions.map(function(l, i){ return i; }).filter(function(i){
@@ -1991,6 +2042,10 @@
     });
     teInFlex(res.starters).forEach(function(i){
       li.push('<span class="warn-txt">Heads-up: ' + nm(res.starters[i]) + ' (TE) is in your ' + escapeHTML(ctx.rosterPositions[i]) + '.</span>');
+    });
+    (res.lateFlex || []).forEach(function(m){
+      li.push('Late-game ' + escapeHTML(m.flex) + ': ' + nm(m.late) + ' (' + kickText(m.lateT) + ') in ' + escapeHTML(m.flex) + ', ' + nm(m.early) + ' (' + kickText(m.earlyT) + ') at ' + escapeHTML(m.slot) +
+        '. Same players and total; the ' + escapeHTML(m.flex) + ' stays swappable latest.');
     });
     if(res.locked.length) li.push('Locked (game started), left in place: ' + res.locked.map(nm).join(', ') + '.');
     if(!ctx.nfl || !ctx.nfl.kick) li.push('Kickoff times aren’t loaded yet, so no one is treated as locked.');
@@ -3087,13 +3142,13 @@
         '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + (ro ? '' : analyzeAttr(playerId)) + '>' +
         '<div class="player-info">' +
           '<div class="player-name">' + (ro ? escapeHTML(name) : analyzeName(playerId, name)) + byeChip + statusChip + newChip + '</div>' +
-          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + '</span> ' + depthChipHTML(playerId) + '</div>' +
+          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + ' ' + dvpChipHTML(playerId) + '</span> ' + depthChipHTML(playerId) + '</div>' +
           (keyStats ? '<div class="key-stats">' + keyStats + '</div>' : '') +
           signalsHTML(playerId, false) +
         '</div>' +
-        '<div class="col col-opp">' + oppOnly(p.team) + '</div>' +
+        '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(playerId, true) + '</div>' +
         '<div class="col col-snap">' + snapCell(playerId) + '</div>' +
-        '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div></div>' +
+        '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div>' + rangeCellHTML(playerId) + '</div>' +
         '<div class="stat-col"><div class="val">' + fmtPts(last) + '</div><div class="cap">last</div></div>' +
         '<div class="col col-avg">' + fmtPts(seasonAvgPts(playerId)) + '</div>' +
       '</div>';
@@ -3146,6 +3201,7 @@
     });
 
     renderLineupCompare();
+    renderByePlan();
     markSelected();
   }
   els.byeAlert.addEventListener('click', function(e){
@@ -3154,6 +3210,64 @@
     const i = Number(b.getAttribute('data-fix-slot')), pid = ctx.draftStarters[i];
     if(!pid || pid === '0') openEmptySlot(i); else openFocus(pid, i);
   });
+  // ---- bye-week planner: the next few weeks, can every starting slot be filled? ----
+  // A player is unavailable in a week if their team is on bye, or they have a not-startable status today
+  // (Sleeper's status; someone listed Out may be back sooner). Dedicated slots are filled first, then flex slots.
+  const PLAN_WEEKS = 4;
+  function byePlan(){
+    if(!ctx.nfl || !ctx.nfl.sched || !ctx.myRoster) return null;
+    const lastWeek = Math.min(ctx.nfl.sched_weeks || 18, 17), slots = ctx.rosterPositions;
+    const roster = (ctx.myRoster.players || []).filter(function(pid){ return ctx.players[pid]; });
+    const weeks = [];
+    for(let w = ctx.week + 1; w <= Math.min(ctx.week + PLAN_WEEKS, lastWeek); w++) weeks.push(w);
+    return weeks.map(function(w){
+      const out = {}, avail = [];
+      roster.forEach(function(pid){
+        const p = ctx.players[pid], m = matchup(p.team, w);
+        if(m && m.bye) out[pid] = 'bye';
+        else if(cantPlay(p.injury_status)) out[pid] = statusInfo(p.injury_status).label;
+        else avail.push(pid);
+      });
+      avail.sort(function(a, b){ return fantasyPositions(a).length - fantasyPositions(b).length; }); // single-position players first
+      const used = new Set(), short = [];
+      const take = function(i){
+        const c = avail.find(function(pid){ return !used.has(pid) && canFill(pid, slots[i]); });
+        if(c) used.add(c); else short.push(i);
+      };
+      slots.forEach(function(label, i){ if(!isFlexSlot(label)) take(i); });
+      slots.map(function(l, i){ return i; }).filter(function(i){ return isFlexSlot(slots[i]); })
+        .sort(function(x, y){ return FLEX_GROUPS[slots[x]].length - FLEX_GROUPS[slots[y]].length || x - y; }).forEach(take);
+      const byLabel = {};
+      short.forEach(function(i){ byLabel[slots[i]] = (byLabel[slots[i]] || 0) + 1; });
+      return { week: w, short: byLabel, out: out };
+    });
+  }
+  function renderByePlan(){
+    const el = document.getElementById('bye-plan');
+    if(!el) return;
+    const plan = byePlan();
+    if(!plan || !plan.length){ el.hidden = true; return; }
+    el.hidden = false;
+    const nm = function(pid){ return escapeHTML(playerName(ctx.players[pid])); };
+    const lines = plan.map(function(wk){
+      const labels = Object.keys(wk.short);
+      const byes = Object.keys(wk.out).filter(function(pid){ return wk.out[pid] === 'bye'; });
+      if(!labels.length){
+        return '<div class="bp-week ok"><span class="bp-wk">Week ' + wk.week + '</span><span class="bp-txt">Covered' +
+          (byes.length ? ' · on bye: ' + byes.map(nm).join(', ') : '') + '</span></div>';
+      }
+      const detail = labels.map(function(label){
+        const who = Object.keys(wk.out).filter(function(pid){ return canFill(pid, label); })
+          .map(function(pid){ return nm(pid) + ' (' + escapeHTML(wk.out[pid]) + ')'; });
+        return '<b>short ' + wk.short[label] + ' ' + escapeHTML(label) + '</b>' + (who.length ? ': ' + who.join(', ') : '');
+      }).join('; ');
+      return '<div class="bp-week bad"><span class="bp-wk">Week ' + wk.week + '</span><span class="bp-txt">' + detail + '</span></div>';
+    });
+    const bad = plan.filter(function(wk){ return Object.keys(wk.short).length; }).length;
+    el.innerHTML = '<div class="section-title">Bye-week planner <span style="opacity:0.7;">— weeks ' + plan[0].week + '–' + plan[plan.length - 1].week + '</span></div>' +
+      '<div class="card bp-card">' + (bad ? '' : '<div class="bp-all">No holes coming up: you can fill every starting slot.</div>') + lines.join('') +
+      '<div class="bp-note">Uses NFL byes and today’s injury statuses (someone listed Out may be back sooner).</div></div>';
+  }
   function emptyStarterSlots(){
     return ctx.rosterPositions.map(function(s, i){ return i; }).filter(function(i){ const pid = ctx.draftStarters[i]; return !pid || pid === '0'; });
   }
@@ -3312,14 +3426,14 @@
           '<img class="avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
           '<div class="player-info">' +
             '<div class="player-name">' + analyzeName(pid, playerName(p)) + injuryChip(p.injury_status) + '</div>' +
-            '<div class="player-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team) + '<span class="m-opp">' + matchupHTML(p.team) + '</span> ' + depthChipHTML(pid) + '</div>' +
+            '<div class="player-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team) + '<span class="m-opp">' + matchupHTML(p.team) + ' ' + dvpChipHTML(pid) + '</span> ' + depthChipHTML(pid) + '</div>' +
             faVsLine(pid, p.position) +
             signalsHTML(pid, true) +
           '</div>' +
-          '<div class="col col-opp">' + oppOnly(p.team) + '</div>' +
+          '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(pid, true) + '</div>' +
           '<div class="col col-snap">' + snapCell(pid) + '</div>' +
           '<div class="col col-tgt">' + (SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—') + '</div>' +
-          '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div></div>' +
+          '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div>' + rangeCellHTML(pid) + '</div>' +
           '<div class="col col-vs">' + faVsLine(pid, p.position).replace('class="fa-vs"', 'class="fa-vs-inline"') + '</div>' +
           '<div class="row-vs">' + vsBtn(pid) + '</div>' +
         '</div>';
@@ -3757,6 +3871,87 @@
     if(row && !(top.kind === 'player' && top.pid === row.getAttribute('data-open'))) openMax({ kind: 'player', pid: row.getAttribute('data-open') });
   });
 
+  // ---- floor / ceiling: a typical bad and good week from this season's games (league scoring) ----
+  // 6+ games: 20th and 80th percentile. 3-5 games: lowest and highest, marked "early". Under 3: not shown at all.
+  const RANGE_MIN_GAMES = 3, RANGE_FULL_GAMES = 6;
+  function weekRange(pid){
+    const h = ctx.history[pid];
+    if(!h) return null;
+    const pts = h.map(function(w){ return w.pts; }).filter(function(v){ return typeof v === 'number'; }).sort(function(a, b){ return a - b; });
+    const n = pts.length;
+    if(n < RANGE_MIN_GAMES) return { n: n, ok: false };
+    if(n < RANGE_FULL_GAMES) return { n: n, ok: true, early: true, floor: pts[0], ceil: pts[n - 1] };
+    const q = function(f){ const i = (n - 1) * f, lo = Math.floor(i), hi = Math.ceil(i); return pts[lo] + (pts[hi] - pts[lo]) * (i - lo); };
+    return { n: n, ok: true, early: false, floor: q(0.2), ceil: q(0.8) };
+  }
+  function rangeBasis(r){
+    if(!r) return '';
+    if(!r.ok) return 'Needs ' + RANGE_MIN_GAMES + '+ games (' + r.n + ' so far)';
+    return r.early ? 'Lowest and highest of ' + r.n + ' games (early, will settle)' : '20th–80th percentile of ' + r.n + ' games';
+  }
+  // Compact on rows: "8–19" under the projection.
+  function rangeCellHTML(pid){
+    const r = weekRange(pid);
+    if(!r || !r.ok) return '';
+    return '<div class="rng' + (r.early ? ' early' : '') + '" title="Typical week: ' + r.floor.toFixed(1) + ' to ' + r.ceil.toFixed(1) + ' pts. ' + rangeBasis(r) + '">' +
+      Math.round(r.floor) + '–' + Math.round(r.ceil) + '</div>';
+  }
+  // Player page: bad week — projection — good week on one bar.
+  function rangeDetailHTML(pid){
+    const r = weekRange(pid), proj = ctx.projections[pid];
+    if(!r) return '';
+    if(!r.ok) return '<div class="range-card"><div class="rg-head"><span class="eyebrow">Typical week</span><span class="rg-basis">' + rangeBasis(r) + '</span></div></div>';
+    const lo = Math.min(r.floor, typeof proj === 'number' ? proj : r.floor), hi = Math.max(r.ceil, typeof proj === 'number' ? proj : r.ceil);
+    const span = Math.max(hi - lo, 1), at = function(v){ return ((v - lo) / span * 100).toFixed(1) + '%'; };
+    return '<div class="range-card"><div class="rg-head"><span class="eyebrow">Typical week</span><span class="rg-basis">' + rangeBasis(r) + '</span></div>' +
+      '<div class="rg-bar"><div class="rg-fill" style="left:' + at(r.floor) + ';right:calc(100% - ' + at(r.ceil) + ')"></div>' +
+        (typeof proj === 'number' ? '<div class="rg-proj" style="left:' + at(proj) + '" title="This week’s projection"></div>' : '') + '</div>' +
+      '<div class="rg-legend"><span>Bad week <b>' + r.floor.toFixed(1) + '</b></span>' + (typeof proj === 'number' ? '<span class="rg-p">Proj <b>' + proj.toFixed(1) + '</b></span>' : '') +
+      '<span>Good week <b>' + r.ceil.toFixed(1) + '</b></span></div></div>';
+  }
+
+  // ---- matchup difficulty: points each defense allows to a position this season, in this league's scoring ----
+  // From nflverse.json dvp (raw stats allowed, summed; scoring is linear so the league's settings apply exactly).
+  // Rank 1 = most points allowed (easiest). Under DVP_MIN_GAMES games the ranking is shown greyed and labeled early.
+  const DVP_MIN_GAMES = 4, DVP_POS = ['QB', 'RB', 'WR', 'TE', 'K'];
+  let dvpMemo = {};
+  function dvpTable(pos){
+    const nfl = ctx.nfl;
+    if(!nfl || !nfl.dvp || !ctx.league) return null;
+    const key = (nfl.generated || '') + '|' + ctx.league.league_id + '|' + pos;
+    if(dvpMemo[key]) return dvpMemo[key];
+    const sc = ctx.league.scoring_settings || {};
+    const rows = Object.keys(nfl.dvp).map(function(t){
+      const d = nfl.dvp[t][pos];
+      return d && d.g ? { team: t, g: d.g, per: (calcPoints(d.s, sc) || 0) / d.g } : null;
+    }).filter(Boolean).sort(function(a, b){ return b.per - a.per; });
+    const out = {};
+    rows.forEach(function(r, i){ out[r.team] = { team: r.team, g: r.g, per: r.per, rank: i + 1, of: rows.length }; });
+    return (dvpMemo[key] = out);
+  }
+  function oppCode(team, week){ const m = matchup(team, week); return m && !m.bye ? m.text.split(' ').pop() : null; }
+  function ordinal(n){ const v = n % 100; return n + (v >= 11 && v <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] || 'th'); }
+  function dvpInfo(pid){
+    const p = ctx.players[pid];
+    if(!p || DVP_POS.indexOf(p.position) === -1) return null;
+    const opp = oppCode(p.team, ctx.week), t = dvpTable(p.position);
+    const e = t && opp && t[opp];
+    if(!e) return null;
+    const most = e.rank <= e.of / 2;
+    return Object.assign({ pos: p.position, early: e.g < DVP_MIN_GAMES, most: most, n: most ? e.rank : e.of - e.rank + 1,
+      tone: e.rank <= 8 ? 'easy' : e.rank > e.of - 8 ? 'hard' : 'mid' }, e);
+  }
+  function dvpLabel(i, short){ return ordinal(i.n) + '-' + (i.most ? 'most' : 'fewest') + (short ? '' : ' to ' + i.pos + 's'); }
+  function dvpSentence(i){
+    return i.team + ' has allowed the ' + dvpLabel(i, true) + ' points to ' + i.pos + 's in your scoring (' + i.per.toFixed(1) + ' per game over ' + i.g + ' game' + (i.g > 1 ? 's' : '') + ')' +
+      (i.early ? ': early season, so this ranking will move a lot' : '') + '.';
+  }
+  function dvpChipHTML(pid, short){
+    const i = dvpInfo(pid);
+    if(!i) return '';
+    return '<span class="dvp-chip ' + (i.early ? 'early' : i.tone) + '" title="' + escapeHTML(dvpSentence(i)) + '">' + dvpLabel(i, short) + (i.early && !short ? ' · ' + i.g + ' gm' + (i.g > 1 ? 's' : '') : '') + '</span>';
+  }
+
   // ---- head-to-head: pick any two players (VS buttons) and compare them stat by stat ----
   // Selection lives in a tray pinned to the bottom of the screen; picking the second player opens the comparison.
   ctx.h2h = [];
@@ -3843,7 +4038,7 @@
     const dots = function(){ return '…'; };
 
     // This week
-    const opp = function(pid){ const m = matchup(ctx.players[pid].team, ctx.week); return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : ''; };
+    const opp = function(pid){ const m = matchup(ctx.players[pid].team, ctx.week); return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span> ' + dvpChipHTML(pid) : ''; };
     const status = function(pid){ const st = effectiveStatus(pid); return st && st !== 'Healthy' ? injuryChip(st) : '<span class="dim">Healthy</span>'; };
     let week = row('Projected points', ctx.projections[a], ctx.projections[b], fmtPts, 'high') +
       textRow('Opponent', opp(a), opp(b)) + textRow('Status', status(a), status(b));
@@ -3857,6 +4052,13 @@
         row('Season average', seasonAvgPts(a), seasonAvgPts(b), fmtPts, 'high') +
         row('Season total', seasonTotalPts(a), seasonTotalPts(b), fmtPts, 'high') +
         row('Best game', best(a), best(b), fmtPts, 'high') +
+        (function(){
+          const ra = weekRange(a), rb = weekRange(b);
+          const v = function(r, k){ return r && r.ok ? r[k] : null; };
+          const early = (ra && ra.early) || (rb && rb.early), few = (ra && !ra.ok) || (rb && !rb.ok);
+          const tag = few ? ' (needs ' + RANGE_MIN_GAMES + '+ games)' : early ? ' (early)' : '';
+          return row('Typical bad week' + tag, v(ra, 'floor'), v(rb, 'floor'), fmtPts, 'high') + row('Typical good week' + tag, v(ra, 'ceil'), v(rb, 'ceil'), fmtPts, 'high');
+        })() +
         row('Games played', games(a), games(b), fmtStat, null);
 
     // Usage (nflverse)
@@ -4034,7 +4236,9 @@
         snaps.map(function(x, i){ return '<div class="bar"><span class="lbl">Wk ' + x.week + '</span><div class="track"><div class="fill snap" style="--i:' + i + ';width:' + (x.s * 100) + '%"></div></div><b>' + pct(x.s) + '</b></div>'; }).join('') + '</div>';
     }
     left += '</div>';
-    return byeCallouts([pid]) + hero + injuryDetailHTML(pid) + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
+    const dvp = dvpInfo(pid);
+    const context = rangeDetailHTML(pid) + (dvp ? '<div class="dvp-line"><span class="dvp-chip ' + (dvp.early ? 'early' : dvp.tone) + '">Matchup</span> ' + escapeHTML(dvpSentence(dvp)) + '</div>' : '');
+    return byeCallouts([pid]) + hero + injuryDetailHTML(pid) + (loading ? '' : context) + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
   }
 
   // The last two header cards depend on the position, so there's never a card that can't apply (no "snap %" for a kicker).

@@ -107,6 +107,20 @@
     ['no direction is neutral', f.h2hCompare(3, 1, fmt1, null), null],
   ].forEach(function(t){ check(t[0], t[1] === t[2], 'got ' + t[1]); });
 
+  // ---- 3b. floor / ceiling rules ----
+  section('Floor / ceiling: few games are handled honestly');
+  const rsrc = ['const RANGE_MIN_GAMES', 'function weekRange(', 'function ordinal('].map(extract).join('\n');
+  const hist = {};
+  const g = new Function('ctx', rsrc + '; return { weekRange, ordinal };')({ history: hist });
+  hist.two = [{ pts: 10 }, { pts: 20 }];
+  hist.four = [{ pts: 12 }, { pts: 3 }, { pts: 25 }, { pts: 9 }];
+  hist.ten = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function(v){ return { pts: v }; });
+  const two = g.weekRange('two'), four = g.weekRange('four'), ten = g.weekRange('ten');
+  check('2 games: no range shown', two && two.ok === false && two.n === 2);
+  check('4 games: lowest–highest, marked early', four.ok && four.early && four.floor === 3 && four.ceil === 25);
+  check('10 games: 20th–80th percentile', ten.ok && !ten.early && Math.abs(ten.floor - 2.8) < 1e-9 && Math.abs(ten.ceil - 8.2) < 1e-9, ten.floor + '–' + ten.ceil);
+  check('ordinals (1st, 2nd, 3rd, 11th, 22nd)', ['1st', '2nd', '3rd', '11th', '22nd'].join() === [1, 2, 3, 11, 22].map(g.ordinal).join());
+
   // ---- 4. injury statuses vs live Sleeper values ----
   section('Injury statuses: every live Sleeper value is known');
   try{
