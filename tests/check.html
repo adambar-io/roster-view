@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sleepa checks</title>
+<style>
+  :root{ --bg:#fff; --text:#111114; --muted:#5F5F6B; --ok:#1F9D5C; --bad:#D92D20; --hair:rgba(0,0,0,.08); }
+  @media (prefers-color-scheme: dark){ :root{ --bg:#0B0B0D; --text:#F5F5F7; --muted:#A1A1AA; --ok:#3DD68C; --bad:#FF5A4F; --hair:rgba(255,255,255,.08); } }
+  body{ margin: 0; padding: 24px 16px 60px; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, -apple-system, sans-serif; }
+  main{ max-width: 760px; margin: 0 auto; }
+  h1{ font-size: 22px; margin: 0 0 4px; } p{ color: var(--muted); margin: 0 0 18px; }
+  h2{ font-size: 15px; margin: 22px 0 6px; }
+  .row{ display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--hair); }
+  .row b{ flex-shrink: 0; width: 42px; } .ok b{ color: var(--ok); } .bad b{ color: var(--bad); }
+  .row span{ overflow-wrap: anywhere; }
+  #sum{ font-weight: 700; font-size: 16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>sleepa checks</h1>
+  <p>Runs the app's own functions, taken straight from <code>index.html</code>, against fixed cases and live Sleeper data.
+     Open after any change to scoring, the optimizer, head-to-head or injury statuses. Must be served over http(s)
+     (GitHub Pages: <code>/tests/check.html</code>).</p>
+  <div id="sum">Running…</div>
+  <div id="out"></div>
+</main>
+<script>
+(async function(){
+  const out = document.getElementById('out'); let pass = 0, fail = 0;
+  function section(t){ const h = document.createElement('h2'); h.textContent = t; out.appendChild(h); }
+  function check(name, ok, detail){
+    const d = document.createElement('div'); d.className = 'row ' + (ok ? 'ok' : 'bad');
+    d.innerHTML = '<b>' + (ok ? 'PASS' : 'FAIL') + '</b><span></span>'; d.lastChild.textContent = name + (detail ? ' — ' + detail : '');
+    out.appendChild(d); ok ? pass++ : fail++;
+  }
+
+  // ---- pull pieces of index.html by name (quote-aware brace matching) ----
+  const src = await (await fetch('../index.html', { cache: 'no-cache' })).text();
+  function extract(startToken){
+    const i = src.indexOf(startToken);
+    if(i === -1) throw new Error('not found in index.html: ' + startToken);
+    let depth = 0, q = null, seen = false;
+    for(let j = i; j < src.length; j++){
+      const c = src[j];
+      if(q){ if(c === '\\'){ j++; continue; } if(c === q) q = null; continue; }
+      if(c === '"' || c === "'" || c === '`'){ q = c; continue; }
+      if(c === '{' || c === '(' || c === '['){ depth++; seen = true; }
+      else if(c === '}' || c === ')' || c === ']'){ depth--; if(c === '}' && seen && depth === 0 && startToken.indexOf('function') === 0) return src.slice(i, j + 1); }
+      else if(c === ';' && depth === 0 && startToken.indexOf('const') === 0) return src.slice(i, j + 1);
+    }
+    throw new Error('unterminated: ' + startToken);
+  }
+  const code = ['const FLEX_PREFERENCE', 'const LOWER_IS_BETTER', 'const NEUTRAL_STAT', 'const INJURY_STATUS',
+    'function calcPoints(', 'function pickFlex(', 'function statDirection(', 'function h2hCompare(', 'function statusInfo(', 'function cantPlay(', 'function pct(']
+    .map(extract).join('\n');
+  const f = new Function(code + '; return { FLEX_PREFERENCE, calcPoints, pickFlex, statDirection, h2hCompare, statusInfo, cantPlay, pct };')();
+
+  // ---- 1. scoring math vs Sleeper's own pts_ppr (live) ----
+  section('Scoring: calcPoints reproduces Sleeper pts_ppr (default PPR scoring, last completed week)');
+  const S = { pass_yd:.04, pass_td:4, pass_int:-1, pass_2pt:2, rush_yd:.1, rush_td:6, rush_2pt:2, rec:1, rec_yd:.1, rec_td:6, rec_2pt:2,
+    fum_lost:-2, fgm_0_19:3, fgm_20_29:3, fgm_30_39:3, fgm_40_49:4, fgm_50p:5, fgmiss:-1, xpm:1, xpmiss:-1,
+    sack:1, int:2, fum_rec:2, def_td:6, safe:2, blk_kick:2, ff:1, def_st_td:6, def_st_ff:1, def_st_fum_rec:1, st_td:6, st_ff:1, st_fum_rec:1,
+    pts_allow_0:10, pts_allow_1_6:7, pts_allow_7_13:4, pts_allow_14_20:1, pts_allow_21_27:0, pts_allow_28_34:-1, pts_allow_35p:-4 };
+  try{
+    const state = await (await fetch('https://api.sleeper.app/v1/state/nfl')).json();
+    const week = Math.max(1, (state.week || 2) - 1);
+    const stats = await (await fetch('https://api.sleeper.app/v1/stats/nfl/regular/' + state.season + '/' + week)).json();
+    let n = 0, bad = [];
+    for(const pid in stats){
+      const s = stats[pid]; if(typeof s.pts_ppr !== 'number') continue; n++;
+      const mine = f.calcPoints(s, S);
+      if(Math.abs(mine - s.pts_ppr) > 0.05) bad.push(pid + ': ' + mine.toFixed(2) + ' vs ' + s.pts_ppr);
+    }
+    check(n + ' player-weeks (' + state.season + ' week ' + week + ')', n > 0 && !bad.length, bad.slice(0, 5).join('; '));
+  }catch(e){ check('live Sleeper stats reachable', false, e.message); }
+
+  // ---- 2. FLEX preference ----
+  section('Optimizer FLEX rule (RB +' + f.FLEX_PREFERENCE.RB_OVER_WR + ', TE +' + f.FLEX_PREFERENCE.TE_OVER_WR_RB + ')');
+  const c = function(pos, proj){ return { pid: pos + proj, pos: pos, proj: proj }; };
+  const run = function(cands){ const r = f.pickFlex(cands); return (r.pick ? r.pick.pid : 'none') + (r.over ? ' over ' + r.over.pid : ''); };
+  const R = f.FLEX_PREFERENCE.RB_OVER_WR, T = f.FLEX_PREFERENCE.TE_OVER_WR_RB;
+  [
+    ['close RB loses to WR', [c('WR', 11.3), c('RB', 11.3 + R - 0.4)], 'WR11.3 over RB' + (11.3 + R - 0.4)],
+    ['RB exactly at the margin wins', [c('WR', 11.3), c('RB', 11.3 + R)], 'RB' + (11.3 + R)],
+    ['TE short of margin loses', [c('WR', 10), c('RB', 10.5), c('TE', 10.5 + T - 0.2)], 'WR10 over TE' + (10.5 + T - 0.2)],
+    ['TE at the margin wins', [c('WR', 11), c('RB', 11.4), c('TE', 11.4 + T)], 'TE' + (11.4 + T)],
+    ['no WR: RB vs TE', [c('RB', 10), c('TE', 11)], 'RB10 over TE11'],
+    ['SUPER_FLEX QB on projection', [c('WR', 12), c('QB', 20)], 'QB20'],
+    ['only a TE', [c('TE', 8)], 'TE8'],
+    ['nobody available', [], 'none'],
+  ].forEach(function(t){ const got = run(t[1]); check(t[0], got === t[2], 'got ' + got + ', want ' + t[2]); });
+
+  // ---- 3. head-to-head directions and ties ----
+  section('Head-to-head: better / worse / tie');
+  [['pass_int', 'low'], ['pass_sack', 'low'], ['fum_lost', 'low'], ['rec_drop', 'low'], ['fgmiss_40_49', 'low'], ['pts_allow', 'low'],
+   ['int', 'high'], ['sack', 'high'], ['fum_rec', 'high'], ['rec', 'high'], ['rush_yd', 'high'], ['pts_allow_7_13', null]]
+    .forEach(function(t){ const got = f.statDirection(t[0]); check(t[0] + ' → ' + (t[1] || 'neutral'), got === t[1], 'got ' + got); });
+  const fmt1 = function(v){ return v.toFixed(1); };
+  [
+    ['higher wins', f.h2hCompare(10, 8, fmt1, 'high'), 'a'],
+    ['lower wins for interceptions', f.h2hCompare(3, 1, fmt1, 'low'), 'b'],
+    ['equal is a tie', f.h2hCompare(5, 5, fmt1, 'high'), null],
+    ['equal at display precision is a tie', f.h2hCompare(0.501, 0.504, f.pct, 'high'), null],
+    ['missing value is neutral', f.h2hCompare(null, 4, fmt1, 'high'), null],
+    ['no direction is neutral', f.h2hCompare(3, 1, fmt1, null), null],
+  ].forEach(function(t){ check(t[0], t[1] === t[2], 'got ' + t[1]); });
+
+  // ---- 4. injury statuses vs live Sleeper values ----
+  section('Injury statuses: every live Sleeper value is known');
+  try{
+    let players;
+    try{ players = (await (await fetch('../players.json', { cache: 'no-cache' })).json()).players; }
+    catch(e){ players = await (await fetch('https://api.sleeper.app/v1/players/nfl')).json(); }
+    const seen = {};
+    Object.keys(players).forEach(function(k){ const st = players[k].injury_status; if(st) seen[st] = (seen[st] || 0) + 1; });
+    Object.keys(seen).forEach(function(st){
+      const info = f.statusInfo(st);
+      const known = !!info && info.label && !(info.tone === 'warn' && st !== 'Questionable');
+      check(st + ' (' + seen[st] + ' players): ' + (info ? info.label : '?') + (f.cantPlay(st) ? ', not startable' : ', startable'), known,
+        known ? '' : 'unknown status: add it to INJURY_STATUS in index.html');
+    });
+    check('Questionable stays startable', !f.cantPlay('Questionable'));
+  }catch(e){ check('player list reachable', false, e.message); }
+
+  const sum = document.getElementById('sum');
+  sum.textContent = fail ? fail + ' failed, ' + pass + ' passed' : 'All ' + pass + ' checks passed';
+  sum.style.color = fail ? 'var(--bad)' : 'var(--ok)';
+})().catch(function(e){ document.getElementById('sum').textContent = 'Checks crashed: ' + e.message; });
+</script>
+</body>
+</html>

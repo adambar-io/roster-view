@@ -752,6 +752,7 @@
     background: var(--surface-3); color: var(--text-2); font: inherit; font-size: 11px; font-weight: 800; letter-spacing: .03em; cursor: pointer;
     -webkit-tap-highlight-color: transparent; transition: background .2s, color .2s, transform .25s var(--spring); }
   .vs-btn[hidden]{ display: none; }
+  .xbtn[hidden]{ display: none; } /* e.g. no full-page view for an empty slot */
   .vs-btn:active{ transform: scale(.88); }
   .vs-btn.on{ background: var(--accent); color: var(--on-accent); }
   .cand-acts{ display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -2980,13 +2981,7 @@
       .sort(function(a, b){ const pa = ctx.projections[a], pb = ctx.projections[b]; return (typeof pb === 'number' ? pb : -1) - (typeof pa === 'number' ? pa : -1); });
     const waiverPos = group.length > 1 && group.every(function(g){ return ['RB','WR','TE','QB'].indexOf(g) !== -1; }) ? 'FLEX' : group[0];
     els.candidatesList.innerHTML = bench.map(function(pid){
-      const p = ctx.players[pid];
-      return '<div class="cand-card">' +
-        '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
-        '<div class="cand-info"><div class="cand-name">' + analyzeName(pid, playerName(p)) + ' ' + injuryChip(p.injury_status) + '</div>' +
-        '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div></div>' +
-        candidateStatsHTML(pid) +
-        '<div class="cand-acts">' + vsBtn(pid) + '<button class="swap-btn" data-fill="' + escapeHTML(pid) + '">Add</button></div></div>';
+      return candCardHTML(pid, { acts: '<button class="swap-btn" data-fill="' + escapeHTML(pid) + '">Add</button>' });
     }).join('') || '<div class="empty-state">No bench players can play ' + escapeHTML(label) + '.<br><button class="quiet-btn" style="margin-top:12px" data-go-waivers="' + escapeHTML(waiverPos) + '">Find one on Waivers</button></div>';
     els.candidatesList.querySelectorAll('[data-fill]').forEach(function(btn){
       btn.addEventListener('click', function(){ swapIntoSlot(slotIndex, btn.getAttribute('data-fill')); });
@@ -3197,6 +3192,21 @@
     else closeFocus();
   }
 
+  // One player card for every "choose a player" list: swap / add-to-slot candidates, the free-agent panel's
+  // comparison cards and the player page's side cards. opts.acts = HTML for the right side (after the VS button);
+  // opts.current = highlighted; opts.open = the whole card opens that player's page (full-screen views), otherwise
+  // the photo and name do.
+  function candCardHTML(pid, opts){
+    opts = opts || {};
+    const p = ctx.players[pid];
+    const avatar = opts.open ? avatarTag(pid, 'cand-avatar')
+      : '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(pid)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>';
+    const name = opts.open ? escapeHTML(playerName(p)) : analyzeName(pid, playerName(p));
+    return '<div class="cand-card' + (opts.current ? ' is-current' : '') + '"' + (opts.open ? ' data-open="' + escapeHTML(pid) + '" style="cursor:pointer"' : '') + '>' + avatar +
+      '<div class="cand-info"><div class="cand-name">' + name + ' ' + injuryChip(p.injury_status) + '</div>' +
+      '<div class="cand-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div></div>' +
+      candidateStatsHTML(pid) + '<div class="cand-acts">' + vsBtn(pid) + (opts.acts || '') + '</div></div>';
+  }
   function candidateStatsHTML(pid){
     const proj = ctx.projections[pid];
     const last = lastGamePts(pid);
@@ -3384,17 +3394,7 @@
         return (typeof pb === 'number' ? pb : -1) - (typeof pa === 'number' ? pa : -1);
       });
     els.candidatesList.innerHTML = mine.map(function(id){
-      const mp = ctx.players[id];
-      return '' +
-        '<div class="cand-card' + (id === worst ? ' is-current' : '') + '">' +
-          '<img class="cand-avatar" src="' + escapeHTML(playerImageUrl(id)) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(mp.team) + '"' + analyzeAttr(id) + '>' +
-          '<div class="cand-info">' +
-            '<div class="cand-name">' + analyzeName(id, playerName(mp)) + ' ' + injuryChip(mp.injury_status) + '</div>' +
-            '<div class="cand-meta">' + escapeHTML(mp.position) + ' · ' + escapeHTML(mp.team || 'FA') + matchupHTML(mp.team) + '</div>' +
-          '</div>' +
-          candidateStatsHTML(id) +
-          '<div class="cand-acts">' + vsBtn(id) + (id === worst ? '<div class="current-tag">Lowest</div>' : '') + '</div>' +
-        '</div>';
+      return candCardHTML(id, { current: id === worst, acts: id === worst ? '<div class="current-tag">Lowest</div>' : '' });
     }).join('') || '<div class="empty-state">You have no ' + escapeHTML(p.position) + ' on your roster.</div>';
 
     showFocus();
@@ -3454,24 +3454,10 @@
 
     let html = '';
     candidates.forEach(function(pid){
-      const p = ctx.players[pid];
-      const cname = p.full_name || ((p.first_name || '') + ' ' + (p.last_name || ''));
-      const avatarUrl = playerImageUrl(pid);
       const isCurrentStarter = pid === occupant;
-      const statusChip = injuryChip(p.injury_status);
-
-      html += '' +
-        '<div class="cand-card' + (isCurrentStarter ? ' is-current' : '') + '">' +
-          '<img class="cand-avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(pid) + '>' +
-          '<div class="cand-info">' +
-            '<div class="cand-name">' + analyzeName(pid, cname) + ' ' + statusChip + '</div>' +
-            '<div class="cand-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') + matchupHTML(p.team) + '</div>' +
-          '</div>' +
-          candidateStatsHTML(pid) +
-          '<div class="cand-acts">' + vsBtn(pid) + (isCurrentStarter
-            ? '<div class="current-tag">Starting</div>'
-            : '<button class="swap-btn" data-swap-to="' + escapeHTML(pid) + '">Swap in</button>') + '</div>' +
-        '</div>';
+      html += candCardHTML(pid, { current: isCurrentStarter, acts: isCurrentStarter
+        ? '<div class="current-tag">Starting</div>'
+        : '<button class="swap-btn" data-swap-to="' + escapeHTML(pid) + '">Swap in</button>' });
     });
     if(!benchCandidates.length){ html += '<div class="empty-state">No bench players are eligible for this slot.</div>'; }
     els.candidatesList.innerHTML = html;
@@ -3627,6 +3613,12 @@
   const LOWER_IS_BETTER = /^(pass_int|pass_int_td|pass_sack|pass_sack_yds?|pass_inc|fum|fum_lost|rush_fum|rec_fum|rec_drop|rush_tkl_loss|rush_tkl_loss_yds?|fgmiss(_.+)?|xpmiss|pts_allow|yds_allow|def_(pass|rush)_yds?_allow|penalty|pen_yds?)$/;
   const NEUTRAL_STAT = /^pts_allow_\d/; // points-allowed buckets: how many games landed in each range
   function statDirection(key){ return NEUTRAL_STAT.test(key) ? null : LOWER_IS_BETTER.test(key) ? 'low' : 'high'; }
+  // Which side wins one head-to-head row: 'a', 'b', or null for a tie at display precision, a missing value, or a
+  // stat with no better direction.
+  function h2hCompare(va, vb, fmt, dir){
+    if(!dir || typeof va !== 'number' || typeof vb !== 'number' || fmt(va) === fmt(vb)) return null;
+    return (dir === 'high' ? va > vb : va < vb) ? 'a' : 'b';
+  }
 
   function h2hHTML(a, b){
     const pa = ctx.players[a], pb = ctx.players[b];
@@ -3638,11 +3630,8 @@
     function row(label, va, vb, fmt, dir){
       fmt = fmt || fmtStat;
       let ca = '', cb = '';
-      if(dir && typeof va === 'number' && typeof vb === 'number' && fmt(va) !== fmt(vb)){
-        const aWins = dir === 'high' ? va > vb : va < vb;
-        ca = aWins ? ' win' : ' lose'; cb = aWins ? ' lose' : ' win';
-        tally[aWins ? 'a' : 'b']++;
-      }
+      const winner = h2hCompare(va, vb, fmt, dir);
+      if(winner){ ca = winner === 'a' ? ' win' : ' lose'; cb = winner === 'a' ? ' lose' : ' win'; tally[winner]++; }
       return '<div class="h2h-row"><div class="hv' + ca + '">' + cell(va, fmt) + '</div><div class="hl">' + escapeHTML(label) +
         (dir === 'low' ? '<span class="h2h-low" title="Lower is better">lower is better</span>' : '') + '</div><div class="hv' + cb + '">' + cell(vb, fmt) + '</div></div>';
     }
@@ -3862,13 +3851,7 @@
   function maxSideHTML(pid){
     const p = ctx.players[pid];
     const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
-    function card(id, right, current){
-      const q = ctx.players[id];
-      return '<div class="cand-card' + (current ? ' is-current' : '') + '" data-open="' + escapeHTML(id) + '" style="cursor:pointer">' + avatarTag(id, 'cand-avatar') +
-        '<div class="cand-info"><div class="cand-name">' + escapeHTML(playerName(q)) + ' ' + injuryChip(q.injury_status) + '</div>' +
-        '<div class="cand-meta">' + escapeHTML(q.position || '') + ' · ' + escapeHTML(q.team || 'FA') + matchupHTML(q.team) + '</div></div>' +
-        candidateStatsHTML(id) + '<div class="cand-acts">' + vsBtn(id) + right + '</div></div>';
-    }
+    function card(id, right, current){ return candCardHTML(id, { acts: right, current: current, open: true }); }
     if(!onRoster){
       const worst = weakestRostered(p.position);
       const mine = (ctx.myRoster.players || []).filter(function(id){ return ctx.players[id] && ctx.players[id].position === p.position; })
