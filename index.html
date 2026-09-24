@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#E8E5DE" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0B0B0D" media="(prefers-color-scheme: dark)">
 <meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,16 +27,18 @@
   /* ============ design tokens ============
      Light is the base; dark applies when the OS is dark (unless the user picked Light) or when the user picked Dark.
      Keep the two dark blocks identical. Theme choice lives in localStorage 'rv-theme' ('system' | 'light' | 'dark'). */
+  /* Light = warm "stone and paper": no pure white, softer contrast between page and cards, warm charcoal text.
+     Accents are a shade deeper than dark mode's so they keep contrast on the warm surfaces. */
   :root{
-    --bg:#F5F5F7; --surface:#FFFFFF; --surface-2:#F0F0F3; --surface-3:#E6E6EB;
-    --text:#111114; --text-2:#5F5F6B; --text-3:#8E8E99; --hair:rgba(0,0,0,0.07);
-    --accent:#1F9D5C; --accent-soft:rgba(31,157,92,0.12); --on-accent:#FFFFFF;
-    --danger:#D92D20; --danger-soft:rgba(217,45,32,0.09);
-    --warn:#B7791F; --warn-soft:rgba(234,160,20,0.16);
-    --shadow:0 1px 2px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.05);
-    --shadow-lg:0 24px 60px rgba(0,0,0,0.18);
-    --scrim:rgba(20,20,24,0.35);
-    --pos-QB:#3B7BEA; --pos-RB:#1F9D5C; --pos-WR:#E08600; --pos-TE:#9B4DDB; --pos-K:#7C7C88; --pos-DEF:#0A9CC7;
+    --bg:#E8E5DE; --surface:#F4F2EC; --surface-2:#ECE9E1; --surface-3:#E0DCD2;
+    --text:#23221F; --text-2:#5C5950; --text-3:#8B877D; --hair:rgba(60,50,30,0.10);
+    --accent:#18814E; --accent-soft:rgba(24,129,78,0.12); --on-accent:#F6F4EE;
+    --danger:#C4321F; --danger-soft:rgba(196,50,31,0.10);
+    --warn:#A2670F; --warn-soft:rgba(200,140,30,0.17);
+    --shadow:0 1px 2px rgba(60,50,30,0.06), 0 8px 24px rgba(60,50,30,0.06);
+    --shadow-lg:0 24px 60px rgba(40,32,18,0.20);
+    --scrim:rgba(40,34,24,0.35);
+    --pos-QB:#2F6BD6; --pos-RB:#18814E; --pos-WR:#C2700A; --pos-TE:#8A44C8; --pos-K:#75726A; --pos-DEF:#0A86AB;
     --mark-body:#27272a; --mark-ear:#3f3f46; --mark-visor:#09090b;
     color-scheme: light;
   }
@@ -1476,7 +1478,7 @@
 
 
   // ---- theme: Auto (follow the device) / Light / Dark, remembered per browser ----
-  const THEME_BG = { light: '#F5F5F7', dark: '#0B0B0D' };
+  const THEME_BG = { light: '#E8E5DE', dark: '#0B0B0D' }; // keep in sync with --bg
   function applyTheme(t){
     if(t !== 'light' && t !== 'dark') t = 'system';
     try{ localStorage.setItem('rv-theme', t); }catch(e){ console.warn('Could not save theme preference', e); }
@@ -2449,6 +2451,7 @@
     const loadId = ctx.loadId = (ctx.loadId || 0) + 1;
     ctx.nfl = null;
     ctx.h2h = []; renderH2HTray();
+    ctx.seedCheck = null;
     const nflPromise = loadNflverse(ctx.season); // in parallel; never blocks the roster
     try{
       const dataReady = Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
@@ -2787,13 +2790,38 @@
   // Order: wins, then ties, then points for. Checked against real Sleeper playoff brackets (2025 leagues with
   // playoff_seed_type 0, with and without divisions): the playoff teams, byes and first-round pairings all match.
   // A league with another seeding setting was NOT reproduced by this order, so it's shown with a warning.
-  function standings(){
-    return (ctx.lastRosters || []).map(function(r){
+  function standings(){ return rankRosters(ctx.lastRosters || []); }
+  function rankRosters(rosters){
+    return rosters.map(function(r){
       const st = r.settings || {};
       return { id: r.roster_id, name: rosterName(r.roster_id), w: st.wins || 0, l: st.losses || 0, t: st.ties || 0,
         pf: (st.fpts || 0) + (st.fpts_decimal || 0) / 100, pa: (st.fpts_against || 0) + (st.fpts_against_decimal || 0) / 100,
-        div: st.division, mine: r.roster_id === ctx.myRoster.roster_id };
+        div: st.division, mine: !!ctx.myRoster && r.roster_id === ctx.myRoster.roster_id };
     }).sort(function(a, b){ return b.w - a.w || b.t - a.t || b.pf - a.pf; });
+  }
+  // A non-default seeding setting: replay this league's previous (finished) season with the same order and compare
+  // with Sleeper's real winners bracket (playoff teams + byes). Roster records of finished seasons equal the
+  // regular-season records (checked against week-by-week results), so 3 small requests are enough. Cached per league.
+  async function checkSeeding(){
+    const s = (ctx.league && ctx.league.settings) || {};
+    if(!s.playoff_seed_type) return 'default';
+    const prevId = ctx.league.previous_league_id;
+    if(!prevId) return 'none';
+    const key = 'rv-seedcheck:' + prevId + ':' + s.playoff_seed_type;
+    try{ const c = localStorage.getItem(key); if(c) return c; }catch(e){ console.warn(e); }
+    try{
+      const got = await Promise.all([fetchJSON(API + '/league/' + prevId), fetchJSON(API + '/league/' + prevId + '/rosters'), fetchJSON(API + '/league/' + prevId + '/winners_bracket')]);
+      const L = got[0], rosters = got[1], wb = got[2], ps = (L && L.settings) || {};
+      if(!L || L.status !== 'complete' || ps.playoff_seed_type !== s.playoff_seed_type || !Array.isArray(wb) || !wb.length || !ps.playoff_teams) return 'none';
+      const ids = function(round){ const set = new Set(); wb.filter(function(m){ return m.r === round; }).forEach(function(m){ [m.t1, m.t2].forEach(function(t){ if(typeof t === 'number') set.add(t); }); }); return set; };
+      const r1 = ids(1), r2 = ids(2), byes = new Set(Array.from(r2).filter(function(t){ return !r1.has(t); }));
+      const inBracket = new Set(Array.from(r1).concat(Array.from(byes)));
+      const order = rankRosters(rosters).map(function(r){ return r.id; }), top = order.slice(0, ps.playoff_teams);
+      const same = function(list, set){ return list.length === set.size && list.every(function(x){ return set.has(x); }); };
+      const result = same(top, inBracket) && same(top.slice(0, byes.size), byes) ? 'match' : 'mismatch';
+      try{ localStorage.setItem(key, result + '|' + L.season); }catch(e){ console.warn(e); }
+      return result + '|' + L.season;
+    }catch(e){ console.warn('Could not check playoff seeding', e); return 'unknown'; }
   }
   function renderLeague(){
     const mu = document.getElementById('league-mu');
@@ -2818,7 +2846,17 @@
     const notes = [];
     notes.push(n ? 'Top ' + n + ' of ' + rows.length + ' make the playoffs, starting week ' + (s.playoff_week_start || '?') + '.' : 'Playoff settings aren’t available for this league.');
     if(seedType === 0) notes.push('Ranked by record, then points for: Sleeper’s default, checked against real Sleeper playoff brackets.');
-    else notes.push('<b>Heads-up:</b> your league uses a different playoff seeding setting (' + seedType + '). I couldn’t confirm how Sleeper applies it, so the order and playoff line here may not match Sleeper’s.');
+    else {
+      const chk = String(ctx.seedCheck || ''), season = chk.split('|')[1];
+      if(!ctx.seedCheck){
+        notes.push('Checking your league’s playoff seeding setting against last season…');
+        checkSeeding().then(function(r){ ctx.seedCheck = r; if(ctx.view === 'league') renderLeague(); });
+      }
+      else if(chk.indexOf('match') === 0) notes.push('Ranked by record, then points for. Your league uses a non-default seeding setting, so I replayed your league’s ' + season + ' season with this order and it matched Sleeper’s actual playoff bracket (teams and byes).');
+      else notes.push('<b>Heads-up:</b> your league uses a different playoff seeding setting (' + seedType + ')' +
+        (chk.indexOf('mismatch') === 0 ? ' and this order didn’t reproduce your league’s ' + season + ' playoff bracket' : ' that I couldn’t check against a previous season') +
+        ', so the order and playoff line here may not match Sleeper’s.');
+    }
     if(divs) notes.push('Your league has divisions. Whether division winners are guaranteed a spot isn’t confirmed, so treat the line as approximate.');
     notes.push('No playoff odds: they’d need a season simulation, not a guess.');
     document.getElementById('st-note').innerHTML = notes.join(' ');
@@ -3536,6 +3574,7 @@
   // ---- add / drop: my weakest bench players next to the best available at the same position ----
   // Value = rest-of-season projected points in league scoring (bye weeks already excluded, so a good player on bye
   // this week isn't flagged). Recent form and floor/ceiling are shown alongside to judge more than one number.
+  const AD_MIN_GAIN = 15; // rest-of-season points before suggesting a swap (or 8% of the bench player's value)
   function addDropPositions(){ return ctx.faPos === 'FLEX' ? ['RB', 'WR', 'TE'] : [ctx.faPos]; }
   function renderAddDrop(){
     const el = document.getElementById('add-drop');
@@ -3572,10 +3611,11 @@
     const worst = bench[0], best = avail[0];
     let verdict = '';
     if(worst && best){
-      const d = val(best) - val(worst);
-      verdict = d > 5
+      // Only call it when it's worth roughly a point a week: small rest-of-season gaps are projection noise.
+      const d = val(best) - val(worst), bar = Math.max(AD_MIN_GAIN, val(worst) * 0.08);
+      verdict = d >= bar
         ? '<div class="ad-verdict up">Adding <b>' + escapeHTML(playerName(ctx.players[best])) + '</b> for <b>' + escapeHTML(playerName(ctx.players[worst])) + '</b> projects <b>+' + d.toFixed(0) + '</b> points over the rest of the season.</div>'
-        : '<div class="ad-verdict">Your bench ' + label + ' projects about as well as or better than what’s available (' + (d >= 0 ? '+' : '−') + Math.abs(d).toFixed(0) + ' pts rest of season).</div>';
+        : '<div class="ad-verdict">No clear upgrade: the best available ' + label + ' is within ' + Math.abs(d).toFixed(0) + ' pts of your weakest bench ' + label + ' over the rest of the season, which is inside projection noise.</div>';
     }
     el.innerHTML = '<div class="section-title">Add / drop · ' + escapeHTML(label) + ' <span style="opacity:0.7;">— rest-of-season outlook</span></div>' +
       '<div class="card ad-card">' + verdict +
