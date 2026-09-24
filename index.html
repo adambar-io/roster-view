@@ -1853,7 +1853,7 @@
     });
     Object.keys(dedicated).forEach(function(pos){
       const idx = dedicated[pos];
-      const chosen = pool.filter(function(pid){ return !used.has(pid) && ctx.players[pid].position === pos; }).sort(byProj).slice(0, idx.length);
+      const chosen = pool.filter(function(pid){ return !used.has(pid) && fantasyPositions(pid).indexOf(pos) !== -1; }).sort(byProj).slice(0, idx.length);
       chosen.forEach(function(pid){ used.add(pid); });
       place(idx, chosen);
     });
@@ -1863,8 +1863,8 @@
       .sort(function(x, y){ return FLEX_GROUPS[slots[x]].length - FLEX_GROUPS[slots[y]].length || x - y; })
       .forEach(function(i){
         const group = FLEX_GROUPS[slots[i]];
-        const cands = pool.filter(function(pid){ return !used.has(pid) && group.indexOf(ctx.players[pid].position) !== -1; }).sort(byProj)
-          .map(function(pid){ return { pid: pid, pos: ctx.players[pid].position, proj: ctx.projections[pid] }; });
+        const cands = pool.filter(function(pid){ return !used.has(pid) && canFill(pid, slots[i]); }).sort(byProj)
+          .map(function(pid){ return { pid: pid, pos: posInGroup(pid, group), proj: ctx.projections[pid] }; });
         const r = pickFlex(cands);
         if(!r.pick) return;
         out[i] = r.pick.pid; used.add(r.pick.pid);
@@ -2932,7 +2932,7 @@
     els.heroSlotNote.textContent = 'Bench players who can play ' + label + (group.length > 1 ? ' (' + group.join('/') + ')' : '') + ', best projection first.';
     els.focusSectionTitle.textContent = 'Add to ' + label;
     const starterSet = new Set(ctx.draftStarters.filter(function(x){ return x && x !== '0'; }));
-    const bench = (ctx.myRoster.players || []).filter(function(pid){ const p = ctx.players[pid]; return p && !starterSet.has(pid) && group.indexOf(p.position) !== -1; })
+    const bench = (ctx.myRoster.players || []).filter(function(pid){ return ctx.players[pid] && !starterSet.has(pid) && canFill(pid, label); })
       .sort(function(a, b){ const pa = ctx.projections[a], pb = ctx.projections[b]; return (typeof pb === 'number' ? pb : -1) - (typeof pa === 'number' ? pa : -1); });
     const waiverPos = group.length > 1 && group.every(function(g){ return ['RB','WR','TE','QB'].indexOf(g) !== -1; }) ? 'FLEX' : group[0];
     els.candidatesList.innerHTML = bench.map(function(pid){
@@ -3029,7 +3029,7 @@
       let best = null;
       ctx.rosterPositions.forEach(function(label, i){
         const g = FLEX_GROUPS[label];
-        if(!g || g.length < 2 || g.indexOf(p.position) === -1) return;
+        if(!g || g.length < 2 || !canFill(pid, label)) return;
         const occ = ctx.draftStarters[i], has = occ && occ !== '0' && ctx.players[occ];
         const proj = has ? (typeof ctx.projections[occ] === 'number' ? ctx.projections[occ] : 0) : -1;
         if(!best || proj < best.proj) best = { pid: has ? occ : null, proj: proj, slot: label };
@@ -3114,10 +3114,24 @@
     return [slotLabel || playerPos];
   }
 
-  function eligibleSlotIndexesForPosition(pos){
-    return ctx.rosterPositions.map(function(s, i){ return i; }).filter(function(i){
-      return groupForSlot(ctx.rosterPositions[i], pos).indexOf(pos) !== -1;
-    });
+  // Slot eligibility follows Sleeper's fantasy_positions, not position: IDP slots are DL / LB / DB while positions
+  // are DE / DT / CB / S, and some players are listed at two (e.g. an LB who is also DL). Falls back to position.
+  function fantasyPositions(pid){
+    const p = ctx.players[pid];
+    if(!p) return [];
+    return p.fantasy_positions && p.fantasy_positions.length ? p.fantasy_positions : [p.position];
+  }
+  function canFill(pid, slotLabel){
+    const g = groupForSlot(slotLabel, null);
+    return fantasyPositions(pid).some(function(x){ return g.indexOf(x) !== -1; });
+  }
+  // The position a player counts as in a given slot group (their main position if it's allowed there).
+  function posInGroup(pid, group){
+    const p = ctx.players[pid], fp = fantasyPositions(pid);
+    return group.indexOf(p.position) !== -1 ? p.position : (fp.find(function(x){ return group.indexOf(x) !== -1; }) || p.position);
+  }
+  function eligibleSlotIndexes(pid){
+    return ctx.rosterPositions.map(function(s, i){ return i; }).filter(function(i){ return canFill(pid, ctx.rosterPositions[i]); });
   }
 
   function swapIntoSlot(targetSlotIndex, newPid){
@@ -3354,7 +3368,7 @@
     if(slotIndexIfStarter !== null && slotIndexIfStarter !== undefined){
       slotIndex = slotIndexIfStarter;
     }else{
-      const eligible = eligibleSlotIndexesForPosition(player.position);
+      const eligible = eligibleSlotIndexes(playerId);
       if(!eligible.length){ slotIndex = null; }
       else{
         eligible.sort(function(a, b){
@@ -3386,8 +3400,7 @@
     const occupant = ctx.draftStarters[slotIndex];
     const starterSet = new Set(ctx.draftStarters.filter(function(x){ return x && x !== '0'; }));
     const benchCandidates = (ctx.myRoster.players || []).filter(function(pid){
-      const p = ctx.players[pid];
-      return p && !starterSet.has(pid) && group.indexOf(p.position) !== -1;
+      return ctx.players[pid] && !starterSet.has(pid) && canFill(pid, slotLabel);
     }).sort(function(a, b){
       const pa = ctx.projections[a]; const pb = ctx.projections[b];
       return (typeof pb === 'number' ? pb : -1) - (typeof pa === 'number' ? pa : -1);
@@ -3817,14 +3830,14 @@
     }
     let slot = ctx.draftStarters.indexOf(pid);
     if(slot === -1){
-      const elig = eligibleSlotIndexesForPosition(p.position);
+      const elig = eligibleSlotIndexes(pid);
       elig.sort(function(a, b){ return (ctx.projections[ctx.draftStarters[a]] || -1) - (ctx.projections[ctx.draftStarters[b]] || -1); });
       slot = elig.length ? elig[0] : -1;
     }
     if(slot === -1) return '<div class="pf-sec"><h3>Lineup</h3></div><div class="empty-state">No starting slot fits this position.</div>';
     const label = ctx.rosterPositions[slot], group = groupForSlot(label, p.position), occ = ctx.draftStarters[slot];
     const starterSet = new Set(ctx.draftStarters);
-    const bench = (ctx.myRoster.players || []).filter(function(id){ const q = ctx.players[id]; return q && !starterSet.has(id) && group.indexOf(q.position) !== -1; })
+    const bench = (ctx.myRoster.players || []).filter(function(id){ return ctx.players[id] && !starterSet.has(id) && canFill(id, label); })
       .sort(function(a, b){ return (ctx.projections[b] || -1) - (ctx.projections[a] || -1); });
     const list = (occ && occ !== '0' && ctx.players[occ] ? [occ] : []).concat(bench);
     return '<div class="pf-sec"><h3>Options for ' + escapeHTML(label) + '</h3><span class="eyebrow">Bench only</span></div>' +
