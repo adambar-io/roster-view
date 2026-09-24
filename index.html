@@ -1402,7 +1402,30 @@
     setStatus('Downloading the player list (first run only)…');
     return downloadPlayers();
   }
-  function lsSet(key, value){ localStorage.setItem(key, value); }
+  // localStorage write that survives a full quota: evict the oldest cached player stats and try again.
+  function lsSet(key, value){
+    try{ localStorage.setItem(key, value); return; }
+    catch(e){
+      if(!/quota/i.test(e.name + ' ' + e.message)) throw e;
+      console.warn('Storage full; clearing the oldest cached player stats');
+      pruneStatsCache(null, Math.floor(statsCacheKeys().length / 2)); // drop about half, oldest first
+      localStorage.setItem(key, value); // a second failure is reported by the caller
+    }
+  }
+  // Per-player season stats caches: keep the newest STATS_CACHE_MAX for this season, drop every other season.
+  const STATS_CACHE_MAX = 150;
+  function statsCacheKeys(){ try{ return Object.keys(localStorage).filter(function(k){ return k.indexOf(STATS_CACHE_PREFIX) === 0; }); }catch(e){ return []; } }
+  function pruneStatsCache(season, keep){
+    try{
+      let keys = statsCacheKeys();
+      if(season) keys = keys.filter(function(k){ if(!k.endsWith('_' + season)){ localStorage.removeItem(k); return false; } return true; });
+      const limit = keep == null ? STATS_CACHE_MAX : keep;
+      if(keys.length <= limit) return;
+      const ts = function(k){ try{ return (JSON.parse(localStorage.getItem(k)) || {}).ts || 0; }catch(e){ return 0; } };
+      keys.map(function(k){ return [k, ts(k)]; }).sort(function(a, b){ return a[1] - b[1]; })
+        .slice(0, keys.length - limit).forEach(function(x){ localStorage.removeItem(x[0]); });
+    }catch(e){ console.warn('Could not tidy the stats cache', e); }
+  }
   function readPlayersCache(){
     try{ const c = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null'); if(c && c.ts && c.data) return c; }catch(e){}
     return null;
@@ -1480,7 +1503,7 @@
       weeks = normalizeHistory(await fetchJSON(url));
       if(!weeks.length) console.warn('History parsed to 0 weeks for player', playerId, '— check response shape');
     }catch(e){ console.warn('History fetch failed for player', playerId, e); return cached ? cached.data : weeks; } // don't cache failures
-    try{ localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: weeks })); }catch(e){}
+    try{ lsSet(cacheKey, JSON.stringify({ ts: Date.now(), data: weeks })); }catch(e){ console.warn('Could not cache stats for', playerId, e); }
     return weeks;
   }
   // Real responses are an object keyed by week ("1".."18", null for unplayed/bye weeks); older write-ups
@@ -2209,6 +2232,7 @@
       const sb = document.querySelector('.setup-brand');
       sb.setAttribute('role', 'button'); sb.setAttribute('tabindex', '0'); sb.setAttribute('aria-label', 'sleepa: back to your lineup');
       renderFreshness();
+      pruneStatsCache(ctx.season);
       refreshData({ topUp: true }); // anything that came from a stale cache is re-fetched in the background
       // If the app-open transition is still playing, replay the row + total entrance once it lands so you actually see it.
       if(ctx.deferEntrance) ctx.afterVt = function(){
