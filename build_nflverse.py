@@ -120,16 +120,24 @@ def scoring_stats(stats):
     return {k: v for k, v in (stats or {}).items() if isinstance(v, (int, float)) and v and not NON_SCORING.match(k)}
 
 
-def build_dvp(season, through_week):
+def build_dvp(season, through_week, totals=None):
     """Raw stats each defense has allowed to each position, summed over completed weeks, plus games played.
-    Scoring is linear (stat x weight), so the app can score these sums with any league's settings."""
+    Scoring is linear (stat x weight), so the app can score these sums with any league's settings.
+    If totals is given, it is filled with each player's own season sums: {pid: {'g': games, 's': stats}}."""
     dvp = {}
     for week in range(1, through_week + 1):
-        print(f'  sleeper stats week {week} (defense vs position)', file=sys.stderr)
-        for e in sleeper_weekly('stats', season, week, DVP_POS):
+        print(f'  sleeper stats week {week} (defense vs position, season totals)', file=sys.stderr)
+        for e in sleeper_weekly('stats', season, week, DVP_POS + ('DEF',)):
             pos, opp = (e.get('player') or {}).get('position'), team(e.get('opponent') or '')
             st = scoring_stats(e.get('stats'))
-            if pos not in DVP_POS or not opp or not st:
+            if not st:
+                continue
+            if totals is not None:
+                t = totals.setdefault(str(e['player_id']), {'g': 0, 's': {}})
+                t['g'] += 1
+                for k, v in st.items():
+                    t['s'][k] = round(t['s'].get(k, 0) + v, 2)
+            if pos not in DVP_POS or not opp:
                 continue
             d = dvp.setdefault(opp, {}).setdefault(pos, {'g': [], 's': {}})
             if week not in d['g']:
@@ -370,11 +378,20 @@ def main():
     # which the app only loads for the waiver screen and the trade helper.
     state = json.loads(get('https://api.sleeper.app/v1/state/nfl'))
     cur_week = int(state.get('week') or 1) if str(state.get('season')) == str(args.season) else LAST_FANTASY_WEEK + 1
+    totals = {}
     try:
-        out['dvp'] = build_dvp(args.season, min(cur_week - 1, 18))
+        out['dvp'] = build_dvp(args.season, min(cur_week - 1, 18), totals)
         out['dvp_through'] = min(cur_week - 1, 18)
     except Exception as e:
         print('  (defense vs position unavailable:', e, ')', file=sys.stderr)
+    # season.json: every player's season stat totals + games, so the Players tab can filter/sort all players by
+    # season average without fetching each player's history.
+    season_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'season.json')
+    old_season = load_previous(season_path)
+    if totals and (old_season.get('players') != totals or old_season.get('through_week') != cur_week - 1):
+        with open(season_path, 'w', encoding='utf-8') as f:
+            json.dump({'season': args.season, 'generated': out['generated'], 'through_week': cur_week - 1, 'players': totals}, f, separators=(',', ':'))
+        print(f'Wrote {season_path} ({os.path.getsize(season_path):,} bytes, {len(totals):,} players).', file=sys.stderr)
     ros_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'ros.json')
     try:
         ros = build_ros(args.season, cur_week) if cur_week <= LAST_FANTASY_WEEK else {}
