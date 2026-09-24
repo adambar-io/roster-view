@@ -749,6 +749,53 @@
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
   .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
+  /* ---- matchup: side-by-side lineups ---- */
+  .vs-view{ max-width: 860px; margin: 0 auto; }
+  .vs-head{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 16px; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); }
+  .vs-team{ min-width: 0; } .vs-team.opp{ text-align: right; }
+  .vs-tn{ font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vs-tp{ font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  .vs-tp.up{ color: var(--accent); } .vs-tp.down{ color: var(--danger); }
+  .vs-ts{ font-size: 11.5px; color: var(--text-3); }
+  .vs-mid{ display: grid; justify-items: center; font-weight: 800; color: var(--text-3); font-size: 13px; } .vs-mid small{ font-weight: 600; font-size: 10.5px; }
+  .vs-sum{ margin: 10px 2px 12px; font-size: 13.5px; font-weight: 600; color: var(--text-2); text-align: center; }
+  .vs-sum.up{ color: var(--accent); } .vs-sum.down{ color: var(--danger); }
+  .vs-list{ background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 14px; }
+  .vs-row{ display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); align-items: stretch; border-top: 1px solid var(--hair); }
+  .vs-row:first-child{ border-top: none; }
+  .vs-slot{ display: grid; place-items: center; font-size: 11px; font-weight: 700; letter-spacing: .03em; color: var(--text-3); background: var(--surface-2); }
+  .vs-cell{ display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 10px 12px; min-height: 60px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .vs-cell.opp{ grid-template-columns: auto minmax(0, 1fr) 34px; text-align: right; }
+  .vs-cell.opp .vs-av{ order: 3; } .vs-cell.opp .vs-pts{ order: 1; } .vs-cell.opp .vs-who{ order: 2; }
+  .vs-cell.hole{ background: var(--danger-soft); }
+  .vs-cell.hole .vs-nm{ color: var(--danger); }
+  .vs-av{ width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+  .vs-who{ min-width: 0; }
+  .vs-nm{ font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vs-mt{ font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vs-mt .status-chip{ margin: 0 0 0 2px; }
+  .vs-pts{ font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; padding: 3px 6px; border-radius: 8px; }
+  .vs-pts.win{ color: var(--accent); background: var(--accent-soft); } .vs-pts.lose{ color: var(--danger); background: var(--danger-soft); }
+  .vs-benches{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 4px 14px 10px; margin-bottom: 10px; }
+  .vs-benches summary{ cursor: pointer; font-weight: 700; font-size: 14px; padding: 10px 0 6px; }
+  .vs-bench-cols{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .vs-bench-row{ display: flex; gap: 6px; align-items: baseline; font-size: 13px; padding: 6px 0; border-top: 1px solid var(--hair); cursor: pointer; }
+  .vs-bench-row span{ font-size: 10.5px; font-weight: 700; } .vs-bench-row b{ margin-left: auto; font-variant-numeric: tabular-nums; }
+  .vs-bench-row.dim{ color: var(--text-3); cursor: default; }
+  .vs-note{ font-size: 12px; color: var(--text-3); text-align: center; margin: 6px 0 24px; }
+  @media (max-width: 560px){
+    .vs-head{ padding: 12px; gap: 6px; } .vs-tp{ font-size: 26px; }
+    .vs-row{ grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr); }
+    .vs-cell{ grid-template-columns: minmax(0, 1fr) auto; padding: 8px; gap: 6px; min-height: 56px; }
+    .vs-cell.opp{ grid-template-columns: auto minmax(0, 1fr); padding: 8px; gap: 6px; min-height: 56px; }
+    .vs-nm{ white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; overflow-wrap: anywhere; }
+    .vs-av{ display: none; }
+    .vs-cell.opp .vs-pts{ order: 1; } .vs-cell.opp .vs-who{ order: 2; }
+    .vs-nm{ font-size: 13px; } .vs-pts{ font-size: 14px; padding: 2px 5px; }
+    .vs-slot{ font-size: 10px; }
+    .vs-bench-cols{ grid-template-columns: 1fr; gap: 4px; }
+  }
+
   /* ---- trade helper ---- */
   .trade-cta{ display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; border: none; font: inherit; color: var(--text);
     padding: 14px 16px; margin: 0 0 24px; cursor: pointer; }
@@ -2850,8 +2897,8 @@
     const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     const mine = dirty ? planTotal : sleeperTotal, d = mine - oppTotal;
     const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down';
-    return '<button type="button" class="mu-card" data-open-opp aria-label="This week’s matchup. Open ' + escapeHTML(mu.name) + '’s lineup">' +
-      '<div class="mu-head"><span class="eyebrow">Week ' + ctx.week + ' matchup · projected</span><span class="mu-link">Their lineup ›</span></div>' +
+    return '<button type="button" class="mu-card" data-open-opp aria-label="This week’s matchup. Compare your lineup with ' + escapeHTML(mu.name) + '’s">' +
+      '<div class="mu-head"><span class="eyebrow">Week ' + ctx.week + ' matchup · projected</span><span class="mu-link">Compare lineups ›</span></div>' +
       '<div class="mu-row">' +
         '<div class="mu-side"><div class="mu-name">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="mu-pts num' + tone + '">' + mine.toFixed(1) + '</div>' +
           (dirty ? '<div class="mu-sub">Your plan · Sleeper lineup ' + sleeperTotal.toFixed(1) + '</div>' : '<div class="mu-sub">Your Sleeper lineup</div>') + '</div>' +
@@ -2872,32 +2919,73 @@
     if(b && myMatchup()) openMax({ kind: 'opp' }, b);
   });
 
-  // Opponent's lineup, same rows as mine (read-only), with the holes called out.
+  // Matchup view: my lineup and my opponent's, slot by slot, side by side. Mine is my plan (it matches Sleeper when
+  // I haven't changed anything). The side projecting more in a slot is green, the other red; holes on either side
+  // (empty slot, bye, not startable) are called out.
+  function lineupHoles(starters){
+    const holes = [];
+    ctx.rosterPositions.forEach(function(label, i){
+      const pid = starters[i];
+      if(!pid || pid === '0' || !ctx.players[pid]){ holes.push({ i: i, text: 'the ' + escapeHTML(label) + ' slot is empty' }); return; }
+      const nm = escapeHTML(playerName(ctx.players[pid]));
+      if(isOnBye(pid)) holes.push({ i: i, text: nm + ' is on a bye' });
+      else { const st = effectiveStatus(pid); if(cantPlay(st)) holes.push({ i: i, text: nm + ' is ' + escapeHTML(statusInfo(st).label) }); }
+    });
+    return holes;
+  }
+  function vsCell(pid, side, tone, hole){
+    if(!pid || pid === '0' || !ctx.players[pid]){
+      return '<div class="vs-cell ' + side + ' hole"><div class="vs-who"><div class="vs-nm">Empty</div><div class="vs-mt">Nobody in this slot</div></div><div class="vs-pts">—</div></div>';
+    }
+    const p = ctx.players[pid], proj = ctx.projections[pid], m = matchup(p.team, ctx.week);
+    return '<div class="vs-cell ' + side + (hole ? ' hole' : '') + '" data-open="' + escapeHTML(pid) + '" role="button" tabindex="0">' +
+      avatarTag(pid, 'vs-av') +
+      '<div class="vs-who"><div class="vs-nm">' + escapeHTML(playerName(p)) + '</div>' +
+        '<div class="vs-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + (m ? ' · ' + (m.bye ? 'BYE' : escapeHTML(m.text)) : '') + ' ' + injuryChip(effectiveStatus(pid)) + '</div></div>' +
+      '<div class="vs-pts' + tone + '">' + fmtPts(proj) + '</div></div>';
+  }
   function oppHTML(){
     const mu = myMatchup();
     if(!mu) return '<div class="empty-state">No matchup this week.</div>';
-    const holes = [];
-    ctx.rosterPositions.forEach(function(label, i){
-      const pid = mu.starters[i];
-      if(!pid || pid === '0' || !ctx.players[pid]){ holes.push('the ' + escapeHTML(label) + ' slot is empty'); return; }
-      const nm = escapeHTML(playerName(ctx.players[pid]));
-      if(isOnBye(pid)) holes.push(nm + ' is on a bye');
-      else { const st = effectiveStatus(pid); if(cantPlay(st)) holes.push(nm + ' is ' + escapeHTML(statusInfo(st).label)); }
-    });
-    const oppTotal = sumProj(mu.starters), mine = sumProj(ctx.draftStarters);
-    const starterSet = new Set(mu.starters);
-    const bench = mu.players.filter(function(pid){ return !starterSet.has(pid) && ctx.players[pid]; })
-      .sort(function(a, b){ return (ctx.projections[b] || -1) - (ctx.projections[a] || -1); });
-    return '<div class="opp-view">' +
-      '<div class="opp-head"><div><div class="eyebrow">Week ' + ctx.week + ' opponent</div><h2>' + escapeHTML(mu.name) + '</h2>' +
-        '<div class="opp-sub">Projected <b>' + oppTotal.toFixed(1) + '</b> · you ' + mine.toFixed(1) + ' (' + marginText(mine - oppTotal) + ')</div></div></div>' +
-      (holes.length
-        ? '<div class="callout"><b>' + holes.length + ' hole' + (holes.length > 1 ? 's' : '') + ' in their lineup:</b>&nbsp;' + holes.join('; ') + '.</div>'
-        : '<div class="callout ok"><b>No holes:</b>&nbsp;every slot has an active player.</div>') +
-      '<div class="section-title">Starters</div><div class="rows-card">' +
-        ctx.rosterPositions.map(function(label, i){ return playerRow(mu.starters[i], label, i, { readonly: true }); }).join('') + '</div>' +
-      (bench.length ? '<details class="opp-bench"><summary>Bench (' + bench.length + ')</summary><div class="rows-card">' +
-        bench.map(function(pid){ return playerRow(pid, ctx.players[pid].position, undefined, { readonly: true }); }).join('') + '</div></details>' : '') +
+    const mine = ctx.draftStarters, theirs = mu.starters;
+    const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    const myTotal = sumProj(mine), oppTotal = sumProj(theirs), d = myTotal - oppTotal;
+    const myHoles = lineupHoles(mine), oppHoles = lineupHoles(theirs);
+    const holeSet = function(h){ const o = {}; h.forEach(function(x){ o[x.i] = true; }); return o; };
+    const mh = holeSet(myHoles), oh = holeSet(oppHoles);
+    let myWins = 0, oppWins = 0;
+    const rows = ctx.rosterPositions.map(function(label, i){
+      const a = mine[i], b = theirs[i];
+      const pa = a && a !== '0' ? ctx.projections[a] : 0, pb = b && b !== '0' ? ctx.projections[b] : 0;
+      const w = h2hCompare(typeof pa === 'number' ? pa : 0, typeof pb === 'number' ? pb : 0, fmtPts, 'high');
+      if(w === 'a') myWins++; else if(w === 'b') oppWins++;
+      return '<div class="vs-row">' + vsCell(a, 'me', w === 'a' ? ' win' : w === 'b' ? ' lose' : '', mh[i]) +
+        '<div class="vs-slot">' + escapeHTML(label) + '</div>' + vsCell(b, 'opp', w === 'b' ? ' win' : w === 'a' ? ' lose' : '', oh[i]) + '</div>';
+    }).join('');
+    const holesCallout = function(who, h){
+      return h.length ? '<div class="callout"><b>' + who + ': ' + h.length + ' hole' + (h.length > 1 ? 's' : '') + '</b>&nbsp;' + h.map(function(x){ return x.text; }).join('; ') + '.</div>' : '';
+    };
+    const bench = function(roster, starters){
+      const set = new Set(starters);
+      return (roster || []).filter(function(pid){ return !set.has(pid) && ctx.players[pid]; })
+        .sort(function(x, y){ return (ctx.projections[y] || -1) - (ctx.projections[x] || -1); })
+        .map(function(pid){ const p = ctx.players[pid]; return '<div class="vs-bench-row" data-open="' + escapeHTML(pid) + '"><span style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span> ' + escapeHTML(playerName(p)) + '<b>' + fmtPts(ctx.projections[pid]) + '</b></div>'; })
+        .join('') || '<div class="vs-bench-row dim">Empty</div>';
+    };
+    const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down';
+    return '<div class="vs-view">' +
+      '<div class="vs-head">' +
+        '<div class="vs-team me"><div class="vs-tn">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="vs-tp num' + tone + '">' + myTotal.toFixed(1) + '</div>' +
+          '<div class="vs-ts">' + (dirty ? 'Your plan · Sleeper ' + sumProj(ctx.originalStarters).toFixed(1) : 'Your Sleeper lineup') + '</div></div>' +
+        '<div class="vs-mid"><span>vs</span><small>Wk ' + ctx.week + '</small></div>' +
+        '<div class="vs-team opp"><div class="vs-tn">' + escapeHTML(mu.name) + '</div><div class="vs-tp num">' + oppTotal.toFixed(1) + '</div><div class="vs-ts">Their Sleeper lineup</div></div>' +
+      '</div>' +
+      '<div class="vs-sum' + tone + '">' + (Math.abs(d) < 0.05 ? 'Dead even' : 'You’re projected ' + marginText(d)) + ' · you win ' + myWins + ' of ' + ctx.rosterPositions.length + ' slots, they win ' + oppWins + '</div>' +
+      holesCallout('You', myHoles) + holesCallout(escapeHTML(mu.name), oppHoles) +
+      '<div class="vs-list">' + rows + '</div>' +
+      '<details class="vs-benches"><summary>Benches</summary><div class="vs-bench-cols"><div><div class="eyebrow">Yours</div>' + bench(ctx.myRoster.players, mine) + '</div>' +
+        '<div><div class="eyebrow">Theirs</div>' + bench(mu.players, theirs) + '</div></div></details>' +
+      '<p class="vs-note">Projections in your league’s scoring. Tap a player for their page.</p>' +
     '</div>';
   }
 
@@ -4557,7 +4645,7 @@
   function maxOpen(){ return !maxEl.hidden; }
   function maxTitleFor(e){
     if(e.kind === 'h2h') return lastName(e.pids[0]) + ' vs ' + lastName(e.pids[1]);
-    if(e.kind === 'opp'){ const mu = myMatchup(); return mu ? mu.name : 'Opponent'; }
+    if(e.kind === 'opp'){ const mu = myMatchup(); return mu ? 'You vs ' + mu.name : 'Matchup'; }
     if(e.kind === 'trade') return 'Trade helper';
     return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Players · full view' : playerName(ctx.players[e.pid]);
   }
