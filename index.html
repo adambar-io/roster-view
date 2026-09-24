@@ -938,6 +938,10 @@
     .cand-acts{ grid-area: act; align-self: center; gap: 6px; }
   }
 
+  /* remembered login: while opening, show only the brand and "Opening your team…" */
+  .auto-open .setup .field, .auto-open .setup #load-btn, .auto-open .setup .sub{ visibility: hidden; }
+  .auto-open .setup .status{ font-weight: 600; color: var(--text); }
+
   /* the logo is a home button */
   [data-home][role="button"], .home-btn{ cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
   [data-home][role="button"]{ border-radius: 12px; transition: transform .3s var(--spring), opacity .2s; }
@@ -1250,6 +1254,7 @@
               <div class="set-row"><span>League</span><b id="set-league">—</b></div>
               <div class="set-row"><span>Season · week</span><b id="set-week">—</b></div>
               <button class="quiet-btn" id="back-btn">Use a different Sleeper account</button>
+              <p class="set-sub" style="margin:10px 0 0">sleepa remembers your username and league on this device and opens straight to your team. Switch leagues above; this button signs out.</p>
             </div>
             <div class="card set-card"><h3>Data</h3><div class="set-data" data-status></div></div>
             <div class="card set-card"><h3>About sleepa</h3><p class="set-sub" style="margin:0">Read only. Lineup changes here are a plan; nothing is sent to Sleeper. Stats and projections come from Sleeper, scored with your league's settings. Opponents, snap share, target share and depth charts come from nflverse.</p><p class="disclaimer">sleepa is an unofficial fan-made companion and isn't affiliated with or endorsed by Sleeper.</p></div>
@@ -1903,6 +1908,8 @@
   });
 
   els.backBtn.addEventListener('click', function(){
+    forgetLogin();
+    els.username.value = '';
     switchScreens('exit', function(){ // the app shrinks away and the logo flies back
       els.rosterScreen.style.display = 'none';
       document.getElementById('setup-wrap').style.display = '';
@@ -1913,6 +1920,83 @@
       window.scrollTo(0, 0);
     });
   });
+
+  // ---- saved draft lineup: kept per league across closing the app; cleared when the week or the Sleeper lineup changes ----
+  function draftKey(){ return 'rv-draft:' + ctx.league.league_id; }
+  function saveDraft(){
+    if(!ctx.league || !ctx.originalStarters || !ctx.draftStarters) return;
+    const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    try{
+      if(!dirty) localStorage.removeItem(draftKey());
+      else lsSet(draftKey(), JSON.stringify({ week: ctx.week, season: ctx.season, sleeper: ctx.originalStarters, draft: ctx.draftStarters, ts: Date.now() }));
+    }catch(e){ console.warn('Could not save your lineup plan', e); }
+  }
+  // Called on load. Returns a message to show (restored or why it was cleared), or '' when nothing was saved.
+  function restoreDraft(){
+    let saved = null;
+    try{ saved = JSON.parse(localStorage.getItem(draftKey()) || 'null'); }catch(e){ console.warn('Saved lineup plan unreadable', e); }
+    if(!saved || !Array.isArray(saved.draft)) return '';
+    const clear = function(msg){ try{ localStorage.removeItem(draftKey()); }catch(e){ console.warn(e); } return msg; };
+    if(saved.week !== ctx.week || saved.season !== ctx.season) return clear('<b>New week:</b> your saved lineup changes from week ' + saved.week + ' were cleared.');
+    if(JSON.stringify(saved.sleeper) !== JSON.stringify(ctx.originalStarters)) return clear('<b>Your lineup changed in Sleeper</b> since you planned, so your saved changes were cleared.');
+    if(saved.draft.length !== ctx.originalStarters.length) return clear('<b>Your league’s lineup slots changed</b>, so your saved changes were cleared.');
+    const onRoster = new Set(ctx.myRoster.players || []);
+    ctx.draftStarters = saved.draft.map(function(pid){ return pid && pid !== '0' && !onRoster.has(pid) ? '0' : pid; });
+    const n = ctx.draftStarters.filter(function(pid, i){ return pid !== ctx.originalStarters[i]; }).length;
+    return n ? '<b>Welcome back:</b> your planned lineup (' + n + ' change' + (n > 1 ? 's' : '') + ') is still here. Reset goes back to your Sleeper lineup.' : '';
+  }
+
+  // ---- remember the last username + league: open straight to the team next time ----
+  const LAST_KEY = 'rv-last';
+  function rememberLogin(leagueId){
+    const username = (els.username.value || '').trim() || ctx.username;
+    try{ if(username && leagueId) localStorage.setItem(LAST_KEY, JSON.stringify({ username: username, leagueId: leagueId })); }
+    catch(e){ console.warn('Could not remember your login', e); }
+  }
+  function forgetLogin(){ try{ localStorage.removeItem(LAST_KEY); }catch(e){ console.warn(e); } }
+  async function autoOpen(){
+    let last = null;
+    try{ last = JSON.parse(localStorage.getItem(LAST_KEY) || 'null'); }catch(e){ console.warn('Saved login unreadable', e); }
+    if(!last || !last.username || !last.leagueId) return;
+    els.username.value = last.username;
+    document.documentElement.classList.add('auto-open');
+    setStatus('Opening your team…');
+    setBusy(true);
+    try{
+      let user, state;
+      try{ [user, state] = await Promise.all([resolveUser(last.username), fetchJSON(API + '/state/nfl').catch(function(){ return null; })]); }
+      catch(e){ e.userMessage = 'Couldn’t reach Sleeper.'; throw e; }
+      if(!user || !user.user_id){ const e = new Error('saved user gone'); e.userMessage = 'The saved Sleeper user “' + last.username + '” wasn’t found.'; e.notFound = true; throw e; }
+      ctx.userId = user.user_id; ctx.username = user.display_name || last.username;
+      ctx.season = state && Number(state.season) ? Number(state.season) : currentSeasonGuess();
+      let leagues = await fetchLeagues(ctx.userId, ctx.season);
+      if(!leagues.some(function(l){ return l.league_id === last.leagueId; })){
+        const prev = await fetchLeagues(ctx.userId, ctx.season - 1).catch(function(){ return []; });
+        if(prev.some(function(l){ return l.league_id === last.leagueId; })){ ctx.season -= 1; leagues = prev; }
+      }
+      ctx.pendingLeagues = leagues;
+      els.leagueSelect.innerHTML = leagues.map(function(l){ return '<option value="' + l.league_id + '">' + escapeHTML(l.name) + '</option>'; }).join('');
+      els.leagueField.style.display = leagues.length ? 'block' : 'none';
+      els.loadBtn.textContent = leagues.length ? 'View team' : 'Load teams';
+      if(!leagues.some(function(l){ return l.league_id === last.leagueId; })){
+        const e = new Error('saved league gone'); e.userMessage = 'Your saved league isn’t in your leagues anymore. Pick one below.'; e.notFound = true; throw e;
+      }
+      els.leagueSelect.value = last.leagueId;
+      setStatus('');
+      document.documentElement.classList.remove('auto-open');
+      setBusy(false);
+      await loadEverything(last.leagueId);
+    }catch(err){
+      console.warn('Auto-open failed', err);
+      document.documentElement.classList.remove('auto-open');
+      setStatus('');
+      if(err.notFound) setError(err.userMessage);
+      else setError(whyFailed(err) + ' Check your connection and try again.', autoOpen);
+    }finally{
+      document.documentElement.classList.remove('auto-open');
+      setBusy(false);
+    }
+  }
 
   // ---- the logo goes home: the Lineup page exactly as you left it (plan, swaps, compare state, loaded data) ----
   function goHome(fromEl){
@@ -2389,6 +2473,8 @@
       ctx.originalStarters = (myRoster.starters || []).slice();
       while(ctx.originalStarters.length < ctx.rosterPositions.length) ctx.originalStarters.push('0');
       ctx.draftStarters = ctx.originalStarters.slice();
+      hideOptNote();
+      const draftMsg = restoreDraft();
 
       setTeamHeader(users);
 
@@ -2420,6 +2506,8 @@
       setView('roster');
       renderStatus();
       setStatus('');
+      if(draftMsg) showOptNote('<span class="on-txt">' + draftMsg + '</span>', null);
+      rememberLogin(leagueId);
       ctx.updatedAt = ctx.lastRefresh = Date.now(); ctx.refreshFailed = false;
       const sb = document.querySelector('.setup-brand');
       sb.setAttribute('role', 'button'); sb.setAttribute('tabindex', '0'); sb.setAttribute('aria-label', 'sleepa: back to your lineup');
@@ -2505,6 +2593,7 @@
         rerenderEverything();
         if(!ctx.focus) selectDefaultFocus();
       }
+      if(ctx.draftNote){ showOptNote('<span class="on-txt">' + ctx.draftNote + '</span>', null); ctx.draftNote = null; }
     }catch(e){
       failed = true;
       console.warn('Refresh failed; showing the last data', e);
@@ -2536,7 +2625,15 @@
     const layoutChanged = JSON.stringify(positions) !== JSON.stringify(ctx.rosterPositions);
     ctx.league = bundle.league; ctx.myRoster = my; ctx.lastRosters = bundle.rosters; ctx.users = bundle.users; ctx.rosterPositions = positions;
     if(weekRolled){ ctx.week = bundle.week; ctx.weekRolled = true; }
-    if(!dirty || weekRolled || layoutChanged){ ctx.draftStarters = orig.slice(); if(dirty) hideOptNote(); }
+    const sleeperChanged = JSON.stringify(orig) !== JSON.stringify(ctx.originalStarters);
+    if(!dirty || weekRolled || layoutChanged || sleeperChanged){
+      ctx.draftStarters = orig.slice();
+      if(dirty){
+        ctx.draftNote = weekRolled ? '<b>New week:</b> your planned lineup changes from week ' + (bundle.week - 1) + ' were cleared.'
+          : sleeperChanged ? '<b>Your lineup changed in Sleeper</b>, so your planned changes were cleared.'
+          : '<b>Your league’s lineup slots changed</b>, so your planned changes were cleared.';
+      }
+    }
     else {
       const onRoster = new Set(my.players || []);
       ctx.draftStarters = ctx.draftStarters.map(function(pid){ return pid && pid !== '0' && !onRoster.has(pid) ? '0' : pid; });
@@ -2981,6 +3078,7 @@
   // Summary cards: projected total, change vs the Sleeper lineup, who's actually playing, record.
   function renderLineupCompare(){
     renderMatchupCard();
+    saveDraft();
     const isDirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     els.resetBtn.classList.toggle('is-hidden', !isDirty);
     els.compareBtn.classList.toggle('is-hidden', !isDirty);
@@ -4458,6 +4556,7 @@
       }).join('') + (bench.length ? '' : '<div class="empty-state">No bench players fit this slot.</div>');
   }
 
+  autoOpen(); // remembered login: straight to the team
 })();
 </script>
 
