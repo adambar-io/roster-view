@@ -769,7 +769,8 @@
   .seg{ display: inline-flex; padding: 3px; border-radius: 999px; background: var(--surface-2); }
   .seg button{ border: none; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-2); padding: 6px 12px; min-height: 32px; border-radius: 999px; cursor: pointer; }
   .seg button[aria-selected="true"]{ background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
-  .tr-avail{ display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; min-height: 32px; }
+  .tr-avail{ display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; min-height: 32px; white-space: nowrap; }
+  .tr-avail input{ width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; flex: none; accent-color: var(--accent); } /* not the text-input style */
   .tr-row{ display: grid; grid-template-columns: 18px 36px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--hair); cursor: pointer; }
   .tr-rank{ font-size: 12px; color: var(--text-3); text-align: right; font-variant-numeric: tabular-nums; }
   .tr-av{ width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
