@@ -198,8 +198,9 @@
   .key-stats .kv{ color: var(--text-3); }
 
   .status-chip{ font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
-  .status-chip.Q{ background: var(--warn-soft); color: var(--warn); }
-  .status-chip.O, .status-chip.D, .status-chip.I, .status-chip.P, .status-chip.S{ background: var(--danger-soft); color: var(--danger); }
+  .status-chip.st-warn{ background: var(--warn-soft); color: var(--warn); }
+  .status-chip.st-doubt{ background: color-mix(in srgb, var(--danger) 10%, var(--warn-soft)); color: color-mix(in srgb, var(--danger) 60%, var(--warn)); }
+  .status-chip.st-out{ background: var(--danger-soft); color: var(--danger); }
   .status-chip.new-tag{ background: var(--accent-soft); color: var(--accent); }
   .status-chip .chip-short{ display: none; }
 
@@ -1753,8 +1754,7 @@
   //    or a TE at least TE_OVER_WR_RB more than the best WR or RB. Positions outside RB/WR/TE that a flex allows
   //    (QB in SUPER_FLEX, IDP) compete on projection alone.
   const FLEX_PREFERENCE = { RB_OVER_WR: 1.0, TE_OVER_WR_RB: 1.5 }; // points; adjust here
-  // Not startable: Out, IR, Doubtful, PUP, suspended (Questionable is fine), on bye, or no projection.
-  const OPT_SKIP = /^(Out|IR|Doubtful|PUP|Sus)/i;
+  // Not startable: any status marked out in INJURY_STATUS (Questionable is fine), on bye, or no projection.
 
   function kickoff(team, week){
     const k = ctx.nfl && ctx.nfl.kick && ctx.nfl.kick[team];
@@ -1794,7 +1794,7 @@
     const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
     const pool = (ctx.myRoster.players || []).filter(function(pid){
       const p = ctx.players[pid], st = effectiveStatus(pid);
-      return p && !parked.has(pid) && !isLocked(pid) && !isOnBye(pid) && !(st && OPT_SKIP.test(st)) && typeof ctx.projections[pid] === 'number';
+      return p && !parked.has(pid) && !isLocked(pid) && !isOnBye(pid) && !cantPlay(st) && typeof ctx.projections[pid] === 'number';
     });
     const used = new Set();
     // ties keep whoever is starting now, so nothing moves for no gain
@@ -2567,11 +2567,29 @@
     return h + '</div>';
   }
 
+  // Every injury status Sleeper uses (checked against live /players/nfl, Sept 2026). One list for the chips, the
+  // optimizer's "can't start" rule, the Playing card and the callouts. out = not startable. Unknown values show as-is.
+  const INJURY_STATUS = {
+    Questionable: { label: 'Questionable', short: 'Q',   tone: 'warn', out: false },
+    Doubtful:     { label: 'Doubtful',     short: 'D',   tone: 'doubt', out: true },
+    Out:          { label: 'Out',          short: 'O',   tone: 'out',  out: true },
+    IR:           { label: 'IR',           short: 'IR',  tone: 'out',  out: true },
+    PUP:          { label: 'PUP',          short: 'PUP', tone: 'out',  out: true },
+    Sus:          { label: 'Suspended',    short: 'SUS', tone: 'out',  out: true },
+    NA:           { label: 'Not active',   short: 'NA',  tone: 'out',  out: true },
+    COV:          { label: 'COVID list',   short: 'COV', tone: 'out',  out: true },
+    DNR:          { label: 'Did not report', short: 'DNR', tone: 'out', out: true },
+  };
+  function statusInfo(status){
+    if(!status || status === 'Healthy') return null;
+    return INJURY_STATUS[status] || { label: status, short: status.slice(0, 3).toUpperCase(), tone: 'warn', out: false };
+  }
+  function cantPlay(status){ const i = statusInfo(status); return !!(i && i.out); }
   function injuryChip(status){
-    if(!status || status === 'Healthy') return '';
-    const short = status.length <= 3 ? status : status[0];
-    return '<span class="status-chip ' + escapeHTML(status[0]) + '" title="' + escapeHTML(status) + '">' +
-      '<span class="chip-full">' + escapeHTML(status) + '</span><span class="chip-short">' + escapeHTML(short) + '</span></span>';
+    const i = statusInfo(status);
+    if(!i) return '';
+    return '<span class="status-chip st-' + i.tone + '" title="' + escapeHTML(i.label) + '">' +
+      '<span class="chip-full">' + escapeHTML(i.label) + '</span><span class="chip-short">' + escapeHTML(i.short) + '</span></span>';
   }
 
   function sumProj(starterArr){
@@ -2604,7 +2622,7 @@
 
     const filled = ctx.draftStarters.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; });
     const bye = filled.filter(isOnBye).length;
-    const out = filled.filter(function(pid){ const st = effectiveStatus(pid); return !isOnBye(pid) && st && /^(Out|IR|Doubtful|PUP|Sus)/i.test(st); }).length;
+    const out = filled.filter(function(pid){ const st = effectiveStatus(pid); return !isOnBye(pid) && cantPlay(st); }).length;
     const slots = ctx.rosterPositions.length;
     els.kpiPlaying.textContent = (filled.length - bye - out) + '/' + slots;
     els.kpiPlaying.className = 'kpi-mid num' + (bye || out || filled.length < slots ? ' down' : '');
@@ -3634,7 +3652,7 @@
     return pids.filter(function(pid){ return pid && pid !== '0' && ctx.players[pid]; }).map(function(pid){
       const p = ctx.players[pid], st = p.injury_status || '';
       if(isOnBye(pid)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is on a bye in week ' + ctx.week + '.</b>&nbsp;' + (ctx.draftStarters.indexOf(pid) !== -1 ? 'That slot won&#39;t score.' : '') + '</div>';
-      if(/^(Out|IR|Doubtful|PUP|Sus)/i.test(st)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is listed ' + escapeHTML(st) + '.</b></div>';
+      if(cantPlay(st)) return '<div class="callout"><b>' + escapeHTML(playerName(p)) + ' is listed ' + escapeHTML(statusInfo(st).label) + '.</b></div>';
       if(/^Q/i.test(st)) return '<div class="callout warn"><b>' + escapeHTML(playerName(p)) + ' is questionable.</b>&nbsp;Check the status before kickoff.</div>';
       return '';
     }).join('');
