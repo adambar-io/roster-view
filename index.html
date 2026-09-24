@@ -749,6 +749,50 @@
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
   .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
+  /* ---- trade helper ---- */
+  .trade-cta{ display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; border: none; font: inherit; color: var(--text);
+    padding: 14px 16px; margin: 0 0 24px; cursor: pointer; }
+  .trade-cta b{ display: block; font-size: 15px; } .trade-cta span span{ display: block; font-size: 13px; color: var(--text-2); margin-top: 2px; }
+  .st-row.tradeable{ cursor: pointer; }
+  .trade{ max-width: 820px; margin: 0 auto; }
+  .tr-pick{ display: grid; gap: 6px; margin-bottom: 14px; }
+  .tr-pick select{ font: inherit; font-size: 16px; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: none; background: var(--surface); color: var(--text); box-shadow: var(--shadow), inset 0 0 0 1px var(--hair); }
+  .tr-intro{ color: var(--text-2); font-size: 14px; }
+  .tr-results{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .tr-card{ padding: 14px; }
+  .tr-big{ font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin: 4px 0 6px; font-variant-numeric: tabular-nums; }
+  .tr-big.up, .tw-val.up, .tr-line b.up{ color: var(--accent); } .tr-big.down, .tw-val.down, .tr-line b.down{ color: var(--danger); }
+  .tr-line{ display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-2); padding: 3px 0; }
+  .tr-line b{ color: var(--text); font-variant-numeric: tabular-nums; }
+  .tr-cap{ font-size: 11.5px; color: var(--text-3); margin-top: 6px; line-height: 1.4; }
+  .tr-weeks{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 4px 14px 10px; margin-bottom: 12px; }
+  .tr-weeks summary{ cursor: pointer; font-weight: 700; font-size: 14px; padding: 10px 0 6px; }
+  .tw-row{ display: grid; grid-template-columns: 52px 1fr 48px 96px; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+  .tw-wk{ color: var(--text-2); font-weight: 600; white-space: nowrap; } .tw-wk i{ font-style: normal; font-size: 9.5px; font-weight: 700; color: var(--accent); margin-left: 3px; }
+  .tw-bar{ position: relative; height: 8px; border-radius: 999px; background: var(--surface-2); }
+  .tw-bar::after{ content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--hair); }
+  .tw-fill{ position: absolute; top: 0; bottom: 0; border-radius: 999px; background: var(--text-3); }
+  .tw-fill.up{ background: var(--accent); } .tw-fill.down{ background: var(--danger); }
+  .tw-val{ text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tw-tot{ text-align: right; color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tr-note{ font-size: 12.5px; color: var(--text-3); line-height: 1.5; margin: 4px 2px 16px; } .tr-note b{ color: var(--text-2); }
+  .tr-cols{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tr-list{ display: grid; gap: 6px; margin-bottom: 16px; }
+  .tr-player{ display: grid; grid-template-columns: 22px 30px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; font: inherit; color: var(--text);
+    padding: 9px 10px; min-height: 48px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tr-player.on{ background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .tr-check{ display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; box-shadow: inset 0 0 0 1.5px var(--text-3); font-size: 13px; font-weight: 800; color: var(--on-accent); }
+  .tr-player.on .tr-check{ background: var(--accent); box-shadow: none; }
+  .tr-pos{ font-size: 11px; font-weight: 700; }
+  .tr-who{ min-width: 0; } .tr-nm{ display: block; font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tr-sub{ display: block; font-size: 11.5px; color: var(--text-3); }
+  .tr-ros{ text-align: right; } .tr-ros b{ display: block; font-variant-numeric: tabular-nums; } .tr-ros small{ font-size: 9.5px; color: var(--text-3); letter-spacing: .05em; }
+  @media (max-width: 560px){
+    .tr-results{ gap: 8px; } .tr-card{ padding: 12px; } .tr-big{ font-size: 26px; }
+    .tr-cols{ grid-template-columns: 1fr; gap: 0; }
+    .tw-row{ grid-template-columns: 46px 1fr 44px; } .tw-tot{ display: none; }
+  }
+
   /* ---- Players tab toolbar ---- */
   .pl-tools{ display: grid; gap: 10px; margin-bottom: 18px; }
   .section-title #pl-title{ font-size: inherit; font-weight: inherit; } /* the heading itself, not a subtitle */
@@ -1286,6 +1330,9 @@
           <div class="section-title">Standings <span style="opacity:0.7;" id="st-sub"></span></div>
           <div class="card st-card"><div id="standings"></div></div>
           <p class="st-note" id="st-note"></p>
+          <button type="button" class="card trade-cta" data-open-trade="">
+            <span><b>Trade helper</b><span>Rest-of-season points and what a trade does to your lineup each week</span></span><span class="mu-link">Open ›</span>
+          </button>
         </section>
 
         <section class="view" id="compare-view" style="display:none;">
@@ -2129,27 +2176,18 @@
     return { pick: pick, over: top && pick && top !== pick && top.proj > pick.proj ? top : null };
   }
 
-  // Returns { starters, notes: [{ slot, pick, over }], locked: [pid] }.
-  function optimalStarters(){
-    const slots = ctx.rosterPositions, orig = ctx.originalStarters;
-    const out = slots.map(function(){ return null; });
-    const locked = [];
-    slots.forEach(function(label, i){
-      const pid = orig[i];
-      if(pid && pid !== '0' && ctx.players[pid] && isLocked(pid)){ out[i] = pid; locked.push(pid); }
-    });
-    const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
-    const pool = (ctx.myRoster.players || []).filter(function(pid){
-      const p = ctx.players[pid], st = effectiveStatus(pid);
-      return p && !parked.has(pid) && !isLocked(pid) && !isOnBye(pid) && !cantPlay(st) && typeof ctx.projections[pid] === 'number';
-    });
+  // The lineup rules, shared by Optimal Lineup and the trade helper: dedicated slots get the best player at their
+  // position, then flex slots (most restrictive first) via pickFlex's WR/RB/TE preference. out: slots already filled
+  // (locked players) or null; pool: who may start; projOf(pid): points; keep: current lineup, so ties and placements
+  // don't move anyone for nothing (null = no preference). Fills out in place; returns the flex notes.
+  function fillLineup(slots, out, pool, projOf, keep, locked){
     const used = new Set();
-    // ties keep whoever is starting now, so nothing moves for no gain
-    const byProj = function(x, y){ return ctx.projections[y] - ctx.projections[x] || (ctx.draftStarters.indexOf(y) !== -1) - (ctx.draftStarters.indexOf(x) !== -1); };
+    const inKeep = function(pid){ return keep ? keep.indexOf(pid) !== -1 : false; };
+    const byProj = function(x, y){ return projOf(y) - projOf(x) || inKeep(y) - inKeep(x); };
     // Put chosen players in slots so that anyone already in one of those slots stays in it (no pointless WR1/WR2 swaps).
     const place = function(idx, chosen){
       const rest = chosen.slice();
-      idx.forEach(function(i){ const k = rest.indexOf(ctx.draftStarters[i]); if(k !== -1){ out[i] = rest[k]; rest.splice(k, 1); } });
+      if(keep) idx.forEach(function(i){ const k = rest.indexOf(keep[i]); if(k !== -1){ out[i] = rest[k]; rest.splice(k, 1); } });
       idx.forEach(function(i){ if(!out[i] && rest.length) out[i] = rest.shift(); });
     };
     const dedicated = {};
@@ -2171,7 +2209,7 @@
       .forEach(function(i){
         const group = FLEX_GROUPS[slots[i]];
         const cands = pool.filter(function(pid){ return !used.has(pid) && canFill(pid, slots[i]); }).sort(byProj)
-          .map(function(pid){ return { pid: pid, pos: posInGroup(pid, group), proj: ctx.projections[pid] }; });
+          .map(function(pid){ return { pid: pid, pos: posInGroup(pid, group), proj: projOf(pid) }; });
         const r = pickFlex(cands);
         if(!r.pick) return;
         out[i] = r.pick.pid; used.add(r.pick.pid);
@@ -2187,6 +2225,24 @@
       idx.forEach(function(i){ out[i] = null; });
       place(idx, chosen);
     });
+    return notes;
+  }
+
+  // Returns { starters, notes: [{ slot, pick, over }], locked: [pid] }.
+  function optimalStarters(){
+    const slots = ctx.rosterPositions, orig = ctx.originalStarters;
+    const out = slots.map(function(){ return null; });
+    const locked = [];
+    slots.forEach(function(label, i){
+      const pid = orig[i];
+      if(pid && pid !== '0' && ctx.players[pid] && isLocked(pid)){ out[i] = pid; locked.push(pid); }
+    });
+    const parked = new Set([].concat(ctx.myRoster.reserve || [], ctx.myRoster.taxi || [])); // Sleeper IR / taxi spots can't start
+    const pool = (ctx.myRoster.players || []).filter(function(pid){
+      const p = ctx.players[pid], st = effectiveStatus(pid);
+      return p && !parked.has(pid) && !isLocked(pid) && !isOnBye(pid) && !cantPlay(st) && typeof ctx.projections[pid] === 'number';
+    });
+    const notes = fillLineup(slots, out, pool, function(pid){ return ctx.projections[pid]; }, ctx.draftStarters, locked);
     // Late-game flex: same starters, same total. Put the latest kickoff in each flex slot, so if a late player is
     // ruled out the flex can still be swapped for anyone eligible. Only swaps between a flex and a dedicated slot where
     // both players fit both slots; never touches a locked player.
@@ -2845,6 +2901,129 @@
     '</div>';
   }
 
+  // ---- trade helper: rest-of-season points on each side, and what it does to my starting lineup week by week ----
+  // Future weeks use each player's average projected week from ros.json (league scoring), and zero in weeks they have
+  // no projection (bye, injury). This week uses the real projection. Each week's lineup comes from fillLineup, i.e.
+  // the same rules as Optimal Lineup. An estimate: no roster limits, waivers or trade partner's side.
+  ctx.trade = { team: null, give: [], get: [] };
+  function weekProj(pid, w){
+    const p = ctx.players[pid];
+    if(!p) return 0;
+    if(w === ctx.week){ const v = ctx.projections[pid]; return typeof v === 'number' && !isOnBye(pid) && !cantPlay(effectiveStatus(pid)) ? Math.max(0, v) : 0; }
+    const r = ctx.ros && ctx.ros.players[pid];
+    if(!r || !r.w) return 0;
+    const plays = r.k ? r.k.indexOf(w) !== -1 : !(function(){ const m = matchup(p.team, w); return m && m.bye; })();
+    if(!plays) return 0;
+    const v = rosValue(pid);
+    return v ? Math.max(0, v.pts / r.w) : 0;
+  }
+  function bestLineupTotal(pids, w){
+    const taxi = new Set(ctx.myRoster.taxi || []);
+    const proj = {};
+    const pool = pids.filter(function(pid){ if(!ctx.players[pid] || taxi.has(pid)) return false; proj[pid] = weekProj(pid, w); return proj[pid] > 0; });
+    const out = ctx.rosterPositions.map(function(){ return null; });
+    fillLineup(ctx.rosterPositions, out, pool, function(pid){ return proj[pid]; }, null, []);
+    return out.reduce(function(sum, pid){ return sum + (pid ? proj[pid] : 0); }, 0);
+  }
+  function tradeWeeks(){
+    if(!ctx.ros) return [];
+    const from = Math.max(ctx.week, ctx.ros.from_week || ctx.week), to = ctx.ros.through_week || 17, out = [];
+    for(let w = from; w <= to; w++) out.push(w);
+    return out;
+  }
+  function tradeResult(){
+    const t = ctx.trade, mine = ctx.myRoster.players || [];
+    const give = t.give.filter(function(pid){ return mine.indexOf(pid) !== -1; });
+    const theirs = tradeRoster(t.team);
+    const get = t.get.filter(function(pid){ return theirs.indexOf(pid) !== -1; });
+    const after = mine.filter(function(pid){ return give.indexOf(pid) === -1; }).concat(get);
+    const ros = function(list){ return list.reduce(function(a, pid){ const v = rosValue(pid); return a + (v ? v.pts : 0); }, 0); };
+    const weeks = tradeWeeks().map(function(w){ const b = bestLineupTotal(mine, w), a = bestLineupTotal(after, w); return { w: w, before: b, after: a, d: a - b }; });
+    const ps = ((ctx.league.settings || {}).playoff_week_start) || 15;
+    const sum = function(list){ return list.reduce(function(a, x){ return a + x.d; }, 0); };
+    return { give: give, get: get, rosGive: ros(give), rosGet: ros(get), weeks: weeks, total: sum(weeks),
+      playoffs: sum(weeks.filter(function(x){ return x.w >= ps; })), ps: ps };
+  }
+  function tradeRoster(rosterId){
+    const r = (ctx.lastRosters || []).find(function(x){ return x.roster_id === rosterId; });
+    return r ? (r.players || []) : [];
+  }
+  function signed(v, d){ return (Math.abs(v) < 0.05 ? '±' : v > 0 ? '+' : '−') + Math.abs(v).toFixed(d == null ? 1 : d); }
+  function tradeHTML(){
+    if(!ctx.ros) return '<div class="empty-state">Loading rest-of-season projections…</div>';
+    const t = ctx.trade;
+    const others = (ctx.lastRosters || []).filter(function(r){ return r.roster_id !== ctx.myRoster.roster_id; });
+    const pick = '<label class="tr-pick"><span class="eyebrow">Trade with</span><select data-trade-team><option value="">Choose a team…</option>' +
+      others.map(function(r){ return '<option value="' + r.roster_id + '"' + (t.team === r.roster_id ? ' selected' : '') + '>' + escapeHTML(rosterName(r.roster_id)) + '</option>'; }).join('') + '</select></label>';
+    if(!t.team) return '<div class="trade">' + pick + '<p class="tr-intro">Pick a team, then tick the players on each side. You’ll see the rest-of-season points on both sides and what the trade does to your starting lineup each week.</p></div>';
+    const lastWeek = (ctx.ros && ctx.ros.through_week) || 17;
+    const byeText = function(pid){
+      const p = ctx.players[pid], byes = [];
+      for(let w = ctx.week; w <= lastWeek; w++){ const m = matchup(p.team, w); if(m && m.bye) byes.push(w); }
+      return byes.length ? 'bye wk ' + byes.join(', ') : '';
+    };
+    const list = function(pids, side){
+      return pids.filter(function(pid){ return ctx.players[pid]; })
+        .sort(function(a, b){ const va = rosValue(a), vb = rosValue(b); return (vb ? vb.pts : 0) - (va ? va.pts : 0); })
+        .map(function(pid){
+          const p = ctx.players[pid], v = rosValue(pid), on = t[side].indexOf(pid) !== -1;
+          return '<button type="button" class="tr-player' + (on ? ' on' : '') + '" data-trade-' + side + '="' + escapeHTML(pid) + '" aria-pressed="' + on + '">' +
+            '<span class="tr-check" aria-hidden="true">' + (on ? '✓' : '') + '</span>' +
+            '<span class="tr-pos" style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span>' +
+            '<span class="tr-who"><span class="tr-nm">' + escapeHTML(playerName(p)) + ' ' + injuryChip(p.injury_status) + '</span>' +
+              '<span class="tr-sub">' + escapeHTML(p.team || 'FA') + (byeText(pid) ? ' · ' + byeText(pid) : '') + '</span></span>' +
+            '<span class="tr-ros"><b>' + (v ? v.pts.toFixed(0) : '—') + '</b><small>ROS</small></span></button>';
+        }).join('') || '<div class="empty-state">No players.</div>';
+    };
+    const r = tradeResult();
+    const any = r.give.length || r.get.length;
+    const tone = function(v){ return Math.abs(v) < 0.5 ? '' : v > 0 ? ' up' : ' down'; };
+    const maxAbs = Math.max.apply(null, r.weeks.map(function(x){ return Math.abs(x.d); }).concat([1]));
+    const results = !any ? '<p class="tr-intro">Tick players on each side to see the numbers.</p>' :
+      '<div class="tr-results">' +
+        '<div class="card tr-card"><div class="eyebrow">Rest-of-season points</div>' +
+          '<div class="tr-big' + tone(r.rosGet - r.rosGive) + '">' + signed(r.rosGet - r.rosGive, 0) + '</div>' +
+          '<div class="tr-line"><span>You get</span><b>' + r.rosGet.toFixed(0) + '</b></div><div class="tr-line"><span>You give</span><b>' + r.rosGive.toFixed(0) + '</b></div>' +
+          '<div class="tr-cap">Total projected points of the players on each side, weeks ' + (r.weeks[0] ? r.weeks[0].w : ctx.week) + '–' + lastWeek + ', whether or not they’d start for you.</div></div>' +
+        '<div class="card tr-card"><div class="eyebrow">Lineup impact</div>' +
+          '<div class="tr-big' + tone(r.total) + '">' + signed(r.total) + '</div>' +
+          '<div class="tr-line"><span>Per week</span><b>' + signed(r.weeks.length ? r.total / r.weeks.length : 0) + '</b></div>' +
+          '<div class="tr-line"><span>Playoffs (wk ' + r.ps + '–' + lastWeek + ')</span><b class="' + tone(r.playoffs).trim() + '">' + signed(r.playoffs) + '</b></div>' +
+          '<div class="tr-cap">Change in your best starting lineup’s points, summed over the remaining weeks (byes included).</div></div>' +
+      '</div>' +
+      '<details class="tr-weeks" open><summary>Week by week (your starting lineup)</summary>' +
+        r.weeks.map(function(x){
+          const w = Math.abs(x.d) / maxAbs * 50;
+          return '<div class="tw-row' + (x.w >= r.ps ? ' po' : '') + '"><span class="tw-wk">Wk ' + x.w + (x.w >= r.ps ? '<i>PO</i>' : '') + '</span>' +
+            '<span class="tw-bar"><span class="tw-fill' + tone(x.d) + '" style="' + (x.d >= 0 ? 'left:50%;' : 'right:50%;') + 'width:' + w.toFixed(1) + '%"></span></span>' +
+            '<span class="tw-val' + tone(x.d) + '">' + signed(x.d) + '</span><span class="tw-tot">' + x.before.toFixed(1) + ' → ' + x.after.toFixed(1) + '</span></div>';
+        }).join('') + '</details>';
+    return '<div class="trade">' + pick + results +
+      '<p class="tr-note"><b>Estimates, not a verdict.</b> Sleeper’s weekly projections scored with your league’s settings. Future weeks use each player’s average projected week, with zero on byes and weeks they aren’t projected to play. Your lineup each week follows the same rules as Optimal Lineup (FLEX preferences included). Roster limits, waivers and the other team’s side aren’t considered.</p>' +
+      '<div class="tr-cols"><div><div class="section-title">You give</div><div class="tr-list">' + list(ctx.myRoster.players || [], 'give') + '</div></div>' +
+        '<div><div class="section-title">You get · ' + escapeHTML(rosterName(t.team)) + '</div><div class="tr-list">' + list(tradeRoster(t.team), 'get') + '</div></div></div>' +
+    '</div>';
+  }
+  function rerenderTrade(){
+    const y = maxPanel.scrollTop;
+    maxBody.innerHTML = tradeHTML();
+    maxPanel.scrollTop = y;
+  }
+  function openTrade(teamId, fromEl){
+    if(teamId && teamId !== ctx.trade.team) ctx.trade = { team: teamId, give: ctx.trade.give, get: [] };
+    openMax({ kind: 'trade' }, fromEl);
+    if(!ctx.ros) loadRos().then(function(){ if(maxOpen() && maxStack[maxStack.length - 1].kind === 'trade') rerenderTrade(); });
+  }
+  document.addEventListener('click', function(e){
+    const tb = e.target.closest && e.target.closest('[data-open-trade]');
+    if(tb){ openTrade(Number(tb.getAttribute('data-open-trade')) || null, tb); }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const tb = e.target.closest && e.target.closest('.st-row[data-open-trade]');
+    if(tb){ e.preventDefault(); openTrade(Number(tb.getAttribute('data-open-trade')) || null, tb); }
+  });
+
   // ---- standings & playoff picture ----
   // Order: wins, then ties, then points for. Checked against real Sleeper playoff brackets (2025 leagues with
   // playoff_seed_type 0, with and without divisions): the playoff teams, byes and first-round pairings all match.
@@ -2895,7 +3074,7 @@
       '<div class="st-row st-headrow"><span class="st-rank">#</span><span class="st-team">Team</span><span class="st-rec">W-L' + (hasTies ? '-T' : '') + '</span><span class="st-num">PF</span><span class="st-num">PA</span></div>' +
       rows.map(function(r, i){
         const cut = n && i === n - 1 && i < rows.length - 1;
-        return '<div class="st-row' + (r.mine ? ' mine' : '') + (n && i < n ? ' in' : '') + (cut ? ' cut' : '') + '">' +
+        return '<div class="st-row' + (r.mine ? ' mine' : ' tradeable') + (n && i < n ? ' in' : '') + (cut ? ' cut' : '') + '"' + (r.mine ? '' : ' data-open-trade="' + r.id + '" role="button" tabindex="0" title="Trade with ' + escapeHTML(r.name) + '"') + '>' +
           '<span class="st-rank">' + (i + 1) + '</span>' +
           '<span class="st-team">' + escapeHTML(r.name) + (divs && r.div ? '<span class="st-div">Div ' + r.div + '</span>' : '') + '</span>' +
           '<span class="st-rec">' + r.w + '-' + r.l + (hasTies ? '-' + r.t : '') + '</span>' +
@@ -4379,6 +4558,7 @@
   function maxTitleFor(e){
     if(e.kind === 'h2h') return lastName(e.pids[0]) + ' vs ' + lastName(e.pids[1]);
     if(e.kind === 'opp'){ const mu = myMatchup(); return mu ? mu.name : 'Opponent'; }
+    if(e.kind === 'trade') return 'Trade helper';
     return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Players · full view' : playerName(ctx.players[e.pid]);
   }
   function insetOf(el){
@@ -4388,7 +4568,7 @@
   }
   function renderMax(dir){
     const e = maxStack[maxStack.length - 1];
-    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : e.kind === 'opp' ? oppHTML() : maxPlayerHTML(e.pid);
+    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : e.kind === 'opp' ? oppHTML() : e.kind === 'trade' ? tradeHTML() : maxPlayerHTML(e.pid);
     maxBody.style.setProperty('--bar-h', maxEl.querySelector('.max-bar').offsetHeight + 'px');
     maxTitle.textContent = maxTitleFor(e);
     maxBackLabel.textContent = maxStack.length > 1 ? maxTitleFor(maxStack[maxStack.length - 2]) : 'Back to ' + VIEW_TITLES[ctx.view];
@@ -4446,7 +4626,17 @@
     openMax({ kind: kind }, kind === 'roster' ? els.startersList : els.faList);
   }, true);
   // Inside the full-screen layer: rows open that player's page; swap buttons work like the panel's.
+  maxBody.addEventListener('change', function(e){
+    if(e.target.matches('[data-trade-team]')){ ctx.trade = { team: Number(e.target.value) || null, give: ctx.trade.give, get: [] }; rerenderTrade(); }
+  });
   maxBody.addEventListener('click', function(e){
+    const tg = e.target.closest('[data-trade-give], [data-trade-get]');
+    if(tg){
+      const side = tg.hasAttribute('data-trade-give') ? 'give' : 'get', pid = tg.getAttribute('data-trade-' + side), list = ctx.trade[side];
+      ctx.trade[side] = list.indexOf(pid) !== -1 ? list.filter(function(x){ return x !== pid; }) : list.concat([pid]);
+      rerenderTrade();
+      return;
+    }
     const sw = e.target.closest('[data-mx-swap]');
     if(sw){ swapIntoSlot(Number(sw.getAttribute('data-slot')), sw.getAttribute('data-mx-swap')); renderMax(0); return; }
     const row = e.target.closest('[data-open]');

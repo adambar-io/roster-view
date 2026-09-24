@@ -11,7 +11,7 @@ Usage:   python build_nflverse.py                 (season defaults to the curren
          python build_nflverse.py --season 2026
 Re-run it whenever you want fresher data (nflverse updates daily in season). Standard library only.
 """
-import argparse, csv, datetime, gzip, io, json, os, re, sys, unicodedata, urllib.request
+import argparse, csv, datetime, gzip, io, json, os, re, sys, time, unicodedata, urllib.error, urllib.request
 
 REL = 'https://github.com/nflverse/nflverse-data/releases/download'
 SOURCES = {
@@ -50,8 +50,19 @@ def get(url):
     if url.startswith('https://api.github.com/') and os.environ.get('GITHUB_TOKEN'):
         headers['Authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']   # in the Action: avoids the anonymous rate limit
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=180) as r:
-        data = r.read()
+    # GitHub release downloads and Sleeper occasionally answer 5xx or time out; retry a few times before failing.
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                data = r.read()
+            break
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+            code = getattr(e, 'code', None)
+            if attempt == 3 or (code is not None and code < 500 and code != 429):
+                raise
+            wait = 2 ** attempt * 3
+            print(f'  retrying {url.rsplit("/", 1)[-1]} in {wait}s ({e})', file=sys.stderr)
+            time.sleep(wait)
     return gzip.decompress(data) if url.endswith('.gz') else data
 
 
@@ -152,7 +163,7 @@ def build_dvp(season, through_week, totals=None):
 
 def build_ros(season, from_week, last_week=LAST_FANTASY_WEEK):
     """Each player's projected raw stats summed from from_week through last_week. Bye weeks have empty
-    projections, so they add nothing. 'w' = weeks with a projection."""
+    projections, so they add nothing. 'w' = weeks with a projection, 'k' = those weeks (for the trade helper)."""
     ros = {}
     for week in range(from_week, last_week + 1):
         print(f'  sleeper projections week {week} (rest of season)', file=sys.stderr)
@@ -160,8 +171,9 @@ def build_ros(season, from_week, last_week=LAST_FANTASY_WEEK):
             st = scoring_stats(e.get('stats'))
             if not st:
                 continue
-            r = ros.setdefault(str(e['player_id']), {'w': 0, 's': {}})
+            r = ros.setdefault(str(e['player_id']), {'w': 0, 'k': [], 's': {}})
             r['w'] += 1
+            r['k'].append(week)   # which weeks have a projection (byes and injury weeks don't)
             for k, v in st.items():
                 r['s'][k] = round(r['s'].get(k, 0) + v, 2)
     # keep fantasy-relevant players only (more than a token projection)
@@ -244,36 +256,53 @@ def build(season, previous=None):
         if v is not None:
             weekly.setdefault(gsis, {}).setdefault(str(int(week)), {})[k] = round(v, 3)
 
+    # Target/air share, snap share and depth charts are each optional: if one nflverse file can't be downloaded
+    # (it happens: GitHub answered 500 for snap counts for a whole morning), keep that part from the previous
+    # nflverse.json instead of failing the whole build. `stale` lists what was carried forward.
+    stale = []
+
     # --- target share / air yards share (weekly player stats) ---
-    for r in csv_rows(SOURCES['stats'].format(season=season)):
-        if r.get('season_type') != 'REG':
-            continue
-        put(r['player_id'], r['week'], 't', num(r.get('target_share')))
-        put(r['player_id'], r['week'], 'a', num(r.get('air_yards_share')))
+    try:
+        for r in csv_rows(SOURCES['stats'].format(season=season)):
+            if r.get('season_type') != 'REG':
+                continue
+            put(r['player_id'], r['week'], 't', num(r.get('target_share')))
+            put(r['player_id'], r['week'], 'a', num(r.get('air_yards_share')))
+    except Exception as e:
+        print('  (weekly player stats unavailable, keeping previous target/air share:', e, ')', file=sys.stderr)
+        stale.append('shares')
     stats_through = max((int(w) for d in weekly.values() for w in d), default=0)
 
     # --- offensive snap share (keyed by PFR id, mapped to gsis) ---
     snap_unmapped = 0
-    for r in csv_rows(SOURCES['snaps'].format(season=season)):
-        if r.get('game_type') != 'REG' or r.get('position') not in SKILL:
-            continue
-        g = pfr_gsis.get(r.get('pfr_player_id'))
-        if not g:
-            snap_unmapped += 1
-            continue
-        put(g, r['week'], 's', num(r.get('offense_pct')))
+    try:
+        for r in csv_rows(SOURCES['snaps'].format(season=season)):
+            if r.get('game_type') != 'REG' or r.get('position') not in SKILL:
+                continue
+            g = pfr_gsis.get(r.get('pfr_player_id'))
+            if not g:
+                snap_unmapped += 1
+                continue
+            put(g, r['week'], 's', num(r.get('offense_pct')))
+    except Exception as e:
+        print('  (snap counts unavailable, keeping previous snap share:', e, ')', file=sys.stderr)
+        stale.append('snaps')
 
     # --- depth chart: latest snapshot per team, offense skill positions, label = pos_abb + pos_rank ---
     latest = {}  # team -> (dt, rows)
-    for r in csv_rows(SOURCES['depth'].format(season=season)):
-        if r.get('pos_abb') not in SKILL or not r.get('gsis_id'):
-            continue
-        t, dt = team(r['team']), r['dt']
-        cur = latest.get(t)
-        if cur is None or dt > cur[0]:
-            latest[t] = (dt, [r])
-        elif dt == cur[0]:
-            cur[1].append(r)
+    try:
+        for r in csv_rows(SOURCES['depth'].format(season=season)):
+            if r.get('pos_abb') not in SKILL or not r.get('gsis_id'):
+                continue
+            t, dt = team(r['team']), r['dt']
+            cur = latest.get(t)
+            if cur is None or dt > cur[0]:
+                latest[t] = (dt, [r])
+            elif dt == cur[0]:
+                cur[1].append(r)
+    except Exception as e:
+        print('  (depth charts unavailable, keeping previous depth chart:', e, ')', file=sys.stderr)
+        stale.append('depth')
     depth, depth_as_of = {}, ''
     for t, (dt, rows) in latest.items():
         depth_as_of = max(depth_as_of, dt)
@@ -347,6 +376,21 @@ def build(season, previous=None):
         if g in weekly:
             e['w'] = weekly[g]
         players[sid] = e
+    # carry forward whatever couldn't be downloaded this time
+    prev_players = prev.get('players', {}) if prev.get('season') == season else {}
+    keys = [k for k, part in (('t', 'shares'), ('a', 'shares'), ('s', 'snaps')) if part in stale]
+    for sid, old in prev_players.items():
+        e = players.setdefault(sid, {})
+        if 'depth' in stale and 'd' in old:
+            e['d'] = old['d']
+        for wk, vals in (old.get('w') or {}).items():
+            for k in keys:
+                if k in vals:
+                    e.setdefault('w', {}).setdefault(wk, {})[k] = vals[k]
+    if 'shares' in stale:
+        stats_through = prev.get('stats_through_week', stats_through)
+    if 'depth' in stale:
+        depth_as_of = prev.get('depth_as_of', depth_as_of)
 
     out = {
         'season': season,
@@ -359,6 +403,7 @@ def build(season, previous=None):
         'players': players,
         'inj': inj,
         'inj_as_of': inj_updated.strftime('%Y-%m-%dT%H:%MZ'),
+        'stale': stale,
         'coverage': dict(method, relevant=len(relevant), snap_rows_unmapped=snap_unmapped),
     }
     slim = {sid: {f: p[f] for f in PLAYER_FIELDS if p.get(f) is not None} for sid, p in sleeper.items()}
