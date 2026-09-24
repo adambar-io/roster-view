@@ -84,7 +84,7 @@ Stable, safe to rely on:
 - `/user/<username>` → user_id
 - `/user/<user_id>/leagues/nfl/<season>` → leagues
 - `/league/<league_id>`, `/rosters`, `/users` → league/roster/owner data
-- `/players/nfl` → full player dictionary (large; trimmed to `PLAYER_FIELDS` incl. `injury_body_part`, `injury_notes`, `injury_start_date`, `practice_participation`, `practice_description`; cached in localStorage `sleeper_players_cache_v3`, refreshed per the data-freshness rules)
+- `/players/nfl` → full player dictionary (14.7 MB raw / 2.6 MB gzipped). **Only a fallback now**: the GitHub Action writes a trimmed **players.json** (same data, `PLAYER_FIELDS` only incl. `fantasy_positions` and injury fields; 1.57 MB raw / ~260 KB gzipped, all 12k players) next to nflverse.json and rebuilds it every 30 min on game days. The app fetches players.json (`downloadPlayers`, `cache: no-cache` so unchanged = 304) and falls back to Sleeper only if it is missing/broken; the heavy fallback refreshes daily, players.json follows the game-day rule. Cache: localStorage `sleeper_players_cache_v4` with `source`
 - `/state/nfl` → current NFL week
 
 ### Images (Sleeper CDN, all via `playerImageUrl`)

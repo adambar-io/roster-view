@@ -28,6 +28,10 @@ SOURCES = {
 TEAM_FIX = {'LA': 'LAR'}           # nflverse abbreviation -> Sleeper abbreviation
 SKILL = ('QB', 'RB', 'WR', 'TE')   # positions that get snap / share / depth data
 INJURY_POS = SKILL + ('K',)        # positions that get injury / practice data
+# players.json: the Sleeper player fields the app uses (keep in sync with PLAYER_FIELDS in index.html). About 260 KB
+# gzipped instead of the 2.6 MB / 14.7 MB raw /players/nfl, so the app can re-check it on every open.
+PLAYER_FIELDS = ['full_name', 'first_name', 'last_name', 'position', 'fantasy_positions', 'team', 'injury_status',
+                 'injury_body_part', 'injury_notes', 'injury_start_date', 'practice_participation', 'practice_description']
 PRACTICE = {'Did Not Participate In Practice': 'DNP', 'Limited Participation in Practice': 'LP', 'Full Participation in Practice': 'FP'}
 
 
@@ -293,7 +297,8 @@ def build(season, previous=None):
         'inj_as_of': inj_updated.strftime('%Y-%m-%dT%H:%MZ'),
         'coverage': dict(method, relevant=len(relevant), snap_rows_unmapped=snap_unmapped),
     }
-    return out
+    slim = {sid: {f: p[f] for f in PLAYER_FIELDS if p.get(f) is not None} for sid, p in sleeper.items()}
+    return out, slim
 
 
 def main():
@@ -303,7 +308,17 @@ def main():
     args = ap.parse_args()
 
     old = load_previous(args.out)
-    out = build(args.season, old)
+    out, slim = build(args.season, old)
+
+    # players.json (Sleeper player database, trimmed): rewritten only when a player's fields changed.
+    players_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'players.json')
+    old_players = load_previous(players_path)
+    if old_players.get('players') != slim:
+        with open(players_path, 'w', encoding='utf-8') as f:
+            json.dump({'generated': out['generated'], 'players': slim}, f, separators=(',', ':'))
+        print(f'Wrote {players_path} ({os.path.getsize(players_path):,} bytes, {len(slim):,} players).', file=sys.stderr)
+    else:
+        print('No player changes; players.json left as is.', file=sys.stderr)
 
     # Skip rewriting when only the timestamp would change (keeps scheduled commits quiet).
     if old and {k: v for k, v in old.items() if k != 'generated'} == {k: v for k, v in out.items() if k != 'generated'}:

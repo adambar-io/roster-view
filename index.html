@@ -1180,9 +1180,13 @@
 (function(){
   const API = 'https://api.sleeper.app/v1';
   const UNOFFICIAL = 'https://api.sleeper.app';
-  const PLAYERS_CACHE_KEY = 'sleeper_players_cache_v3'; // v3 = + injury detail fields (see slimPlayers)
-  const PLAYER_FIELDS = ['full_name','first_name','last_name','position','team','injury_status',
+  const PLAYERS_CACHE_KEY = 'sleeper_players_cache_v4'; // v4 = + fantasy_positions, source (players.json / sleeper)
+  // Keep in sync with PLAYER_FIELDS in build_nflverse.py, which writes players.json with exactly these fields.
+  const PLAYER_FIELDS = ['full_name','first_name','last_name','position','fantasy_positions','team','injury_status',
     'injury_body_part','injury_notes','injury_start_date','practice_participation','practice_description'];
+  // The trimmed player database the GitHub Action publishes next to this page (~260 KB gzipped, rebuilt every
+  // 30 min on game days). Sleeper's own /players/nfl (2.6 MB gzipped, 14.7 MB raw) is only the fallback.
+  const PLAYERS_URL = 'players.json';
   const STATS_CACHE_PREFIX = 'sleeper_stats_v2_'; // v2: v1 cached empty histories (week-keyed object response wasn't parsed)
 
   // nflverse signals (opponent/bye, snap %, target/air-yards share, depth chart) come from a small JSON file
@@ -1395,22 +1399,35 @@
   async function getPlayersDict(){
     const cached = readPlayersCache();
     if(cached) return cached;
-    setStatus('Downloading player database (first run only)…');
+    setStatus('Downloading the player list (first run only)…');
     return downloadPlayers();
   }
+  function lsSet(key, value){ localStorage.setItem(key, value); }
   function readPlayersCache(){
     try{ const c = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null'); if(c && c.ts && c.data) return c; }catch(e){}
     return null;
   }
+  // players.json first; Sleeper's full download only if that's missing or broken (e.g. the file isn't deployed).
   async function downloadPlayers(){
-    const data = slimPlayers(await fetchJSON(API + '/players/nfl'));
+    let data = null, source = 'sleepa';
+    try{
+      const res = await fetch(PLAYERS_URL, { cache: 'no-cache' }); // unchanged file = cheap "not modified"
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      if(!j || !j.players || !Object.keys(j.players).length) throw new Error('empty');
+      data = j.players;
+    }catch(e){
+      console.warn(PLAYERS_URL + ' unavailable (' + e.message + '); downloading the full player list from Sleeper');
+      data = slimPlayers(await fetchJSON(API + '/players/nfl'));
+      source = 'sleeper';
+    }
     const ts = Date.now();
     try{
-      ['sleeper_players_cache_v1', 'sleeper_players_cache_v2'].forEach(function(k){ localStorage.removeItem(k); });
-      localStorage.setItem(PLAYERS_CACHE_KEY, JSON.stringify({ ts: ts, data: data }));
+      ['sleeper_players_cache_v1', 'sleeper_players_cache_v2', 'sleeper_players_cache_v3'].forEach(function(k){ localStorage.removeItem(k); });
+      lsSet(PLAYERS_CACHE_KEY, JSON.stringify({ ts: ts, data: data, source: source }));
     }
     catch(e){ console.warn('Could not cache players locally:', e); }
-    return { ts: ts, data: data };
+    return { ts: ts, data: data, source: source };
   }
   // The full dump is well over iOS Safari's ~5MB localStorage quota, so keep only the fields we render.
   function slimPlayers(full){
@@ -2153,6 +2170,7 @@
       ctx.myRoster = myRoster;
       ctx.players = players;
       ctx.playersTs = playersCache.ts;
+      ctx.playersSource = playersCache.source || 'sleeper';
       ctx.lastRosters = rosters;
       ctx.rosterPositions = (league.roster_positions || []).filter(function(p){ return p !== 'BN' && p !== 'IR' && p !== 'TAXI'; });
       ctx.originalStarters = (myRoster.starters || []).slice();
@@ -2227,7 +2245,7 @@
     ctx.refreshing = true; renderFreshness();
     let changed = false, failed = false;
     try{
-      const playersP = (opts.manual || isStale('players', ctx.playersTs)) ? downloadPlayers() : null;
+      const playersP = (opts.manual || isStale(ctx.playersSource === 'sleeper' ? 'daily' : 'players', ctx.playersTs)) ? downloadPlayers() : null;
       if(playersP) playersP.catch(function(){});
       const nflP = fetchNflverse(ctx.season);
       if(!opts.topUp){ // topUp: the load that just ran already fetched these
@@ -2239,7 +2257,7 @@
         changed = true;
       }
       if(playersP){
-        try{ const pc = await playersP; if(loadId !== ctx.loadId) return; ctx.players = pc.data; ctx.playersTs = pc.ts; changed = true; }
+        try{ const pc = await playersP; if(loadId !== ctx.loadId) return; ctx.players = pc.data; ctx.playersTs = pc.ts; ctx.playersSource = pc.source; changed = true; }
         catch(e){ console.warn('Player database refresh failed; keeping the cached copy', e); }
       }
       if(changed) ctx.freeAgents = computeFreeAgents(ctx.lastRosters);
