@@ -747,6 +747,54 @@
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
   .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
+  /* ---- matchup card, opponent view, standings ---- */
+  .mu-card{ display: block; width: 100%; text-align: left; border: none; font: inherit; color: var(--text); cursor: pointer; margin: 0 0 12px;
+    padding: 14px 16px; border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow); -webkit-tap-highlight-color: transparent;
+    transition: transform .3s var(--spring); }
+  .mu-card:active{ transform: scale(.985); }
+  .mu-head{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .mu-link{ font-size: 12.5px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .mu-row{ display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+  .mu-side{ min-width: 0; } .mu-side.opp{ text-align: right; }
+  .mu-name{ font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mu-pts{ font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
+  .mu-pts.up{ color: var(--accent); } .mu-pts.down{ color: var(--danger); }
+  .mu-sub{ font-size: 11.5px; color: var(--text-3); }
+  .mu-vs{ font-size: 12px; font-weight: 800; color: var(--text-3); }
+  .mu-foot{ margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--hair); font-size: 13px; font-weight: 600; color: var(--text-2); }
+  .mu-foot.up{ color: var(--accent); } .mu-foot.down{ color: var(--danger); }
+  .mu-foot .dim{ font-weight: 500; color: var(--text-3); }
+  .rows-card{ background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 4px 0; overflow: hidden; margin-bottom: 14px; }
+  .opp-view{ max-width: 760px; margin: 0 auto; }
+  .opp-head h2{ margin: 2px 0 4px; font-size: 24px; letter-spacing: -0.02em; }
+  .opp-sub{ color: var(--text-2); font-size: 14px; margin-bottom: 14px; }
+  .opp-sub b{ color: var(--text); }
+  .callout.ok{ background: var(--accent-soft); color: var(--accent); }
+  .opp-bench summary{ cursor: pointer; font-weight: 700; font-size: 15px; padding: 6px 2px 10px; }
+  .st-card{ padding: 4px 0; overflow: hidden; }
+  .st-row{ display: grid; grid-template-columns: 28px minmax(0, 1fr) 54px 58px 58px; align-items: center; gap: 6px; padding: 10px 14px; font-size: 14px; border-top: 1px solid var(--hair); }
+  .st-row:first-child{ border-top: none; }
+  .st-headrow{ font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text-3); padding-top: 8px; padding-bottom: 8px; }
+  .st-rank{ color: var(--text-3); font-variant-numeric: tabular-nums; }
+  .st-team{ font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .st-div{ margin-left: 6px; font-size: 10.5px; font-weight: 600; color: var(--text-3); }
+  .st-rec, .st-num{ text-align: right; font-variant-numeric: tabular-nums; }
+  .st-num{ color: var(--text-2); }
+  .st-row.in .st-rank{ color: var(--accent); font-weight: 700; }
+  .st-row.mine{ background: var(--accent-soft); }
+  .st-cutline{ position: relative; height: 0; border-top: 2px dashed var(--accent); margin: 0 14px; }
+  .st-cutline span{ position: absolute; right: 0; top: -9px; padding: 0 6px; background: var(--surface); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+  .st-note{ color: var(--text-3); font-size: 12.5px; line-height: 1.5; margin: 10px 2px 24px; }
+  .st-note b{ color: var(--warn); }
+  .st-empty{ padding: 16px; color: var(--text-2); margin-bottom: 12px; }
+  #league-mu .mu-card{ margin-bottom: 18px; }
+  @media (max-width: 560px){
+    .mu-pts{ font-size: 26px; }
+    .st-row{ grid-template-columns: 20px minmax(0, 1fr) 50px 46px 46px; padding: 10px 12px; font-size: 13px; gap: 4px; }
+    .st-headrow{ letter-spacing: 0; }
+    .st-rec{ white-space: nowrap; }
+  }
+
   /* ---- head-to-head ---- */
   .vs-btn{ flex-shrink: 0; display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 999px;
     background: var(--surface-3); color: var(--text-2); font: inherit; font-size: 11px; font-weight: 800; letter-spacing: .03em; cursor: pointer;
@@ -1040,6 +1088,7 @@
       <span class="nav-thumb"></span>
       <button class="nav-btn" data-view="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>Lineup</span><span class="nav-badge" data-bye-badge hidden></span></button>
       <button class="nav-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>Waivers</span></button>
+      <button class="nav-btn" data-view="league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg><span>League</span></button>
       <button class="nav-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Compare</span></button>
       <button class="nav-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Settings</span></button>
     </nav>
@@ -1065,6 +1114,7 @@
     </header>
 
     <div id="lineup-top">
+      <div id="mu-slot"></div>
       <div class="kpis">
         <div class="kpi kpi-hero"><div class="eyebrow">Projected points</div><div class="kpi-big num" id="kpi-proj">—</div><div class="kpi-cap">Your planned lineup</div></div>
         <div class="kpi"><div class="eyebrow">vs Sleeper</div><div class="kpi-mid num flat" id="kpi-delta">±0.0</div><div class="kpi-cap" id="kpi-delta-cap">No changes yet</div></div>
@@ -1096,6 +1146,13 @@
           <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
+        </section>
+
+        <section class="view" id="league-view" style="display:none;">
+          <div id="league-mu"></div>
+          <div class="section-title">Standings <span style="opacity:0.7;" id="st-sub"></span></div>
+          <div class="card st-card"><div id="standings"></div></div>
+          <p class="st-note" id="st-note"></p>
         </section>
 
         <section class="view" id="compare-view" style="display:none;">
@@ -1137,6 +1194,7 @@
     <span class="tab-thumb"></span>
     <button class="tab-btn" data-view="roster"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Lineup<span class="nav-badge" data-bye-badge hidden></span></button>
     <button class="tab-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Waivers</button>
+    <button class="tab-btn" data-view="league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg>League</button>
     <button class="tab-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Compare</button>
     <button class="tab-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</button>
   </nav>
@@ -1297,6 +1355,7 @@
     tabNav: document.getElementById('tab-nav'),
     compareView: document.getElementById('compare-view'),
     settingsView: document.getElementById('settings-view'),
+    leagueView: document.getElementById('league-view'),
     cmpEmpty: document.getElementById('cmp-empty'),
     lineupTop: document.getElementById('lineup-top'),
     panes: document.getElementById('panes'),
@@ -2099,7 +2158,7 @@
     els.rosterScreen.style.display = '';
     els.rosterScreen.classList.add('is-loading');
     ctx.view = null;
-    ['rosterView', 'faView', 'compareView', 'settingsView'].forEach(function(k){ els[k].style.display = k === 'rosterView' ? '' : 'none'; });
+    ['rosterView', 'faView', 'compareView', 'settingsView', 'leagueView'].forEach(function(k){ els[k].style.display = k === 'rosterView' ? '' : 'none'; });
     els.lineupTop.style.display = '';
     els.panes.classList.remove('solo');
     els.byeAlert.classList.add('gone');
@@ -2229,6 +2288,8 @@
       ctx.playersTs = playersCache.ts;
       ctx.playersSource = playersCache.source || 'sleeper';
       ctx.lastRosters = rosters;
+      ctx.users = users;
+      const matchupsP = fetchMatchups(leagueId, week);
       ctx.rosterPositions = (league.roster_positions || []).filter(function(p){ return p !== 'BN' && p !== 'IR' && p !== 'TAXI'; });
       ctx.originalStarters = (myRoster.starters || []).slice();
       while(ctx.originalStarters.length < ctx.rosterPositions.length) ctx.originalStarters.push('0');
@@ -2251,6 +2312,7 @@
 
       ctx.freeAgents = computeFreeAgents(rosters);
       ctx.faLimit = FA_LIST_LIMIT;
+      ctx.matchups = await matchupsP;
       ctx.focus = null;
       els.rosterScreen.classList.remove('is-loading');
       els.kpiProj.textContent = '0.0'; // so the total counts up on first load
@@ -2313,6 +2375,8 @@
         const projRaw = await getWeekProjections(ctx.season, bundle.week);
         if(loadId !== ctx.loadId) return;
         applyLeagueBundle(bundle, projRaw);
+        ctx.matchups = (await fetchMatchups(leagueId, ctx.week)) || ctx.matchups;
+        if(loadId !== ctx.loadId) return;
         changed = true;
       }
       if(playersP){
@@ -2374,7 +2438,7 @@
     const weekRolled = bundle.week !== ctx.week;
     const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     const layoutChanged = JSON.stringify(positions) !== JSON.stringify(ctx.rosterPositions);
-    ctx.league = bundle.league; ctx.myRoster = my; ctx.lastRosters = bundle.rosters; ctx.rosterPositions = positions;
+    ctx.league = bundle.league; ctx.myRoster = my; ctx.lastRosters = bundle.rosters; ctx.users = bundle.users; ctx.rosterPositions = positions;
     if(weekRolled){ ctx.week = bundle.week; ctx.weekRolled = true; }
     if(!dirty || weekRolled || layoutChanged){ ctx.draftStarters = orig.slice(); if(dirty) hideOptNote(); }
     else {
@@ -2444,10 +2508,134 @@
     if(ctx.lastRefresh && Date.now() - ctx.lastRefresh > (isGameDay(Date.now()) ? GAME_DAY_MIN_GAP : HOUR)) refreshData();
   }, 30 * 1000);
 
+  // ---- this week's matchup (Sleeper /league/{id}/matchups/{week}) ----
+  async function fetchMatchups(leagueId, week){
+    try{ const m = await fetchJSON(API + '/league/' + leagueId + '/matchups/' + week); return Array.isArray(m) && m.length ? m : null; }
+    catch(e){ console.warn('Matchups unavailable', e); return null; }
+  }
+  function rosterName(rosterId){
+    const r = (ctx.lastRosters || []).find(function(x){ return x.roster_id === rosterId; });
+    const u = r && (ctx.users || []).find(function(x){ return x.user_id === r.owner_id; });
+    return (u && u.metadata && u.metadata.team_name) || (u && u.display_name) || 'Team ' + rosterId;
+  }
+  // My opponent this week, with their Sleeper starters padded to the league's slots. null = no matchup (bye, playoffs, no data).
+  function myMatchup(){
+    if(!ctx.matchups || !ctx.myRoster) return null;
+    const me = ctx.matchups.find(function(m){ return m.roster_id === ctx.myRoster.roster_id; });
+    if(!me || me.matchup_id == null) return null;
+    const opp = ctx.matchups.find(function(m){ return m.matchup_id === me.matchup_id && m.roster_id !== me.roster_id; });
+    if(!opp) return null;
+    const starters = (opp.starters || []).slice();
+    while(starters.length < ctx.rosterPositions.length) starters.push('0');
+    const roster = (ctx.lastRosters || []).find(function(r){ return r.roster_id === opp.roster_id; }) || {};
+    return { rosterId: opp.roster_id, name: rosterName(opp.roster_id), starters: starters, players: roster.players || [], roster: roster };
+  }
+  function marginText(d){ return Math.abs(d) < 0.05 ? 'dead even' : (d > 0 ? 'ahead by ' : 'behind by ') + Math.abs(d).toFixed(1); }
+  // Projected totals use the same league-scored projections as everything else.
+  function matchupCardHTML(){
+    const mu = myMatchup();
+    if(!mu) return '';
+    const sleeperTotal = sumProj(ctx.originalStarters), planTotal = sumProj(ctx.draftStarters), oppTotal = sumProj(mu.starters);
+    const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    const mine = dirty ? planTotal : sleeperTotal, d = mine - oppTotal;
+    const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down';
+    return '<button type="button" class="mu-card" data-open-opp aria-label="This week’s matchup. Open ' + escapeHTML(mu.name) + '’s lineup">' +
+      '<div class="mu-head"><span class="eyebrow">Week ' + ctx.week + ' matchup · projected</span><span class="mu-link">Their lineup ›</span></div>' +
+      '<div class="mu-row">' +
+        '<div class="mu-side"><div class="mu-name">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="mu-pts num' + tone + '">' + mine.toFixed(1) + '</div>' +
+          (dirty ? '<div class="mu-sub">Your plan · Sleeper lineup ' + sleeperTotal.toFixed(1) + '</div>' : '<div class="mu-sub">Your Sleeper lineup</div>') + '</div>' +
+        '<div class="mu-vs" aria-hidden="true">vs</div>' +
+        '<div class="mu-side opp"><div class="mu-name">' + escapeHTML(mu.name) + '</div><div class="mu-pts num">' + oppTotal.toFixed(1) + '</div><div class="mu-sub">Their Sleeper lineup</div></div>' +
+      '</div>' +
+      '<div class="mu-foot' + tone + '">' + (dirty
+        ? 'With your changes you’re ' + marginText(planTotal - oppTotal) + ' <span class="dim">(Sleeper lineup: ' + marginText(sleeperTotal - oppTotal) + ')</span>'
+        : 'You’re projected ' + marginText(d)) + '</div>' +
+    '</button>';
+  }
+  function renderMatchupCard(){
+    const slot = document.getElementById('mu-slot');
+    if(slot) slot.innerHTML = matchupCardHTML();
+  }
+  document.addEventListener('click', function(e){
+    const b = e.target.closest && e.target.closest('[data-open-opp]');
+    if(b && myMatchup()) openMax({ kind: 'opp' }, b);
+  });
+
+  // Opponent's lineup, same rows as mine (read-only), with the holes called out.
+  function oppHTML(){
+    const mu = myMatchup();
+    if(!mu) return '<div class="empty-state">No matchup this week.</div>';
+    const holes = [];
+    ctx.rosterPositions.forEach(function(label, i){
+      const pid = mu.starters[i];
+      if(!pid || pid === '0' || !ctx.players[pid]){ holes.push('the ' + escapeHTML(label) + ' slot is empty'); return; }
+      const nm = escapeHTML(playerName(ctx.players[pid]));
+      if(isOnBye(pid)) holes.push(nm + ' is on a bye');
+      else { const st = effectiveStatus(pid); if(cantPlay(st)) holes.push(nm + ' is ' + escapeHTML(statusInfo(st).label)); }
+    });
+    const oppTotal = sumProj(mu.starters), mine = sumProj(ctx.draftStarters);
+    const starterSet = new Set(mu.starters);
+    const bench = mu.players.filter(function(pid){ return !starterSet.has(pid) && ctx.players[pid]; })
+      .sort(function(a, b){ return (ctx.projections[b] || -1) - (ctx.projections[a] || -1); });
+    return '<div class="opp-view">' +
+      '<div class="opp-head"><div><div class="eyebrow">Week ' + ctx.week + ' opponent</div><h2>' + escapeHTML(mu.name) + '</h2>' +
+        '<div class="opp-sub">Projected <b>' + oppTotal.toFixed(1) + '</b> · you ' + mine.toFixed(1) + ' (' + marginText(mine - oppTotal) + ')</div></div></div>' +
+      (holes.length
+        ? '<div class="callout"><b>' + holes.length + ' hole' + (holes.length > 1 ? 's' : '') + ' in their lineup:</b>&nbsp;' + holes.join('; ') + '.</div>'
+        : '<div class="callout ok"><b>No holes:</b>&nbsp;every slot has an active player.</div>') +
+      '<div class="section-title">Starters</div><div class="rows-card">' +
+        ctx.rosterPositions.map(function(label, i){ return playerRow(mu.starters[i], label, i, { readonly: true }); }).join('') + '</div>' +
+      (bench.length ? '<details class="opp-bench"><summary>Bench (' + bench.length + ')</summary><div class="rows-card">' +
+        bench.map(function(pid){ return playerRow(pid, ctx.players[pid].position, undefined, { readonly: true }); }).join('') + '</div></details>' : '') +
+    '</div>';
+  }
+
+  // ---- standings & playoff picture ----
+  // Order: wins, then ties, then points for. Checked against real Sleeper playoff brackets (2025 leagues with
+  // playoff_seed_type 0, with and without divisions): the playoff teams, byes and first-round pairings all match.
+  // A league with another seeding setting was NOT reproduced by this order, so it's shown with a warning.
+  function standings(){
+    return (ctx.lastRosters || []).map(function(r){
+      const st = r.settings || {};
+      return { id: r.roster_id, name: rosterName(r.roster_id), w: st.wins || 0, l: st.losses || 0, t: st.ties || 0,
+        pf: (st.fpts || 0) + (st.fpts_decimal || 0) / 100, pa: (st.fpts_against || 0) + (st.fpts_against_decimal || 0) / 100,
+        div: st.division, mine: r.roster_id === ctx.myRoster.roster_id };
+    }).sort(function(a, b){ return b.w - a.w || b.t - a.t || b.pf - a.pf; });
+  }
+  function renderLeague(){
+    const mu = document.getElementById('league-mu');
+    if(mu) mu.innerHTML = matchupCardHTML() || '<div class="card st-empty">No head-to-head matchup this week.</div>';
+    const s = (ctx.league && ctx.league.settings) || {};
+    const rows = standings();
+    const n = s.playoff_teams || 0, divs = s.divisions || 0, seedType = s.playoff_seed_type || 0;
+    const lastReg = (s.playoff_week_start || 15) - 1, left = Math.max(0, lastReg - ctx.week + 1);
+    document.getElementById('st-sub').textContent = '— ' + (left ? left + ' regular-season week' + (left > 1 ? 's' : '') + ' left, incl. week ' + ctx.week : 'regular season is over');
+    const hasTies = rows.some(function(r){ return r.t; });
+    document.getElementById('standings').innerHTML =
+      '<div class="st-row st-headrow"><span class="st-rank">#</span><span class="st-team">Team</span><span class="st-rec">W-L' + (hasTies ? '-T' : '') + '</span><span class="st-num">PF</span><span class="st-num">PA</span></div>' +
+      rows.map(function(r, i){
+        const cut = n && i === n - 1 && i < rows.length - 1;
+        return '<div class="st-row' + (r.mine ? ' mine' : '') + (n && i < n ? ' in' : '') + (cut ? ' cut' : '') + '">' +
+          '<span class="st-rank">' + (i + 1) + '</span>' +
+          '<span class="st-team">' + escapeHTML(r.name) + (divs && r.div ? '<span class="st-div">Div ' + r.div + '</span>' : '') + '</span>' +
+          '<span class="st-rec">' + r.w + '-' + r.l + (hasTies ? '-' + r.t : '') + '</span>' +
+          '<span class="st-num">' + r.pf.toFixed(1) + '</span><span class="st-num">' + r.pa.toFixed(1) + '</span></div>' +
+          (cut ? '<div class="st-cutline"><span>Playoff line · top ' + n + '</span></div>' : '');
+      }).join('');
+    const notes = [];
+    notes.push(n ? 'Top ' + n + ' of ' + rows.length + ' make the playoffs, starting week ' + (s.playoff_week_start || '?') + '.' : 'Playoff settings aren’t available for this league.');
+    if(seedType === 0) notes.push('Ranked by record, then points for: Sleeper’s default, checked against real Sleeper playoff brackets.');
+    else notes.push('<b>Heads-up:</b> your league uses a different playoff seeding setting (' + seedType + '). I couldn’t confirm how Sleeper applies it, so the order and playoff line here may not match Sleeper’s.');
+    if(divs) notes.push('Your league has divisions. Whether division winners are guaranteed a spot isn’t confirmed, so treat the line as approximate.');
+    notes.push('No playoff odds: they’d need a season simulation, not a guess.');
+    document.getElementById('st-note').innerHTML = notes.join(' ');
+  }
+
   function rerenderEverything(){
     renderAll();
     if(ctx.view === 'fa') renderFreeAgents();
     if(ctx.view === 'compare') renderCompare();
+    if(ctx.view === 'league') renderLeague();
     renderStatus();
     refreshFocus();
     if(maxOpen()) renderMax(0);
@@ -2696,6 +2884,7 @@
 
   // Summary cards: projected total, change vs the Sleeper lineup, who's actually playing, record.
   function renderLineupCompare(){
+    renderMatchupCard();
     const isDirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     els.resetBtn.classList.toggle('is-hidden', !isDirty);
     els.compareBtn.classList.toggle('is-hidden', !isDirty);
@@ -2843,7 +3032,14 @@
     setDiff(els.cmpDiff, newTotal - origTotal);
   }
 
-  function playerRow(playerId, slotLabel, slotIndex){
+  // opts.readonly: another team's player (opponent view): no swap/tap-to-edit, opens the player page, holes in red.
+  function playerRow(playerId, slotLabel, slotIndex, opts){
+    const ro = !!(opts && opts.readonly);
+    if(ro && (!playerId || playerId === '0' || !ctx.players[playerId])){
+      return '<div class="slot-row static bye-start"><div class="slot-tag">' + escapeHTML(slotLabel || '—') + '</div>' +
+        '<span class="avatar add-avatar" aria-hidden="true"></span><div class="player-info"><div class="player-name empty-name">Empty</div>' +
+        '<div class="player-meta">Nobody in this slot</div></div><div class="stat-col"><div class="val">—</div><div class="cap">proj</div></div></div>';
+    }
     if(!playerId || playerId === '0'){
       // An empty starting slot is a lineup problem: make it a real, tappable row that opens "add to this slot".
       const group = groupForSlot(slotLabel, null);
@@ -2872,24 +3068,25 @@
     const pos = p.position || '';
     const team = p.team || 'FA';
     const color = posColor(pos);
-    const isNewHere = slotIndex !== undefined && ctx.originalStarters[slotIndex] !== ctx.draftStarters[slotIndex];
+    const isNewHere = !ro && slotIndex !== undefined && ctx.originalStarters[slotIndex] !== ctx.draftStarters[slotIndex];
     const statusChip = injuryChip(p.injury_status);
     const newChip = (isNewHere ? '<span class="status-chip new-tag">New</span>' : '') +
       (isLocked(playerId) ? '<span class="status-chip lock-tag" title="Game has started">Locked</span>' : '') +
-      (slotIndex !== undefined && pos === 'TE' && isFlexSlot(ctx.rosterPositions[slotIndex]) ? '<span class="status-chip te-flex-tag" title="A tight end is in your flex slot">TE in ' + escapeHTML(ctx.rosterPositions[slotIndex]) + '</span>' : '');
+      (!ro && slotIndex !== undefined && pos === 'TE' && isFlexSlot(ctx.rosterPositions[slotIndex]) ? '<span class="status-chip te-flex-tag" title="A tight end is in your flex slot">TE in ' + escapeHTML(ctx.rosterPositions[slotIndex]) + '</span>' : '');
     const avatarUrl = playerImageUrl(playerId);
     const proj = ctx.projections[playerId];
     const last = lastGamePts(playerId);
     const keyStats = keyStatsLine(playerId, pos);
-    const byeStarter = slotIndex !== undefined && isOnBye(playerId); // a starter on bye is a lineup mistake
+    const byeStarter = slotIndex !== undefined && (isOnBye(playerId) || (ro && cantPlay(effectiveStatus(playerId)))); // a starter who won't play
     const byeChip = byeStarter ? '<span class="status-chip bye-tag">Bye</span>' : '';
 
     return '' +
-      '<div class="slot-row' + (isNewHere ? ' swapped' : '') + (byeStarter ? ' bye-start' : '') + '" data-player-id="' + escapeHTML(playerId) + '" data-slot-index="' + (slotIndex !== undefined ? slotIndex : '') + '">' +
+      '<div class="slot-row' + (isNewHere ? ' swapped' : '') + (byeStarter ? ' bye-start' : '') + '" ' +
+        (ro ? 'data-open="' + escapeHTML(playerId) + '"' : 'data-player-id="' + escapeHTML(playerId) + '" data-slot-index="' + (slotIndex !== undefined ? slotIndex : '') + '"') + '>' +
         '<div class="slot-tag" style="color:' + color + '; border-color:' + color + ';">' + escapeHTML(slotLabel || pos) + '</div>' +
-        '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + analyzeAttr(playerId) + '>' +
+        '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + (ro ? '' : analyzeAttr(playerId)) + '>' +
         '<div class="player-info">' +
-          '<div class="player-name">' + analyzeName(playerId, name) + byeChip + statusChip + newChip + '</div>' +
+          '<div class="player-name">' + (ro ? escapeHTML(name) : analyzeName(playerId, name)) + byeChip + statusChip + newChip + '</div>' +
           '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + '</span> ' + depthChipHTML(playerId) + '</div>' +
           (keyStats ? '<div class="key-stats">' + keyStats + '</div>' : '') +
           signalsHTML(playerId, false) +
@@ -2992,7 +3189,7 @@
   }
 
   // ---- available players (informational only — not part of the lineup builder) ----
-  const VIEW_TITLES = { roster: 'Lineup', fa: 'Waivers', compare: 'Compare', settings: 'Settings' };
+  const VIEW_TITLES = { roster: 'Lineup', fa: 'Waivers', league: 'League', compare: 'Compare', settings: 'Settings' };
   // Fade a list's rows in one after another (on load and when you switch screens, not on every re-render).
   function staggerIn(list){
     if(!list || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -3011,8 +3208,9 @@
     els.faView.style.display = view === 'fa' ? '' : 'none';
     els.compareView.style.display = view === 'compare' ? '' : 'none';
     els.settingsView.style.display = view === 'settings' ? '' : 'none';
+    els.leagueView.style.display = view === 'league' ? '' : 'none';
     els.lineupTop.style.display = view === 'roster' ? '' : 'none';
-    els.panes.classList.toggle('solo', view === 'compare' || view === 'settings');
+    els.panes.classList.toggle('solo', view === 'compare' || view === 'settings' || view === 'league');
 
     els.pageEyebrow.textContent = 'Week ' + ctx.week + ' · ' + (ctx.league ? ctx.league.name : '');
     els.pageTitle.textContent = VIEW_TITLES[view];
@@ -3020,14 +3218,16 @@
     els.pageSub.textContent = view === 'roster' ? els.teamName.textContent + (typeof st.wins === 'number' ? ' · ' + st.wins + '–' + st.losses + (st.ties ? '–' + st.ties : '') : '')
       : view === 'fa' ? 'Not on any roster in your league, sorted by projection.'
       : view === 'compare' ? 'Your Sleeper lineup next to your plan. Nothing is sent to Sleeper.'
+      : view === 'league' ? 'This week’s matchup and where everyone stands.'
       : '';
     document.querySelector('.top-actions').style.display = (view === 'roster' || view === 'compare') ? '' : 'none';
 
     if(view === 'fa') renderFreeAgents();
     if(view === 'compare') renderCompare();
     if(view === 'settings') renderStatus();
+    if(view === 'league') renderLeague();
     if(changed){
-      [els.rosterView, els.faView, els.compareView, els.settingsView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
+      [els.rosterView, els.faView, els.compareView, els.settingsView, els.leagueView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
       if(view === 'roster' && !ctx.deferEntrance){ staggerIn(els.startersList); staggerIn(els.benchList); }
       if(view === 'fa') staggerIn(els.faList);
       if(!paneMode()) window.scrollTo(0, 0);
@@ -3480,6 +3680,7 @@
   function maxOpen(){ return !maxEl.hidden; }
   function maxTitleFor(e){
     if(e.kind === 'h2h') return lastName(e.pids[0]) + ' vs ' + lastName(e.pids[1]);
+    if(e.kind === 'opp'){ const mu = myMatchup(); return mu ? mu.name : 'Opponent'; }
     return e.kind === 'roster' ? 'Lineup · full view' : e.kind === 'fa' ? 'Waivers · full view' : playerName(ctx.players[e.pid]);
   }
   function insetOf(el){
@@ -3489,7 +3690,7 @@
   }
   function renderMax(dir){
     const e = maxStack[maxStack.length - 1];
-    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : maxPlayerHTML(e.pid);
+    maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : e.kind === 'opp' ? oppHTML() : maxPlayerHTML(e.pid);
     maxBody.style.setProperty('--bar-h', maxEl.querySelector('.max-bar').offsetHeight + 'px');
     maxTitle.textContent = maxTitleFor(e);
     maxBackLabel.textContent = maxStack.length > 1 ? maxTitleFor(maxStack[maxStack.length - 2]) : 'Back to ' + VIEW_TITLES[ctx.view];

@@ -32,6 +32,11 @@ INJURY_POS = SKILL + ('K',)        # positions that get injury / practice data
 # gzipped instead of the 2.6 MB / 14.7 MB raw /players/nfl, so the app can re-check it on every open.
 PLAYER_FIELDS = ['full_name', 'first_name', 'last_name', 'position', 'fantasy_positions', 'team', 'injury_status',
                  'injury_body_part', 'injury_notes', 'injury_start_date', 'practice_participation', 'practice_description']
+# Sleeper stat/projection keys that never score (the app scores with the league's own settings).
+NON_SCORING = re.compile(r'^(pts_|pos_rank|rank_|adp_|pos_adp|gp$|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|.*_(ypa|ypc|ypr|ypt|pct|rtg|lng|avg)$)')
+DVP_POS = ('QB', 'RB', 'WR', 'TE', 'K')
+ROS_POS = ('QB', 'RB', 'WR', 'TE', 'K', 'DEF')
+LAST_FANTASY_WEEK = 17   # rest-of-season sums run through the usual fantasy championship week
 PRACTICE = {'Did Not Participate In Practice': 'DNP', 'Limited Participation in Practice': 'LP', 'Full Participation in Practice': 'FP'}
 
 
@@ -102,6 +107,57 @@ def practice_days(game_date):
     Mon/Tue/Wed for Thursday (short week), Wed/Thu/Fri for Saturday. Mirrored in index.html (practiceDays)."""
     back = (3, 2, 1) if game_date.weekday() in (3, 5) else (4, 3, 2)   # Thu / Sat games
     return [game_date - datetime.timedelta(days=b) for b in back]
+
+
+def sleeper_weekly(kind, season, week, positions):
+    """Sleeper's weekly stats or projections (unofficial endpoint the app already uses): a list of
+    {player_id, team, opponent, player: {position}, stats}."""
+    q = '&'.join('position[]=' + x for x in positions)
+    return json.loads(get(f'https://api.sleeper.app/{kind}/nfl/{season}/{week}?season_type=regular&{q}'))
+
+
+def scoring_stats(stats):
+    return {k: v for k, v in (stats or {}).items() if isinstance(v, (int, float)) and v and not NON_SCORING.match(k)}
+
+
+def build_dvp(season, through_week):
+    """Raw stats each defense has allowed to each position, summed over completed weeks, plus games played.
+    Scoring is linear (stat x weight), so the app can score these sums with any league's settings."""
+    dvp = {}
+    for week in range(1, through_week + 1):
+        print(f'  sleeper stats week {week} (defense vs position)', file=sys.stderr)
+        for e in sleeper_weekly('stats', season, week, DVP_POS):
+            pos, opp = (e.get('player') or {}).get('position'), team(e.get('opponent') or '')
+            st = scoring_stats(e.get('stats'))
+            if pos not in DVP_POS or not opp or not st:
+                continue
+            d = dvp.setdefault(opp, {}).setdefault(pos, {'g': [], 's': {}})
+            if week not in d['g']:
+                d['g'].append(week)
+            for k, v in st.items():
+                d['s'][k] = round(d['s'].get(k, 0) + v, 3)
+    for opp in dvp.values():
+        for d in opp.values():
+            d['g'] = len(d['g'])
+    return dvp
+
+
+def build_ros(season, from_week, last_week=LAST_FANTASY_WEEK):
+    """Each player's projected raw stats summed from from_week through last_week. Bye weeks have empty
+    projections, so they add nothing. 'w' = weeks with a projection."""
+    ros = {}
+    for week in range(from_week, last_week + 1):
+        print(f'  sleeper projections week {week} (rest of season)', file=sys.stderr)
+        for e in sleeper_weekly('projections', season, week, ROS_POS):
+            st = scoring_stats(e.get('stats'))
+            if not st:
+                continue
+            r = ros.setdefault(str(e['player_id']), {'w': 0, 's': {}})
+            r['w'] += 1
+            for k, v in st.items():
+                r['s'][k] = round(r['s'].get(k, 0) + v, 2)
+    # keep fantasy-relevant players only (more than a token projection)
+    return {pid: r for pid, r in ros.items() if r['s'].get('rec', 0) + r['s'].get('rush_yd', 0) + r['s'].get('pass_yd', 0) + r['s'].get('fgm', 0) + r['s'].get('xpm', 0) + r['w'] * (1 if pid.isalpha() else 0) > 1}
 
 
 def load_previous(path):
@@ -309,6 +365,28 @@ def main():
 
     old = load_previous(args.out)
     out, slim = build(args.season, old)
+
+    # Defense vs position (completed weeks) goes in nflverse.json; rest-of-season projections in their own file,
+    # which the app only loads for the waiver screen and the trade helper.
+    state = json.loads(get('https://api.sleeper.app/v1/state/nfl'))
+    cur_week = int(state.get('week') or 1) if str(state.get('season')) == str(args.season) else LAST_FANTASY_WEEK + 1
+    try:
+        out['dvp'] = build_dvp(args.season, min(cur_week - 1, 18))
+        out['dvp_through'] = min(cur_week - 1, 18)
+    except Exception as e:
+        print('  (defense vs position unavailable:', e, ')', file=sys.stderr)
+    ros_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'ros.json')
+    try:
+        ros = build_ros(args.season, cur_week) if cur_week <= LAST_FANTASY_WEEK else {}
+        old_ros = load_previous(ros_path)
+        if old_ros.get('players') != ros or old_ros.get('from_week') != cur_week:
+            with open(ros_path, 'w', encoding='utf-8') as f:
+                json.dump({'season': args.season, 'generated': out['generated'], 'from_week': cur_week, 'through_week': LAST_FANTASY_WEEK, 'players': ros}, f, separators=(',', ':'))
+            print(f'Wrote {ros_path} ({os.path.getsize(ros_path):,} bytes, {len(ros):,} players, weeks {cur_week}-{LAST_FANTASY_WEEK}).', file=sys.stderr)
+        else:
+            print('No projection changes; ros.json left as is.', file=sys.stderr)
+    except Exception as e:
+        print('  (rest-of-season projections unavailable:', e, ')', file=sys.stderr)
 
     # players.json (Sleeper player database, trimmed): rewritten only when a player's fields changed.
     players_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'players.json')
