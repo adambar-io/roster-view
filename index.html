@@ -792,6 +792,7 @@
   .h2h-sticky{ position: sticky; top: var(--bar-h, 56px); z-index: 2; display: flex; justify-content: space-between; padding: 8px 14px; margin: 0 0 10px;
     border-radius: 12px; background: color-mix(in srgb, var(--bg) 88%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--text-2); box-shadow: 0 0 0 1px var(--hair); }
+  .neg-air{ color: var(--text-3); cursor: help; text-decoration: underline dotted; text-underline-offset: 2px; }
   .h2h-note{ font-size: 13px; color: var(--text-2); margin: 0 2px 10px; }
   .h2h-card{ padding: 6px 14px 10px; }
   .h2h-sec h3{ display: flex; align-items: baseline; gap: 8px; margin: 14px 0 6px; font-size: 15px; font-weight: 700; }
@@ -2543,6 +2544,13 @@
     return { last: last, dir: dir, recent: pts.slice(-3) };
   }
   function pct(v){ return typeof v === 'number' ? Math.round(v * 100) + '%' : '—'; }
+  // Air-yards share goes negative when a player's targets were mostly behind the line (screens, checkdowns):
+  // real nflverse values down to -39%. Show that as "<0%" with an explanation instead of a bug-looking "-7%".
+  function airPct(v){
+    return typeof v === 'number' && v < 0
+      ? '<span class="neg-air" title="Negative air yards: targets mostly behind the line of scrimmage (screens, checkdowns)">&lt;0%</span>'
+      : pct(v);
+  }
   function depthChipHTML(pid){
     const p = ctx.players[pid];
     if(!p || SKILL_POSITIONS.indexOf(p.position) === -1) return '';
@@ -2573,7 +2581,7 @@
         (tr ? ' <span class="trend ' + tr.dir + '">' + arrow + '</span>' : '') + '</span>';
     if(withShares && p.position !== 'QB'){
       html += '<span class="sig-item" title="Season avg target share"><span class="sig-k">Tgt</span> ' + pct(seasonShare(pid, 't')) + '</span>' +
-              '<span class="sig-item" title="Season avg air-yards share"><span class="sig-k">Air</span> ' + pct(seasonShare(pid, 'a')) + '</span>';
+              '<span class="sig-item" title="Season avg air-yards share"><span class="sig-k">Air</span> ' + airPct(seasonShare(pid, 'a')) + '</span>';
     }
     return html + '</div>';
   }
@@ -3319,8 +3327,9 @@
       body += secRow('Usage · nflverse');
       usage.forEach(function(u){
         const vals = weeks.map(function(w){ return (nflByWeek[w.week] || {})[u[0]]; }).filter(function(v){ return typeof v === 'number'; });
-        body += '<tr><th class="gl-wk">' + u[1] + '</th>' + cols.map(function(c){ return c.w ? '<td>' + pct((nflByWeek[c.week] || {})[u[0]]) + '</td>' : '<td class="gl-off"></td>'; }).join('') +
-          '<td class="gl-tot">—</td><td class="gl-tot">' + pct(meanOf(vals)) + '</td></tr>'; // shares don't sum; season avg of weekly shares
+        const fmt = u[0] === 'a' ? airPct : pct;
+        body += '<tr><th class="gl-wk">' + u[1] + '</th>' + cols.map(function(c){ return c.w ? '<td>' + fmt((nflByWeek[c.week] || {})[u[0]]) + '</td>' : '<td class="gl-off"></td>'; }).join('') +
+          '<td class="gl-tot">—</td><td class="gl-tot">' + fmt(meanOf(vals)) + '</td></tr>'; // shares don't sum; season avg of weekly shares
       });
     }
     if(groups.main.length){ body += secRow(POS_SECTION[p.position] || 'Stats'); groups.main.forEach(function(k){ body += statRow(k); }); }
@@ -3668,7 +3677,7 @@
       row('Snap share, season', share(a, 's'), share(b, 's'), pct, 'high');
     const catcher = ['RB', 'WR', 'TE'].indexOf(pa.position) !== -1 || ['RB', 'WR', 'TE'].indexOf(pb.position) !== -1; // not meaningful for two QBs
     if(catcher && (share(a, 't') !== null || share(b, 't') !== null)) usage += row('Target share', share(a, 't'), share(b, 't'), pct, 'high');
-    if(catcher && (share(a, 'a') !== null || share(b, 'a') !== null)) usage += row('Air yards share', share(a, 'a'), share(b, 'a'), pct, 'high');
+    if(catcher && (share(a, 'a') !== null || share(b, 'a') !== null)) usage += row('Air yards share', share(a, 'a'), share(b, 'a'), airPct, 'high');
     const depth = function(pid){ const e = ctx.nfl && ctx.nfl.players ? ctx.nfl.players[pid] : null; return e && e.d ? '<span class="depth-chip">' + escapeHTML(e.d) + '</span>' : ''; };
     if(depth(a) || depth(b)) usage += textRow('Depth chart', depth(a), depth(b));
 
@@ -3685,7 +3694,10 @@
       const extraMain = pb.position !== pa.position ? statsForPosition(pb.position, all).main.filter(function(k){ return ga.main.indexOf(k) === -1; }) : [];
       const main = ga.main.concat(extraMain);
       const rest = ga.more.filter(function(k){ return main.indexOf(k) === -1; });
-      const val = function(r, k){ if(!r) return null; if(k in r) return r[k]; return statKind(k) === 'count' ? 0 : null; };
+      // Same position: a counting stat never recorded is a real 0. Different positions: it's just not their job
+      // (an RB's rushing vs a TE), so it stays "—": neutral, and not counted in "Better in N".
+      const samePos = pa.position === pb.position;
+      const val = function(r, k){ if(!r) return null; if(k in r) return r[k]; return samePos && statKind(k) === 'count' ? 0 : null; };
       stats = main.map(function(k){ return row(statLabel(k), val(ra, k), val(rb, k), fmtStat, statDirection(k)); }).join('');
       more = rest.map(function(k){ return row(statLabel(k), val(ra, k), val(rb, k), fmtStat, statDirection(k)); }).join('');
       moreN = rest.length;
@@ -3705,7 +3717,7 @@
         '<div class="h2h-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + ' · ' + role + '</div>' +
         '<div class="h2h-score' + (wins > other ? ' lead' : '') + '">Better in <b>' + wins + '</b></div></div>';
     };
-    const note = pa.position !== pb.position ? '<div class="h2h-note">Different positions (' + escapeHTML(pa.position) + ' vs ' + escapeHTML(pb.position) + '): each stat compares what both players have.</div>' : '';
+    const note = pa.position !== pb.position ? '<div class="h2h-note">Different positions (' + escapeHTML(pa.position) + ' vs ' + escapeHTML(pb.position) + '): stats only one of them records are shown but not colored or counted.</div>' : '';
     // tally is complete once body is built, so the header (with "Better in N") comes last
     return '<div class="h2h">' +
       '<div class="h2h-head">' + who(a, 'a') + '<div class="h2h-vsmark" aria-hidden="true">VS</div>' + who(b, 'b') + '</div>' +
@@ -3788,7 +3800,7 @@
         const proj = ctx.projections[pid], v = faVsParts(pid);
         const vs = (v.txt ? '<b class="' + (v.cls === 'flat' ? 'dim' : 'trend ' + v.cls) + '">' + v.txt + '</b> ' : '') + '<span class="muted">' + escapeHTML(v.who) + '</span>';
         return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
-          (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + pct(seasonShare(pid, 'a')) + '</td>' : '') +
+          (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + airPct(seasonShare(pid, 'a')) + '</td>' : '') +
           '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td><td>' + vsBtn(pid) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (list.length ? '' : '<div class="empty-state">No available ' + escapeHTML(ctx.faPos) + ' found.</div>');
