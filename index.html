@@ -796,6 +796,20 @@
     .vs-bench-cols{ grid-template-columns: 1fr; gap: 4px; }
   }
 
+  /* ---- sortable columns (Players tab + full view) ---- */
+  .h-sort{ border: none; background: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; padding: 0; cursor: pointer; text-align: inherit; }
+  .h-sort:hover, .th-sort button:hover{ color: var(--text); }
+  .h-sort.sorted, .th-sort.sorted button{ color: var(--accent); }
+  .h-sort.sorted::after, .th-sort.sorted button::after{ content: ' ↓'; }
+  .h-sort.sorted.asc::after, .th-sort.sorted.asc button::after{ content: ' ↑'; }
+  .th-sort button{ border: none; background: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; padding: 4px 0; cursor: pointer; white-space: nowrap; }
+  .pl-dir{ font: inherit; font-size: 16px; font-weight: 700; width: 38px; height: 38px; border: none; border-radius: 10px; background: var(--surface); color: var(--text); box-shadow: inset 0 0 0 1px var(--hair); cursor: pointer; }
+  .mx-tools{ display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 10px; }
+  .mx-tools .pos-filter{ margin: 0; }
+  .mx-count{ font-size: 13px; color: var(--text-3); }
+  .mx-active{ margin: 0 0 10px; }
+  .mx-body .fa-more, #max-body .fa-more{ margin: 12px auto 20px; display: block; }
+
   /* ---- trade helper ---- */
   .trade-cta{ display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; border: none; font: inherit; color: var(--text);
     padding: 14px 16px; margin: 0 0 24px; cursor: pointer; }
@@ -1359,6 +1373,7 @@
             <div class="pos-filter" id="fa-pos-filter" role="group" aria-label="Positions"></div>
             <div class="pl-row">
               <label class="pl-sort"><span>Sort</span><select id="pl-sort" aria-label="Sort players"></select></label>
+              <button type="button" class="pl-dir" id="pl-dir">↓</button>
               <button type="button" class="pl-filter-btn" id="pl-filter-btn" aria-expanded="false">Filters</button>
               <div class="seg pl-trendkind" id="pl-trendkind" hidden><button type="button" data-trend-kind="add">Most added</button><button type="button" data-trend-kind="drop">Most dropped</button></div>
             </div>
@@ -1367,7 +1382,7 @@
           </div>
           <div id="add-drop"></div>
           <div class="section-title"><span id="pl-title">Available</span> <span style="opacity:0.7;" id="fa-sub"></span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
-          <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-col h-tgt">Tgt</div><div class="h-stat">Proj</div><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
+          <div class="list-head pl-head"><div class="h-slot"></div><button type="button" class="h-info h-sort" data-pl-sort="name">Player</button><div class="h-col h-opp">Opp</div><button type="button" class="h-col h-snap h-sort" data-pl-sort="snap" title="Season snap share">Snap</button><button type="button" class="h-col h-tgt h-sort" data-pl-sort="tgt" title="Season target share">Tgt</button><button type="button" class="h-stat h-sort" data-pl-sort="proj">Proj</button><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
         </section>
@@ -1622,7 +1637,7 @@
     view: 'roster',       // 'roster' | 'fa' | 'compare' | 'settings'
     focus: null,          // what the player panel shows: {kind:'roster', pid, slot} | {kind:'fa', pid}
     faPos: 'ALL', // derived from pl.pos by syncFaPos (older code reads it)
-    pl: { view: 'avail', pos: [], filters: [], q: '', sort: 'default', trendKind: 'add' },
+    pl: { view: 'avail', pos: [], filters: [], q: '', sort: 'default', dir: 'desc', trendKind: 'add' },
     faLimit: FA_LIST_LIMIT,
     focusPid: null,       // player currently open in the focus panel (guards async history loads)
     nfl: null,            // nflverse.json contents, or null if unavailable
@@ -4076,11 +4091,53 @@
       const want = PL_METRICS[f.k].pct ? f.v / 100 : f.v;
       list = list.filter(function(pid){ const v = metric(f.k, pid); return v !== null && (f.op === '>=' ? v >= want - 1e-9 : v <= want + 1e-9); });
     });
-    if(st.sort !== 'default' && PL_METRICS[st.sort]){
+    const dir = st.dir === 'asc' ? 1 : -1;
+    if(st.sort === 'name'){
+      list = list.slice().sort(function(a, b){ return dir * playerName(ctx.players[a]).localeCompare(playerName(ctx.players[b])); });
+    }else if(st.sort !== 'default' && PL_METRICS[st.sort]){
       const k = st.sort;
-      list = list.slice().sort(function(a, b){ const va = metric(k, a), vb = metric(k, b); return (vb === null ? -Infinity : vb) - (va === null ? -Infinity : va); });
+      list = list.slice().sort(function(a, b){
+        const va = metric(k, a), vb = metric(k, b);
+        if(va === null || vb === null) return (va === null) - (vb === null); // players without the stat go last either way
+        return dir * (va - vb);
+      });
+    }else if(st.sort === 'default' && st.dir === 'asc'){
+      list = list.slice().reverse();
     }
     return list;
+  }
+  // Tap a column: sort by it (high to low, or A-Z for names); tap the same column again to flip the direction.
+  function setSort(key){
+    const st = ctx.pl;
+    if(st.sort === key) st.dir = st.dir === 'asc' ? 'desc' : 'asc';
+    else { st.sort = key; st.dir = key === 'name' ? 'asc' : 'desc'; }
+    ctx.faLimit = PL_PAGE;
+    if((key === 'ros' && !ctx.ros) || ((key === 'avg' || key === 'gp') && !ctx.seasonData)) loadPlayersData();
+  }
+  function sortedClass(key){
+    const st = ctx.pl, active = st.sort === key || (key === 'proj' && st.sort === 'default' && st.view !== 'trend');
+    return active ? ' sorted ' + st.dir : '';
+  }
+  function sortAria(key){ const c = sortedClass(key); return c ? (c.indexOf('asc') !== -1 ? 'ascending' : 'descending') : 'none'; }
+  // Position chips (shared by the Players tab and its full-screen view).
+  function posChipsHTML(){
+    const st = ctx.pl, flexOn = ['RB', 'WR', 'TE'].every(function(x){ return st.pos.indexOf(x) !== -1; });
+    return '<button type="button" class="pos-pill' + (st.pos.length ? '' : ' active') + '" data-pl-pos="ALL" aria-pressed="' + !st.pos.length + '">All</button>' +
+      PL_POS.map(function(pos){
+        const on = st.pos.indexOf(pos) !== -1;
+        return '<button type="button" class="pos-pill' + (on ? ' active' : '') + '" data-pl-pos="' + pos + '" aria-pressed="' + on + '" style="--pill-color:' + posColor(pos) + ';">' + pos + '</button>';
+      }).join('') +
+      '<button type="button" class="pos-pill flex-pill' + (flexOn ? ' active' : '') + '" data-pl-pos="FLEX" aria-pressed="' + flexOn + '" title="RB + WR + TE">FLEX</button>';
+  }
+  function togglePos(pos){
+    const st = ctx.pl;
+    if(pos === 'ALL') st.pos = [];
+    else if(pos === 'FLEX'){
+      const trio = ['RB', 'WR', 'TE'], on = trio.every(function(x){ return st.pos.indexOf(x) !== -1; });
+      st.pos = on ? st.pos.filter(function(x){ return trio.indexOf(x) === -1; }) : st.pos.concat(trio.filter(function(x){ return st.pos.indexOf(x) === -1; }));
+    }
+    else st.pos = st.pos.indexOf(pos) !== -1 ? st.pos.filter(function(x){ return x !== pos; }) : st.pos.concat([pos]);
+    ctx.faLimit = PL_PAGE;
   }
   function filterLabel(f){
     const m = PL_METRICS[f.k];
@@ -4110,21 +4167,24 @@
       const tk = document.getElementById('pl-trendkind');
       tk.hidden = st.view !== 'trend';
       tk.querySelectorAll('[data-trend-kind]').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-trend-kind') === st.trendKind); });
-      const flexOn = ['RB', 'WR', 'TE'].every(function(x){ return st.pos.indexOf(x) !== -1; });
-      els.faPosFilter.innerHTML = '<button type="button" class="pos-pill' + (st.pos.length ? '' : ' active') + '" data-pl-pos="ALL" aria-pressed="' + !st.pos.length + '">All</button>' +
-        PL_POS.map(function(pos){
-          const on = st.pos.indexOf(pos) !== -1;
-          return '<button type="button" class="pos-pill' + (on ? ' active' : '') + '" data-pl-pos="' + pos + '" aria-pressed="' + on + '" style="--pill-color:' + posColor(pos) + ';">' + pos + '</button>';
-        }).join('') +
-        '<button type="button" class="pos-pill flex-pill' + (flexOn ? ' active' : '') + '" data-pl-pos="FLEX" aria-pressed="' + flexOn + '" title="RB + WR + TE">FLEX</button>';
+      els.faPosFilter.innerHTML = posChipsHTML();
       const sortSel = document.getElementById('pl-sort');
       sortSel.innerHTML = '<option value="default">' + (st.view === 'trend' ? 'Trending' : 'Projection') + '</option>' +
-        Object.keys(PL_METRICS).filter(function(k){ return st.view === 'trend' || k !== 'proj'; }).map(function(k){ return '<option value="' + k + '">' + PL_METRICS[k].label + '</option>'; }).join('');
-      sortSel.value = st.sort;
+        Object.keys(PL_METRICS).filter(function(k){ return st.view === 'trend' || k !== 'proj'; }).map(function(k){ return '<option value="' + k + '">' + PL_METRICS[k].label + '</option>'; }).join('') +
+        '<option value="name">Name</option>';
+      sortSel.value = st.sort === 'proj' && st.view !== 'trend' ? 'default' : st.sort;
       const q = document.getElementById('pl-q');
       if(q.value !== st.q) q.value = st.q;
     }
     document.getElementById('pl-q-x').hidden = !st.q;
+    const dirBtn = document.getElementById('pl-dir');
+    dirBtn.textContent = st.dir === 'asc' ? '↑' : '↓';
+    dirBtn.setAttribute('aria-label', st.dir === 'asc' ? 'Sorted low to high. Switch to high to low' : 'Sorted high to low. Switch to low to high');
+    document.querySelectorAll('#fa-view .list-head [data-pl-sort]').forEach(function(h){
+      const k = h.getAttribute('data-pl-sort');
+      h.className = h.className.replace(/ sorted (asc|desc)/, '') + sortedClass(k);
+      h.setAttribute('aria-sort', sortAria(k));
+    });
     const fb = document.getElementById('pl-filter-btn');
     fb.textContent = 'Filters' + (st.filters.length ? ' · ' + st.filters.length : '');
     fb.classList.toggle('on', !!st.filters.length);
@@ -4204,14 +4264,7 @@
   els.faPosFilter.addEventListener('click', function(e){
     const b = e.target.closest('[data-pl-pos]');
     if(!b) return;
-    const pos = b.getAttribute('data-pl-pos'), st = ctx.pl;
-    if(pos === 'ALL') st.pos = [];
-    else if(pos === 'FLEX'){
-      const trio = ['RB', 'WR', 'TE'], on = trio.every(function(x){ return st.pos.indexOf(x) !== -1; });
-      st.pos = on ? st.pos.filter(function(x){ return trio.indexOf(x) === -1; }) : st.pos.concat(trio.filter(function(x){ return st.pos.indexOf(x) === -1; }));
-    }
-    else st.pos = st.pos.indexOf(pos) !== -1 ? st.pos.filter(function(x){ return x !== pos; }) : st.pos.concat([pos]);
-    ctx.faLimit = PL_PAGE;
+    togglePos(b.getAttribute('data-pl-pos'));
     renderPlayers(); renderAddDrop(); staggerIn(els.faList);
     if(paneMode()){ const top = firstAvailableInList(); if(top) openFreeAgent(top); }
   });
@@ -4223,8 +4276,18 @@
   });
   document.getElementById('pl-q').addEventListener('keydown', function(e){ if(e.key === 'Enter') e.target.blur(); }); // "Search" closes the iPhone keyboard
   document.getElementById('pl-q-x').addEventListener('click', function(){ ctx.pl.q = ''; document.getElementById('pl-q').value = ''; ctx.faLimit = PL_PAGE; renderPlayers(true); });
+  document.getElementById('pl-dir').addEventListener('click', function(){
+    ctx.pl.dir = ctx.pl.dir === 'asc' ? 'desc' : 'asc'; ctx.faLimit = PL_PAGE; renderPlayers(true);
+  });
+  document.querySelector('#fa-view .pl-head').addEventListener('click', function(e){
+    const h = e.target.closest('[data-pl-sort]');
+    if(!h) return;
+    const key = h.getAttribute('data-pl-sort');
+    setSort(key === 'proj' && ctx.pl.view !== 'trend' && ctx.pl.sort === 'default' ? 'default' : key);
+    renderPlayers(true);
+  });
   document.getElementById('pl-sort').addEventListener('change', function(e){
-    ctx.pl.sort = e.target.value; ctx.faLimit = PL_PAGE;
+    ctx.pl.sort = e.target.value; ctx.pl.dir = e.target.value === 'name' ? 'asc' : 'desc'; ctx.faLimit = PL_PAGE;
     if((ctx.pl.sort === 'ros' && !ctx.ros) || ((ctx.pl.sort === 'avg' || ctx.pl.sort === 'gp') && !ctx.seasonData)) loadPlayersData();
     renderPlayers(true);
   });
@@ -4718,6 +4781,18 @@
     if(e.target.matches('[data-trade-team]')){ ctx.trade = { team: Number(e.target.value) || null, give: ctx.trade.give, get: [] }; rerenderTrade(); }
   });
   maxBody.addEventListener('click', function(e){
+    const shown = maxStack[maxStack.length - 1];
+    if(shown && shown.kind === 'fa'){
+      const refresh = function(){ const y = maxPanel.scrollTop; maxBody.innerHTML = maxWaiversHTML(); maxPanel.scrollTop = y; renderPlayers(); renderAddDrop(); };
+      const pc = e.target.closest('[data-pl-pos]');
+      if(pc){ togglePos(pc.getAttribute('data-pl-pos')); refresh(); return; }
+      const hs = e.target.closest('[data-pl-sort]');
+      if(hs){ const key = hs.getAttribute('data-pl-sort'); setSort(key === 'proj' && ctx.pl.view !== 'trend' && ctx.pl.sort === 'default' ? 'default' : key); refresh(); return; }
+      const rm = e.target.closest('[data-pl-remove]');
+      if(rm){ ctx.pl.filters.splice(Number(rm.getAttribute('data-pl-remove')), 1); ctx.faLimit = PL_PAGE; refresh(); return; }
+      if(e.target.closest('[data-pl-clear-q]')){ ctx.pl.q = ''; document.getElementById('pl-q').value = ''; ctx.faLimit = PL_PAGE; refresh(); return; }
+      if(e.target.closest('[data-mx-more]')){ ctx.faLimit += PL_PAGE; refresh(); return; }
+    }
     const tg = e.target.closest('[data-trade-give], [data-trade-get]');
     if(tg){
       const side = tg.hasAttribute('data-trade-give') ? 'give' : 'get', pid = tg.getAttribute('data-trade-' + side), list = ctx.trade[side];
@@ -5046,19 +5121,31 @@
   }
 
   function maxWaiversHTML(){
-    const list = faList().slice(0, ctx.faLimit);
-    const shares = ctx.faPos !== 'QB' && ctx.faPos !== 'K' && ctx.faPos !== 'DEF';
-    return '<div class="mx-scroll"><table class="mx-tbl"><thead><tr><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th>' +
-      (shares ? '<th>Tgt share</th><th>Air share</th>' : '') + '<th>Proj</th><th class="l" style="padding-left:20px">' + (ctx.pl.view !== 'avail' ? 'Team / vs yours' : ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest') + '</th><th><span class="sr-only">Compare</span></th></tr></thead><tbody class="stagger">' +
+    const all = faList(), list = all.slice(0, ctx.faLimit), st = ctx.pl;
+    const catcher = function(pid){ return ['RB', 'WR', 'TE'].indexOf(ctx.players[pid].position) !== -1; }; // target/air share only mean something for pass catchers
+    const th = function(label, key, cls){
+      if(!key) return '<th class="' + (cls || '') + '">' + label + '</th>';
+      return '<th class="' + (cls || '') + ' th-sort' + sortedClass(key) + '" aria-sort="' + sortAria(key) + '"><button type="button" data-pl-sort="' + key + '">' + label + '</button></th>';
+    };
+    const chips = st.filters.map(function(f, i){ return '<button type="button" class="pl-chip" data-pl-remove="' + i + '">' + escapeHTML(filterLabel(f)) + ' <span aria-hidden="true">×</span></button>'; }).join('') +
+      (st.q ? '<button type="button" class="pl-chip" data-pl-clear-q>“' + escapeHTML(st.q) + '” <span aria-hidden="true">×</span></button>' : '');
+    return '<div class="mx-tools"><div class="pos-filter mx-pos" role="group" aria-label="Positions">' + posChipsHTML() + '</div>' +
+        '<div class="mx-count">' + all.length + ' player' + (all.length === 1 ? '' : 's') + (chips ? '' : '') + '</div></div>' +
+      (chips ? '<div class="pl-active mx-active">' + chips + '</div>' : '') +
+      '<div class="mx-scroll"><table class="mx-tbl"><thead><tr>' + th('Player', 'name', 'l') + th('Opp', null, 'l') + th('Snap by week', 'snap') +
+      th('Tgt share', 'tgt') + th('Air share', 'air') + th('Proj', 'proj') +
+      '<th class="l" style="padding-left:20px">' + (st.view !== 'avail' ? 'Team / vs yours' : ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest') + '</th><th><span class="sr-only">Compare</span></th></tr></thead><tbody class="stagger">' +
       list.map(function(pid, i){
         const proj = ctx.projections[pid], v = isAvailable(pid) ? faVsParts(pid) : null;
         const vs = v ? (v.txt ? '<b class="' + (v.cls === 'flat' ? 'dim' : 'trend ' + v.cls) + '">' + v.txt + '</b> ' : '') + '<span class="muted">' + escapeHTML(v.who) + '</span>'
           : '<span class="muted">' + (isMine(pid) ? 'On your team' : ownerOf(pid) !== undefined ? escapeHTML(rosterName(ownerOf(pid))) : '—') + '</span>';
+        const c = catcher(pid);
         return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
-          (shares ? '<td class="muted">' + pct(seasonShare(pid, 't')) + '</td><td class="muted">' + airPct(seasonShare(pid, 'a')) + '</td>' : '') +
+          '<td class="muted">' + (c ? pct(seasonShare(pid, 't')) : '<span class="dim">—</span>') + '</td><td class="muted">' + (c ? airPct(seasonShare(pid, 'a')) : '<span class="dim">—</span>') + '</td>' +
           '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td><td>' + vsBtn(pid) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
-      (list.length ? '' : '<div class="empty-state">No players match your filters.</div>');
+      (list.length ? '' : '<div class="empty-state">No players match your filters.</div>') +
+      (all.length > list.length ? '<button type="button" class="fa-more" data-mx-more>Show ' + Math.min(PL_PAGE, all.length - list.length) + ' more (' + (all.length - list.length) + ' left)</button>' : '');
   }
 
   function maxPlayerHTML(pid){
