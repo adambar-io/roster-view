@@ -21,7 +21,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
 <script>
   // Apply the saved theme before first paint so there is no flash of the wrong one.
-  (function(){ try{ var t = localStorage.getItem('rv-theme'); if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); }catch(e){} })();
+  (function(){ try{ var t = localStorage.getItem('rv-theme'); if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); }catch(e){ console.warn('Theme preference unavailable', e); } })();
 </script>
 <style>
   /* ============ design tokens ============
@@ -746,6 +746,7 @@
   .m-brand .wordmark{ font-size: 20px; }
   @media (min-width: 1024px){ .m-brand{ display: none; } }
   .disclaimer{ color: var(--text-3); font-size: 12.5px; margin: 10px 0 0; }
+  .err-retry{ display: inline-flex; margin: 8px 0 0 8px; min-height: 36px; padding: 0 14px; vertical-align: middle; }
   /* ---- head-to-head ---- */
   .vs-btn{ flex-shrink: 0; display: inline-grid; place-items: center; width: 36px; height: 36px; padding: 0; border: none; border-radius: 999px;
     background: var(--surface-3); color: var(--text-2); font: inherit; font-size: 11px; font-weight: 800; letter-spacing: .03em; cursor: pointer;
@@ -1342,7 +1343,7 @@
   const THEME_BG = { light: '#F5F5F7', dark: '#0B0B0D' };
   function applyTheme(t){
     if(t !== 'light' && t !== 'dark') t = 'system';
-    try{ localStorage.setItem('rv-theme', t); }catch(e){}
+    try{ localStorage.setItem('rv-theme', t); }catch(e){ console.warn('Could not save theme preference', e); }
     if(t === 'system') document.documentElement.removeAttribute('data-theme');
     else document.documentElement.setAttribute('data-theme', t);
     // Browser/iOS chrome color: forced theme overrides both media-scoped theme-color tags.
@@ -1358,9 +1359,21 @@
     if(document.startViewTransition && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(function(){ applyTheme(t); });
     else applyTheme(t);
   });
-  (function(){ let t = 'system'; try{ t = localStorage.getItem('rv-theme') || 'system'; }catch(e){} applyTheme(t); })();
+  (function(){ let t = 'system'; try{ t = localStorage.getItem('rv-theme') || 'system'; }catch(e){ console.warn('Theme preference unavailable', e); } applyTheme(t); })();
 
-  function setError(msg){ els.errorMsg.textContent = msg || ''; }
+  // Error text under the setup form; pass retry to add a "Try again" button that re-runs the failed step.
+  function setError(msg, retry){
+    els.errorMsg.textContent = msg || '';
+    if(!retry) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'quiet-btn err-retry'; b.textContent = 'Try again';
+    b.addEventListener('click', function(){ setError(''); retry(); });
+    els.errorMsg.appendChild(b);
+  }
+  function whyFailed(err){
+    if(err && err.userMessage) return err.userMessage;
+    return navigator.onLine === false ? 'You seem to be offline.' : 'Sleeper didn’t respond.';
+  }
   function setStatus(msg){
     els.statusMsg.textContent = msg || '';
     if(els.rosterScreen.classList.contains('is-loading') && msg) els.pageSub.textContent = msg; // shown under the loading placeholders
@@ -1384,13 +1397,26 @@
   // ---- core Sleeper reads ----
   async function resolveUser(username){ return fetchJSON(API + '/user/' + encodeURIComponent(username)); }
   async function fetchLeagues(userId, season){ return fetchJSON(API + '/user/' + userId + '/leagues/nfl/' + season); }
+  // All four are needed; if any fails, say which one (err.userMessage) so the error isn't a mystery.
   async function fetchLeagueBundle(leagueId){
-    const [league, rosters, users, nflState] = await Promise.all([
-      fetchJSON(API + '/league/' + leagueId),
-      fetchJSON(API + '/league/' + leagueId + '/rosters'),
-      fetchJSON(API + '/league/' + leagueId + '/users'),
-      fetchJSON(API + '/state/nfl'),
-    ]);
+    const parts = [
+      ['league settings', API + '/league/' + leagueId],
+      ['rosters', API + '/league/' + leagueId + '/rosters'],
+      ['league members', API + '/league/' + leagueId + '/users'],
+      ['current NFL week', API + '/state/nfl'],
+    ];
+    const res = await Promise.allSettled(parts.map(function(x){ return fetchJSON(x[1]); }));
+    const failed = parts.filter(function(x, i){ return res[i].status === 'rejected'; }).map(function(x){ return x[0]; });
+    if(failed.length){
+      const err = new Error('Sleeper request failed: ' + failed.join(', '));
+      err.userMessage = 'Sleeper didn’t send the ' + failed.join(' and ') + '.';
+      err.cause = res.find(function(r){ return r.status === 'rejected'; }).reason;
+      throw err;
+    }
+    const league = res[0].value, rosters = res[1].value, users = res[2].value, nflState = res[3].value || {};
+    if(!league || !Array.isArray(rosters) || !Array.isArray(users)){
+      const err = new Error('Empty league response'); err.userMessage = 'Sleeper sent an empty answer for this league.'; throw err;
+    }
     return { league, rosters, users, week: nflState.week || 1 };
   }
 
@@ -1427,7 +1453,7 @@
     }catch(e){ console.warn('Could not tidy the stats cache', e); }
   }
   function readPlayersCache(){
-    try{ const c = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null'); if(c && c.ts && c.data) return c; }catch(e){}
+    try{ const c = JSON.parse(localStorage.getItem(PLAYERS_CACHE_KEY) || 'null'); if(c && c.ts && c.data) return c; }catch(e){ console.warn('Cached player list unreadable; downloading again', e); }
     return null;
   }
   // players.json first; Sleeper's full download only if that's missing or broken (e.g. the file isn't deployed).
@@ -1441,7 +1467,8 @@
       data = j.players;
     }catch(e){
       console.warn(PLAYERS_URL + ' unavailable (' + e.message + '); downloading the full player list from Sleeper');
-      data = slimPlayers(await fetchJSON(API + '/players/nfl'));
+      try{ data = slimPlayers(await fetchJSON(API + '/players/nfl')); }
+      catch(e2){ e2.userMessage = 'The player list didn’t download.'; throw e2; }
       source = 'sleeper';
     }
     const ts = Date.now();
@@ -1488,7 +1515,7 @@
 
   function historyCacheKey(playerId, season){ return STATS_CACHE_PREFIX + 'player_' + playerId + '_' + season; }
   function readHistoryCache(playerId, season){
-    try{ const c = JSON.parse(localStorage.getItem(historyCacheKey(playerId, season)) || 'null'); if(c && c.ts) return c; }catch(e){}
+    try{ const c = JSON.parse(localStorage.getItem(historyCacheKey(playerId, season)) || 'null'); if(c && c.ts) return c; }catch(e){ console.warn('Cached stats unreadable for', playerId, e); }
     return null;
   }
   // opts.allowStale: use any cached copy (first paint; refreshData fetches the stale ones after). opts.force: always fetch.
@@ -1711,11 +1738,14 @@
     setBusy(true);
     setStatus('Looking up user…');
     try{
-      const user = await resolveUser(uname);
-      if(!user || !user.user_id){ throw new Error('User not found.'); }
+      let user, state;
+      try{ [user, state] = await Promise.all([resolveUser(uname), fetchJSON(API + '/state/nfl').catch(function(){ return null; })]); }
+      catch(e){ e.userMessage = 'Couldn’t reach Sleeper.'; throw e; }
+      if(!user || !user.user_id){ const e = new Error('User not found.'); e.userMessage = 'No Sleeper user called “' + uname + '”. Check the spelling.'; e.notFound = true; throw e; }
       ctx.userId = user.user_id;
       ctx.username = user.display_name || uname;
-      ctx.season = currentSeasonGuess();
+      // Sleeper's own season (verified: state/nfl.season); the month-based guess is only a fallback.
+      ctx.season = state && Number(state.season) ? Number(state.season) : currentSeasonGuess();
 
       setStatus('Fetching leagues for ' + ctx.season + '…');
       let leagues = await fetchLeagues(ctx.userId, ctx.season);
@@ -1733,7 +1763,9 @@
       setStatus('');
     }catch(err){
       console.error(err);
-      setError('Could not find that user. Check the spelling and try again.');
+      setStatus('');
+      if(err.notFound) setError(err.userMessage);
+      else setError(whyFailed(err) + ' Check your connection and try again.', function(){ els.loadBtn.click(); });
     }finally{
       setBusy(false);
     }
@@ -2205,6 +2237,7 @@
       setStatus('Fetching projections…');
       const scoring = league.scoring_settings || {};
       const projRaw = await getWeekProjections(ctx.season, week);
+      ctx.projFailed = !Object.keys(projRaw).length; // shown on the Updated line so a 0.0 total isn't mistaken for real
       ctx.projections = {};
       for(const pid in projRaw){ ctx.projections[pid] = calcPoints(projRaw[pid], scoring); }
 
@@ -2251,7 +2284,7 @@
     }catch(err){
       console.error(err);
       switchScreens('exit', hideLoadingShell);
-      setError('Could not load that league. Try again.');
+      setError('Couldn’t load that league. ' + whyFailed(err) + ' Check your connection and try again.', function(){ loadEverything(leagueId); });
     }finally{
       setBusy(false);
     }
@@ -2348,6 +2381,8 @@
     }
     ctx.originalStarters = orig;
     // A failed projections call comes back empty: keep the ones we have rather than zeroing the lineup.
+    if(Object.keys(projRaw).length) ctx.projFailed = false;
+    else if(!Object.keys(ctx.projections || {}).length) ctx.projFailed = true;
     if(Object.keys(projRaw).length || weekRolled){
       const scoring = bundle.league.scoring_settings || {};
       ctx.projections = {};
@@ -2385,9 +2420,10 @@
     if(!b || !t) return;
     b.hidden = !ctx.updatedAt;
     b.classList.toggle('busy', !!ctx.refreshing);
-    b.classList.toggle('err', !ctx.refreshing && !!ctx.refreshFailed);
+    b.classList.toggle('err', !ctx.refreshing && !!(ctx.refreshFailed || ctx.projFailed));
     const txt = ctx.refreshing ? 'Updating…'
       : ctx.refreshFailed ? 'Couldn’t update · tap to retry'
+      : ctx.projFailed ? 'Projections didn’t load · tap to retry'
       : ctx.updatedAt ? 'Updated ' + agoText(ctx.updatedAt) : '';
     t.textContent = txt;
     b.setAttribute('aria-label', txt + '. Refresh now');
