@@ -22,6 +22,7 @@
 <script>
   // Apply the saved theme before first paint so there is no flash of the wrong one.
   (function(){ try{ var t = localStorage.getItem('rv-theme'); if(t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); }catch(e){ console.warn('Theme preference unavailable', e); } })();
+  (function(){ try{ if(localStorage.getItem('rv-cards') === 'detailed') document.documentElement.classList.add('cards-detailed'); }catch(e){ console.warn('Card preference unavailable', e); } })();
 </script>
 <style>
   /* ============ design tokens ============
@@ -121,9 +122,9 @@
   .status{ color: var(--text-2); font-size: 13.5px; margin-top: 10px; min-height: 18px; }
 
   /* theme control (System / Light / Dark) */
-  .theme-seg{ display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
-  .theme-seg button{ background: none; color: var(--text-2); padding: 6px 12px; font-size: 12.5px; font-weight: 500; min-height: 30px; }
-  .theme-seg button[aria-pressed="true"]{ background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+  .theme-seg, .cards-seg{ display: inline-flex; background: var(--surface-2); border-radius: 999px; padding: 3px; gap: 2px; }
+  .theme-seg button, .cards-seg button{ background: none; color: var(--text-2); padding: 6px 12px; font-size: 12.5px; font-weight: 500; min-height: 30px; }
+  .theme-seg button[aria-pressed="true"], .cards-seg button[aria-pressed="true"]{ background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.14); }
 
 
   /* position chips */
@@ -198,6 +199,28 @@
   .key-stats{ color: var(--text); font-size: 12px; margin-top: 3px; font-variant-numeric: tabular-nums; }
   .key-stats span{ margin-right: 10px; }
   .slot-row .key-stats{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line in compact rows */
+  /* Lineup cards: compact (default) vs detailed (Settings → Lineup cards; html.cards-detailed) */
+  .m-opp-c{ display: none; }
+  .opp.mt-easy{ color: var(--accent); font-weight: 600; } .opp.mt-mid{ color: var(--warn); font-weight: 600; } .opp.mt-hard{ color: var(--danger); font-weight: 600; }
+  .snap-flag{ margin-left: 4px; font-size: 13px; font-weight: 700; }
+  .snap-flag.up{ color: var(--accent); } .snap-flag.down{ color: var(--danger); }
+  html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row :is(.m-opp, .key-stats, .sig, .depth-chip, .lock-tag){ display: none; }
+  html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row .m-opp-c{ display: inline; }
+  html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row .player-meta{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row{ padding-top: 9px; padding-bottom: 9px; }
+  @container list (max-width: 599px){ /* card layout only; the table layout keeps its column widths so headers line up */
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row{ gap: 8px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-tag{ width: 32px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .avatar{ width: 36px; height: 36px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .stat-col{ width: 44px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .stat-col + .stat-col{ width: 40px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .gs{ padding: 1px 4px; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row + .slot-row::before{ left: 88px; }
+  }
+  .hs-ctx{ grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12.5px; color: var(--text-2); }
+  .hs-ctx .sig{ margin-top: 0; }
+  /* home-screen app: the page runs under the status bar; a solid strip keeps scrolled content out from behind the clock */
+  .sb-shield{ position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top); background: var(--bg); z-index: 45; pointer-events: none; }
   .key-stats span span{ margin-right: 0; }
   .key-stats .kv{ color: var(--text-3); }
   .key-stats .kw{ color: var(--danger); font-weight: 700; font-size: 10.5px; letter-spacing: .04em; }
@@ -556,6 +579,7 @@
     .col-vs, .h-vs{ width: 176px; text-align: left; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .h-info{ padding-left: 54px; }
     .slot-row .key-stats, .slot-row .sig, .slot-row .m-opp, .slot-row .fa-vs{ display: none; }
+    html:not(.cards-detailed) :is(#starters-list, #bench-list) .slot-row .m-opp-c{ display: none; } /* table: the Opp column shows it */
     .slot-row .stat-col .cap{ display: none; }
     .slot-row .stat-col .val{ font-size: 17px; }
     .slot-row .stat-col + .stat-col .val{ font-size: 14px; }
@@ -1363,6 +1387,7 @@
 
 </div>
 
+<div class="sb-shield" aria-hidden="true"></div>
 <div class="shell" id="roster-screen" style="display:none;">
   <aside class="side">
     <div class="brand" data-home role="button" tabindex="0" aria-label="sleepa: go to your lineup"><svg class="brand-mark" viewBox="0 0 200 200" aria-hidden="true"><use href="#sleepa-mark"/></svg><span class="wordmark">sleepa</span></div>
@@ -1506,6 +1531,7 @@
         <section class="view" id="settings-view" style="display:none;">
           <div class="settings">
             <div class="card set-card"><h3>Appearance</h3><p class="set-sub">Auto follows your device's light or dark setting.</p><div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div></div>
+            <div class="card set-card"><h3>Lineup cards</h3><p class="set-sub">Compact shows what you need to set a lineup: projection, last game, opponent colored by matchup (green easy, amber average, red tough), injury or bye flags, and an arrow when snap share jumped or dropped. Tap a player for season stats, snaps, depth chart and the full matchup ranking. Detailed puts all of it on the card.</p><div class="cards-seg" role="group" aria-label="Lineup cards"><button type="button" data-cards-opt="compact">Compact</button><button type="button" data-cards-opt="detailed">Detailed</button></div></div>
             <div class="card set-card"><h3>Your leagues</h3><p class="set-sub">Tap a league to switch to it.</p><div class="league-list" data-league-list></div></div>
             <div class="card set-card"><h3>Current team</h3>
               <div class="set-row"><span>Team</span><b id="set-team">—</b></div>
@@ -1750,6 +1776,17 @@
     });
     document.querySelectorAll('.theme-seg button').forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-theme-opt') === t ? 'true' : 'false'); });
   }
+  function applyCards(v){
+    v = v === 'detailed' ? 'detailed' : 'compact';
+    try{ localStorage.setItem('rv-cards', v); }catch(e){ console.warn('Could not save card preference', e); }
+    document.documentElement.classList.toggle('cards-detailed', v === 'detailed');
+    document.querySelectorAll('.cards-seg button').forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-cards-opt') === v ? 'true' : 'false'); });
+  }
+  document.addEventListener('click', function(e){
+    const b = e.target.closest && e.target.closest('.cards-seg button');
+    if(b) applyCards(b.getAttribute('data-cards-opt'));
+  });
+  (function(){ let v = 'compact'; try{ v = localStorage.getItem('rv-cards') || 'compact'; }catch(e){} applyCards(v); })();
   document.addEventListener('click', function(e){
     const b = e.target.closest && e.target.closest('.theme-seg button');
     if(!b) return;
@@ -3296,9 +3333,13 @@
     return (g.period > 4 ? 'OT' : 'Q' + g.period) + ' ' + (g.displayClock || '');
   }
   // Game line used in rows and cards once a game has started; before kickoff it's the usual opponent text.
-  function gameStatusHTML(team){
+  function gameStatusHTML(team, compact){
     const g = gameOf(team), txt = gameStateText(g);
     if(!txt) return null;
+    if(compact){ // compact lineup card: state + score only
+      const cls = g.state === 'in' ? 'live' : g.state === 'post' ? 'final' : 'off';
+      return '<span class="gs ' + cls + (g.src !== 'espn' ? ' est' : '') + '">' + escapeHTML(txt) + '</span>' + (g.src === 'espn' ? ' <span class="opp">' + g.us + '–' + g.them + '</span>' : '');
+    }
     const m = matchup(team, ctx.week), opp = m && !m.bye ? m.text : '';
     const score = g.src === 'espn' ? ' ' + g.us + '–' + g.them : '';
     const cls = g.state === 'in' ? 'live' : g.state === 'post' ? 'final' : 'off';
@@ -3843,7 +3884,7 @@
     if(!pts.length) return null;
     const last = pts[pts.length - 1].s, base = meanOf(pts.slice(-3, -1).map(function(x){ return x.s; }));
     const dir = base === null ? 'flat' : (last - base >= 0.05 ? 'up' : (last - base <= -0.05 ? 'down' : 'flat'));
-    return { last: last, dir: dir, recent: pts.slice(-3) };
+    return { last: last, base: base, dir: dir, recent: pts.slice(-3) };
   }
   function pct(v){ return typeof v === 'number' ? Math.round(v * 100) + '%' : '—'; }
   // Air-yards share goes negative when a player's targets were mostly behind the line (screens, checkdowns):
@@ -3852,6 +3893,31 @@
     return typeof v === 'number' && v < 0
       ? '<span class="neg-air" title="Negative air yards: targets mostly behind the line of scrimmage (screens, checkdowns)">&lt;0%</span>'
       : pct(v);
+  }
+  // Compact lineup card: the opponent colored by matchup difficulty (green easy, amber middle, red tough: the defense's
+  // rank in points allowed to the position, league scoring; full ranking on tap), or the game state once it's on; plus a
+  // snap arrow only when snap share moved by 15+ points vs the two games before.
+  function oppCompactHTML(pid){
+    const p = ctx.players[pid];
+    if(!p) return '';
+    let out = gameStatusHTML(p.team, true);
+    if(out) return ' · ' + out;               // game on or over: the state + score is what matters
+    {
+      const m = matchup(p.team, ctx.week);
+      if(!m) out = '<span class="opp">—</span>';
+      else if(m.bye) out = '<span class="opp bye">BYE</span>';
+      else {
+        const i = dvpInfo(pid);
+        out = '<span class="opp' + (i ? ' mt-' + i.tone : '') + '"' + (i ? ' title="' + escapeHTML(dvpSentence(i)) + '"' : '') + '>' + escapeHTML(m.text) + '</span>';
+      }
+    }
+    return ' · ' + out + snapFlagHTML(pid);
+  }
+  function snapFlagHTML(pid){
+    const p = ctx.players[pid], tr = p && SKILL_POSITIONS.indexOf(p.position) !== -1 ? snapTrend(pid) : null;
+    if(!tr || tr.base === null || Math.abs(tr.last - tr.base) < 0.15) return '';
+    const up = tr.last > tr.base, txt = 'Snap share ' + pct(tr.last) + ', ' + (up ? 'up' : 'down') + ' from ' + pct(tr.base);
+    return '<span class="snap-flag ' + (up ? 'up' : 'down') + '" title="' + txt + '" aria-label="' + txt + '">' + (up ? '↑' : '↓') + '</span>';
   }
   function depthChipHTML(pid){
     const p = ctx.players[pid];
@@ -4341,7 +4407,7 @@
         '<img class="avatar" src="' + avatarUrl + '" loading="lazy" onerror="this.style.visibility=\'hidden\'" style="--team:' + teamColor(p.team) + '"' + (ro ? '' : analyzeAttr(playerId)) + '>' +
         '<div class="player-info">' +
           '<div class="player-name">' + (ro ? escapeHTML(name) : analyzeName(playerId, name)) + byeChip + statusChip + newChip + '</div>' +
-          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + ' ' + dvpChipHTML(playerId) + '</span> ' + depthChipHTML(playerId) + '</div>' +
+          '<div class="player-meta">' + escapeHTML(pos) + ' · ' + escapeHTML(team) + '<span class="m-opp">' + matchupHTML(p.team) + ' ' + dvpChipHTML(playerId) + '</span><span class="m-opp-c">' + oppCompactHTML(playerId) + '</span> ' + depthChipHTML(playerId) + '</div>' +
           (keyStats ? '<div class="key-stats">' + keyStats + '</div>' : '') +
           signalsHTML(playerId, false) +
         '</div>' +
@@ -5149,7 +5215,9 @@
 
     const pending = loadingHistory ? '…' : null;
     const wa = weekActual(playerId), wg = gameOf(player.team);
-    els.heroStats.innerHTML = injuryMiniHTML(playerId) + [
+    const ctxBits = [dvpChipHTML(playerId), depthChipHTML(playerId)].filter(Boolean).join(' ');
+    els.heroStats.innerHTML = injuryMiniHTML(playerId) +
+      (ctxBits || SKILL_POSITIONS.indexOf(player.position) !== -1 ? '<div class="hs-ctx">' + ctxBits + signalsHTML(playerId, player.position !== 'QB') + '</div>' : '') + [
       ['Proj this wk', fmtPts(ctx.projections[playerId])],
     ].concat(wa !== null ? [['Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), fmtPts(wa), wg && wg.state === 'post' ? '' : ' live']] : []).concat([
       ['Last game', pending || fmtPts(lastGamePts(playerId))],
