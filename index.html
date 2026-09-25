@@ -598,6 +598,8 @@
   .pf-hero .mx-av{ width: 104px; height: 104px; }
   .pf-name{ font-size: 38px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05; }
   .pf-meta{ font-size: 14px; color: var(--text-2); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pf-game{ display: flex; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; margin-top: 4px; font-size: 14px; color: var(--text-2); }
+  .pf-game b{ font-weight: 600; color: var(--text); } .pf-game.bye b{ color: var(--danger); }
   .pf-stats{ display: grid; grid-template-columns: repeat(6, minmax(86px, 1fr)); gap: 10px; margin-left: auto; }
   .pf-stat{ background: color-mix(in srgb, var(--surface) 72%, transparent); border-radius: var(--radius-sm); padding: 12px 14px; }
   .pf-stat .v{ font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -2349,6 +2351,32 @@
       out[fi] = dp; out[best.i] = fp;
     });
     return { starters: out.map(function(x){ return x || '0'; }), notes: notes, locked: locked, lateFlex: lateFlex };
+  }
+  // ---- upcoming game (nflverse schedule in nflverse.json: sched = opponent text per team/week, kick = kickoff in UTC) ----
+  // The schedule's gametime column is US Eastern; build_nflverse.py converts it to UTC (DST-aware), and here it's shown in
+  // the device's own time zone. Current week = Sleeper's state/nfl (ctx.week), like everywhere else.
+  function gameWhen(t){
+    if(!t) return 'time TBD';
+    const d = new Date(t), soon = d.getTime() - Date.now();
+    const txt = d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    return soon < 0 ? txt + ' · kicked off' : txt;
+  }
+  function nextGame(team, fromWeek){
+    const last = (ctx.nfl && ctx.nfl.sched_weeks) || 18;
+    for(let w = fromWeek; w <= last; w++){ const m = matchup(team, w); if(m && !m.bye) return { w: w, text: m.text, t: kickoff(team, w) }; }
+    return null;
+  }
+  // One compact line for the player page. Nothing (not an error) when the schedule isn't loaded or the player has no team.
+  function gameLineHTML(pid){
+    const p = ctx.players[pid];
+    if(!p || !p.team || !ctx.nfl || !ctx.nfl.sched || !ctx.nfl.sched[p.team]) return '';
+    const m = matchup(p.team, ctx.week);
+    if(!m) return '';
+    if(m.bye){
+      const nx = nextGame(p.team, ctx.week + 1);
+      return '<div class="pf-game bye"><b>BYE — Week ' + ctx.week + '</b>' + (nx ? '<span>Next: Wk ' + nx.w + ' ' + escapeHTML(nx.text) + ' · ' + escapeHTML(gameWhen(nx.t)) + '</span>' : '') + '</div>';
+    }
+    return '<div class="pf-game"><b>Wk ' + ctx.week + ' ' + escapeHTML(m.text) + '</b><span>' + escapeHTML(gameWhen(kickoff(p.team, ctx.week))) + '</span></div>';
   }
   function kickText(t){ return t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'time TBD'; }
   // Flex slots currently holding a tight end (flagged on the row and in the optimizer note).
@@ -5312,7 +5340,6 @@
     const hist = ctx.history[pid] || [];
     const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
     const tr = snapTrend(pid), skill = SKILL_POSITIONS.indexOf(p.position) !== -1;
-    const m = matchup(p.team, ctx.week);
     const stats = [
       [fmtPts(ctx.projections[pid]), 'Proj wk ' + ctx.week],
       [loading ? '…' : fmtPts(lastGamePts(pid)), 'Last'],
@@ -5321,8 +5348,8 @@
     ].concat(positionCards(pid, p.position, loading, tr));
     const hero = '<div class="pf-hero" style="--team:' + teamColor(p.team) + '">' + avatarTag(pid, 'mx-av') +
       '<div><div class="pf-name">' + escapeHTML(playerName(p)) + '</div>' +
-      '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + (m ? ' · Wk ' + ctx.week + ' <span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '') +
-        injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div></div>' +
+      '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') +
+        injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div>' + gameLineHTML(pid) + '</div>' +
       '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
 
     let left = '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
