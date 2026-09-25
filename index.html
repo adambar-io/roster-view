@@ -928,6 +928,21 @@
   .tw-tot{ text-align: right; color: var(--text-3); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tr-note{ font-size: 12.5px; color: var(--text-3); line-height: 1.5; margin: 4px 2px 16px; } .tr-note b{ color: var(--text-2); }
   .tr-cols{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .nm-short{ display: none; }
+  .tp-row{ display: flex; align-items: stretch; gap: 4px; }
+  .tp-row .tr-player{ flex: 1; min-width: 0; }
+  .tr-info{ flex: none; width: 32px; border: none; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); color: var(--text-3); font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+  /* side-by-side trade summary: two columns, rows paired, totals on the same line */
+  .tr-side{ display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 6px; padding: 14px; margin-bottom: 12px; }
+  .ts-head{ min-width: 0; padding-bottom: 6px; border-bottom: 1px solid var(--hair); }
+  .ts-head b{ display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts-cell{ display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 6px; min-height: 40px; padding: 6px 8px; border-radius: 10px; border: none;
+    background: var(--surface-2); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+  .ts-cell.empty{ background: none; cursor: default; display: flex; font-size: 12.5px; }
+  .ts-nm{ font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ts-cell b{ font-variant-numeric: tabular-nums; font-size: 14px; }
+  .ts-tot{ display: flex; align-items: baseline; justify-content: flex-end; gap: 5px; padding-top: 8px; border-top: 1px solid var(--hair); }
+  .ts-tot b{ font-size: 20px; font-variant-numeric: tabular-nums; } .ts-tot span{ font-size: 11px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
   .tr-list{ display: grid; gap: 6px; margin-bottom: 16px; }
   .tr-player{ display: grid; grid-template-columns: 22px 30px minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 100%; text-align: left; border: none; font: inherit; color: var(--text);
     padding: 9px 10px; min-height: 48px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--hair); cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -940,7 +955,21 @@
   .tr-ros{ text-align: right; } .tr-ros b{ display: block; font-variant-numeric: tabular-nums; } .tr-ros small{ font-size: 9.5px; color: var(--text-3); letter-spacing: .05em; }
   @media (max-width: 560px){
     .tr-results{ gap: 8px; } .tr-card{ padding: 12px; } .tr-big{ font-size: 26px; }
-    .tr-cols{ grid-template-columns: 1fr; gap: 0; }
+    .tr-cols{ gap: 8px; }                                 /* phones: still side by side, compact rows */
+    .tr-player{ grid-template-columns: 20px minmax(0, 1fr) auto; gap: 4px; padding: 8px 6px; min-height: 44px; }
+    .tr-player .tr-pos{ font-size: 10px; }
+    .tr-player .tr-check{ display: none; }          /* selected = green outline */
+    .tr-ros b{ font-size: 13.5px; }
+    .tr-cols .section-title{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+    .tr-sub{ display: none; }
+    .tr-nm{ font-size: 13px; } .tr-ros small{ display: none; }
+    .tr-nm .status-chip{ font-size: 0; width: 7px; height: 7px; padding: 0; margin: 0 0 0 3px; border-radius: 50%; background: currentColor; vertical-align: 2px; } /* injury = colored dot */
+    .tr-player .tr-nm{ font-size: 12.5px; }
+    .nm-full{ display: none; } .nm-short{ display: inline; }
+    .tr-info{ width: 24px; font-size: 17px; }
+    .tr-side{ column-gap: 8px; padding: 12px; }
+    .ts-cell{ grid-template-columns: 22px minmax(0, 1fr) auto; gap: 4px; padding: 6px; }
+    .ts-nm{ font-size: 13px; }
     .tw-row{ grid-template-columns: 46px 1fr 44px; } .tw-tot{ display: none; }
   }
 
@@ -3620,6 +3649,11 @@
     return r ? (r.players || []) : [];
   }
   function signed(v, d){ return (Math.abs(v) < 0.05 ? '±' : v > 0 ? '+' : '−') + Math.abs(v).toFixed(d == null ? 1 : d); }
+  // Full name, plus last name only for narrow phone columns (CSS picks which one shows; the position sits next to it).
+  function tradeName(p){
+    const full = playerName(p), short = p.position === 'DEF' ? (p.team || full) : (p.last_name || full);
+    return '<span class="nm-full">' + escapeHTML(full) + '</span><span class="nm-short">' + escapeHTML(short) + '</span>';
+  }
   function tradeHTML(){
     if(!ctx.ros) return '<div class="empty-state">Loading rest-of-season projections…</div>';
     const t = ctx.trade;
@@ -3638,16 +3672,36 @@
         .sort(function(a, b){ const va = rosValue(a), vb = rosValue(b); return (vb ? vb.pts : 0) - (va ? va.pts : 0); })
         .map(function(pid){
           const p = ctx.players[pid], v = rosValue(pid), on = t[side].indexOf(pid) !== -1;
-          return '<button type="button" class="tr-player' + (on ? ' on' : '') + '" data-trade-' + side + '="' + escapeHTML(pid) + '" aria-pressed="' + on + '">' +
+          return '<div class="tp-row"><button type="button" class="tr-player' + (on ? ' on' : '') + '" data-trade-' + side + '="' + escapeHTML(pid) + '" aria-pressed="' + on + '">' +
             '<span class="tr-check" aria-hidden="true">' + (on ? '✓' : '') + '</span>' +
             '<span class="tr-pos" style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span>' +
-            '<span class="tr-who"><span class="tr-nm">' + escapeHTML(playerName(p)) + ' ' + injuryChip(p.injury_status) + '</span>' +
+            '<span class="tr-who"><span class="tr-nm">' + tradeName(p) + ' ' + injuryChip(p.injury_status) + '</span>' +
               '<span class="tr-sub">' + escapeHTML(p.team || 'FA') + (byeText(pid) ? ' · ' + byeText(pid) : '') + '</span></span>' +
-            '<span class="tr-ros"><b>' + (v ? v.pts.toFixed(0) : '—') + '</b><small>ROS</small></span></button>';
+            '<span class="tr-ros"><b>' + (v ? v.pts.toFixed(0) : '—') + '</b><small>ROS</small></span></button>' +
+            '<button type="button" class="tr-info" data-open="' + escapeHTML(pid) + '" aria-label="' + escapeHTML(playerName(p)) + ': full details">›</button></div>';
         }).join('') || '<div class="empty-state">No players.</div>';
     };
     const r = tradeResult();
     const any = r.give.length || r.get.length;
+    const byRos = function(ids){ return ids.filter(function(pid){ return ctx.players[pid]; }).sort(function(a, b){ const va = rosValue(a), vb = rosValue(b); return (vb ? vb.pts : 0) - (va ? va.pts : 0); }); };
+    const sendMine = byRos(t.give), sendTheirs = byRos(t.get), n = Math.max(sendMine.length, sendTheirs.length, 1);
+    const mini = function(pid){
+      if(!pid) return '<div class="ts-cell empty"></div>';
+      const p = ctx.players[pid], v = rosValue(pid);
+      return '<button type="button" class="ts-cell" data-open="' + escapeHTML(pid) + '" aria-label="' + escapeHTML(playerName(p)) + ', ' + escapeHTML(p.position) + ', ' + (v ? v.pts.toFixed(0) : 'no') + ' rest-of-season points. Full details">' +
+        '<span class="tr-pos" style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span><span class="ts-nm">' + tradeName(p) + '</span><b>' + (v ? v.pts.toFixed(0) : '—') + '</b></button>';
+    };
+    let pairs = '';
+    for(let i = 0; i < n; i++){
+      pairs += i < sendMine.length || i < sendTheirs.length ? mini(sendMine[i]) + mini(sendTheirs[i])
+        : '<div class="ts-cell empty"><span class="dim">Tick players below</span></div><div class="ts-cell empty"><span class="dim">Tick players below</span></div>';
+    }
+    const summary = '<div class="card tr-side">' +
+      '<div class="ts-head"><span class="eyebrow">You send</span><b>' + escapeHTML(els.teamName.textContent || 'You') + '</b></div>' +
+      '<div class="ts-head them"><span class="eyebrow">They send</span><b>' + escapeHTML(rosterName(t.team)) + '</b></div>' +
+      pairs +
+      '<div class="ts-tot"><b>' + r.rosGive.toFixed(0) + '</b><span>ROS pts</span></div><div class="ts-tot them"><b>' + r.rosGet.toFixed(0) + '</b><span>ROS pts</span></div>' +
+      '</div>';
     const tone = function(v){ return Math.abs(v) < 0.5 ? '' : v > 0 ? ' up' : ' down'; };
     const maxAbs = Math.max.apply(null, r.weeks.map(function(x){ return Math.abs(x.d); }).concat([1]));
     const results = !any ? '<p class="tr-intro">Tick players on each side to see the numbers.</p>' :
@@ -3669,10 +3723,10 @@
             '<span class="tw-bar"><span class="tw-fill' + tone(x.d) + '" style="' + (x.d >= 0 ? 'left:50%;' : 'right:50%;') + 'width:' + w.toFixed(1) + '%"></span></span>' +
             '<span class="tw-val' + tone(x.d) + '">' + signed(x.d) + '</span><span class="tw-tot">' + x.before.toFixed(1) + ' → ' + x.after.toFixed(1) + '</span></div>';
         }).join('') + '</details>';
-    return '<div class="trade">' + pick + results +
+    return '<div class="trade">' + pick + summary + results +
       '<p class="tr-note"><b>Estimates, not a verdict.</b> Sleeper’s weekly projections scored with your league’s settings. Future weeks use each player’s average projected week, with zero on byes and weeks they aren’t projected to play. Your lineup each week follows the same rules as Optimal Lineup (FLEX preferences included). Roster limits, waivers and the other team’s side aren’t considered.</p>' +
-      '<div class="tr-cols"><div><div class="section-title">You give</div><div class="tr-list">' + list(ctx.myRoster.players || [], 'give') + '</div></div>' +
-        '<div><div class="section-title">You get · ' + escapeHTML(rosterName(t.team)) + '</div><div class="tr-list">' + list(tradeRoster(t.team), 'get') + '</div></div></div>' +
+      '<div class="tr-cols"><div><div class="section-title">Your roster</div><div class="tr-list">' + list(ctx.myRoster.players || [], 'give') + '</div></div>' +
+        '<div><div class="section-title">' + escapeHTML(rosterName(t.team)) + '</div><div class="tr-list">' + list(tradeRoster(t.team), 'get') + '</div></div></div>' +
     '</div>';
   }
   function rerenderTrade(){
