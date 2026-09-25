@@ -233,8 +233,16 @@
   .gs.est{ font-style: italic; }
   @keyframes livePulse{ 0%, 100%{ opacity: 1; } 50%{ opacity: .25; } }
   .stat-col.act-live .val, .cs.act-live .cv, .hs-block.live .hs-val, .pf-stat.live .v, td.act-live, .vs-bench-row b.act-live{ color: var(--accent); }
-  .stat-col.act-live .cap{ color: var(--danger); }
-  .stat-col.act-final .cap{ color: var(--text-2); }
+  /* actual points in the big spot: live = green with a pulsing dot, final = plain; projection small underneath */
+  .stat-col.act-main .val{ font-size: 18px; font-weight: 700; }
+  .stat-col.act-main.act-live .val::before, .cs.act-main.act-live .cv::before, .hs-block.act-main.live .hs-val::before, .pf-stat.act-main.live .v::before{
+    content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); margin-right: 4px; vertical-align: middle; animation: livePulse 1.6s ease-in-out infinite; }
+  .stat-col.act-main.act-final .val{ color: var(--text); }
+  .stat-col.act-main .cap{ text-transform: none; letter-spacing: 0; font-weight: 500; white-space: nowrap; }
+  .cs.dimmed .cv{ color: var(--text-3); font-weight: 500; }
+  .hs-sub{ font-size: 11.5px; color: var(--text-3); margin-top: 1px; }
+  .pf-stat .k.sub{ text-transform: none; letter-spacing: 0; margin-top: 1px; }
+  .hs-block.act-main, .pf-stat.act-main{ box-shadow: inset 0 0 0 1.5px var(--accent-soft); }
   .mu-left{ font-size: 11px; color: var(--text-3); margin-top: 1px; }
   .mu-sub b{ color: var(--text-2); font-weight: 600; }
   .mu-ago{ float: right; font-weight: 500; font-size: 12px; color: var(--text-3); }
@@ -572,7 +580,7 @@
     .slot-row .col{ display: block; flex-shrink: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
     .list-head .h-col{ display: block; flex-shrink: 0; }
     .slot-row .col.col-avg, .list-head .h-col.h-avg, .slot-row .col.col-l3, .list-head .h-col.h-l3{ display: none; } /* only from 740px, below */
-    .slot-row .stat-col.act-live .cap, .slot-row .stat-col.act-final .cap{ display: block; } /* table mode: still say live / final */
+    .slot-row .stat-col.act-main .cap{ display: block; } /* table mode: keep the projection under actual points */
     .col-opp, .h-opp{ width: 78px; text-align: left; }
     .col-snap, .h-snap{ width: 78px; text-align: right; }
     .col-tgt, .h-tgt{ width: 58px; text-align: right; color: var(--text-2); }
@@ -1474,12 +1482,12 @@
           <div class="starters">
             <div class="section-title">Starters <span class="st-hint" style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span><button class="opt-btn" id="opt-btn" title="Fill your starters with the highest projected lineup"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>Optimal lineup</button><button class="xbtn" data-expand="roster" aria-label="Expand lineup to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
             <div class="opt-note" id="opt-note" role="status" aria-live="polite" hidden></div>
-            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat h-pts">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
             <div id="starters-list"></div>
           </div>
           <div class="bench-section">
             <div class="section-title">Bench</div>
-            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat h-pts">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
             <div id="bench-list"></div>
           </div>
           <div class="bye-plan" id="bye-plan" hidden></div>
@@ -3375,6 +3383,16 @@
     return '<span class="gs ' + cls + (g.src !== 'espn' ? ' est' : '') + '">' + escapeHTML(txt) + '</span> <span class="opp">' + escapeHTML(opp) + score + '</span>';
   }
   // Second stat column in rows: this week's actual points once their game has started, otherwise last game.
+  // The two number columns in list rows. Before their game: projection (big) + last game. Once it has kicked off:
+  // this week's ACTUAL points take the big spot (green while live, plain when final) with the projection small
+  // underneath ("proj 20.1"), and last game stays in the second column.
+  function pointsColsHTML(pid){
+    const wa = weekActual(pid), proj = ctx.projections[pid], last = '<div class="stat-col"><div class="val">' + fmtPts(lastGamePts(pid)) + '</div><div class="cap">last</div></div>';
+    if(wa === null) return '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div>' + rangeCellHTML(pid) + '</div>' + last;
+    const g = gameOf(ctx.players[pid] && ctx.players[pid].team), fin = g && g.state === 'post';
+    return '<div class="stat-col act-main ' + (fin ? 'act-final' : 'act-live') + '" title="' + (fin ? 'Final' : 'Live') + ': actual points this week. Projection was ' + fmtPts(proj) + '">' +
+      '<div class="val">' + fmtPts(wa) + '</div><div class="cap">proj ' + fmtPts(proj) + '</div></div>' + last;
+  }
   function actualCell(pid){
     const p = ctx.players[pid], wa = weekActual(pid);
     if(wa === null) return { v: fmtPts(lastGamePts(pid)), cap: 'last', cls: '' };
@@ -3575,7 +3593,7 @@
       const set = new Set(starters);
       return (roster || []).filter(function(pid){ return !set.has(pid) && ctx.players[pid]; })
         .sort(function(x, y){ return (ctx.projections[y] || -1) - (ctx.projections[x] || -1); })
-        .map(function(pid){ const p = ctx.players[pid], wa = weekActual(pid); return '<div class="vs-bench-row" data-open="' + escapeHTML(pid) + '"><span style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span> ' + escapeHTML(playerName(p)) + '<b' + (wa !== null ? ' class="act-live" title="Actual points this week"' : ' title="Projection"') + '>' + fmtPts(wa !== null ? wa : ctx.projections[pid]) + (wa !== null ? '' : ' <small>proj</small>') + '</b></div>'; })
+        .map(function(pid){ const p = ctx.players[pid], wa = weekActual(pid); return '<div class="vs-bench-row" data-open="' + escapeHTML(pid) + '"><span style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span> ' + escapeHTML(playerName(p)) + '<b' + (wa !== null ? ' class="act-live" title="Actual points this week"' : ' title="Projection"') + '>' + fmtPts(wa !== null ? wa : ctx.projections[pid]) + (wa !== null ? ' <small>proj ' + fmtPts(ctx.projections[pid]) + '</small>' : ' <small>proj</small>') + '</b></div>'; })
         .join('') || '<div class="vs-bench-row dim">Empty</div>';
     };
     const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down';
@@ -3981,7 +3999,7 @@
   }
   // Table-mode cells (desktop): opponent on its own, snap % with trend arrow.
   function oppOnly(team){
-    const live = gameStatusHTML(team);
+    const live = gameStatusHTML(team, true);   // narrow table column: state + score
     if(live) return live;
     const m = matchup(team, ctx.week);
     return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '<span class="opp">—</span>';
@@ -4449,7 +4467,6 @@
       (!ro && slotIndex !== undefined && pos === 'TE' && isFlexSlot(ctx.rosterPositions[slotIndex]) ? '<span class="status-chip te-flex-tag" title="A tight end is in your flex slot">TE in ' + escapeHTML(ctx.rosterPositions[slotIndex]) + '</span>' : '');
     const avatarUrl = playerImageUrl(playerId);
     const proj = ctx.projections[playerId];
-    const act = actualCell(playerId);
     const keyStats = keyStatsLine(playerId, pos);
     const byeStarter = slotIndex !== undefined && (isOnBye(playerId) || (ro && cantPlay(effectiveStatus(playerId)))); // a starter who won't play
     const byeChip = byeStarter ? '<span class="status-chip bye-tag">Bye</span>' : '';
@@ -4465,10 +4482,9 @@
           (keyStats ? '<div class="key-stats">' + keyStats + '</div>' : '') +
           signalsHTML(playerId, false) +
         '</div>' +
-        '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(playerId, true) + '</div>' +
+        '<div class="col col-opp">' + oppOnly(p.team) + (gameStatusHTML(p.team, true) ? '' : dvpChipHTML(playerId, true)) + '</div>' +
         '<div class="col col-snap">' + snapCell(playerId) + '</div>' +
-        '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div>' + rangeCellHTML(playerId) + '</div>' +
-        '<div class="stat-col' + act.cls + '"><div class="val">' + act.v + '</div><div class="cap">' + act.cap + '</div></div>' +
+        pointsColsHTML(playerId) +
         '<div class="col col-l3">' + fmtPts(last3Avg(playerId)) + '</div>' +
         '<div class="col col-avg">' + fmtPts(seasonAvgPts(playerId)) + '</div>' +
       '</div>';
@@ -4476,7 +4492,7 @@
 
   function renderAll(){
     const started = weekStarted();
-    document.querySelectorAll('.h-last').forEach(function(el){ el.textContent = started ? 'Actual' : 'Last'; el.title = started ? 'This week once their game starts (live / final), otherwise last game' : 'Last game'; });
+    document.querySelectorAll('.h-pts').forEach(function(el){ el.textContent = started ? 'Pts' : 'Proj'; el.title = started ? 'Actual points once their game has started (projection underneath), otherwise the projection' : 'Projected points this week'; });
     let startersHTML = '';
     ctx.rosterPositions.forEach(function(slot, i){ startersHTML += playerRow(ctx.draftStarters[i], slot, i); });
     els.startersList.innerHTML = startersHTML || '<div class="empty-state">No starters set.</div>';
@@ -5029,11 +5045,10 @@
           (function(){ const k = keyStatsLine(pid, p.position); return k ? '<div class="key-stats">' + k + '</div>' : ''; })() +
           who + signalsHTML(pid, true) +
         '</div>' +
-        '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(pid, true) + '</div>' +
+        '<div class="col col-opp">' + oppOnly(p.team) + (gameStatusHTML(p.team, true) ? '' : dvpChipHTML(pid, true)) + '</div>' +
         '<div class="col col-snap">' + snapCell(pid) + '</div>' +
         '<div class="col col-tgt">' + (SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—') + '</div>' +
-        '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div>' + rangeCellHTML(pid) + '</div>' +
-        (function(){ const a = actualCell(pid); return '<div class="stat-col' + a.cls + '"><div class="val">' + a.v + '</div><div class="cap">' + a.cap + '</div></div>'; })() +
+        pointsColsHTML(pid) +
         '<div class="col col-vs">' + who.replace('class="fa-vs"', 'class="fa-vs-inline"') + '</div>' +
         '<div class="row-vs">' + vsBtn(pid) + '</div>' +
       '</div>';
@@ -5243,11 +5258,13 @@
   }
   function candidateStatsHTML(pid){
     const proj = ctx.projections[pid];
-    const a = actualCell(pid);
+    const a = actualCell(pid), started = a.cap !== 'last';
     return '' +
       '<div class="cand-stats">' +
-        '<div class="cs"><div class="cv">' + fmtPts(proj) + '</div><div class="cl">Proj</div></div>' +
-        '<div class="cs' + a.cls + '"><div class="cv">' + a.v + '</div><div class="cl">' + a.cap + '</div></div>' +
+        (started ? '<div class="cs act-main' + a.cls + '"><div class="cv">' + a.v + '</div><div class="cl">' + a.cap + '</div></div>' +
+                   '<div class="cs dimmed"><div class="cv">' + fmtPts(proj) + '</div><div class="cl">Proj</div></div>'
+                 : '<div class="cs"><div class="cv">' + fmtPts(proj) + '</div><div class="cl">Proj</div></div>' +
+                   '<div class="cs"><div class="cv">' + a.v + '</div><div class="cl">Last</div></div>') +
         '<div class="cs"><div class="cv">' + fmtPts(last3Avg(pid)) + '</div><div class="cl" title="Average of the last 3 games">L3</div></div>' +
         '<div class="cs"><div class="cv">' + fmtPts(seasonAvgPts(pid)) + '</div><div class="cl">Avg</div></div>' +
       '</div>';
@@ -5272,13 +5289,13 @@
     const ctxBits = [dvpChipHTML(playerId), depthChipHTML(playerId)].filter(Boolean).join(' ');
     els.heroStats.innerHTML = injuryMiniHTML(playerId) +
       (ctxBits || SKILL_POSITIONS.indexOf(player.position) !== -1 ? '<div class="hs-ctx">' + ctxBits + signalsHTML(playerId, player.position !== 'QB') + '</div>' : '') + [
-      ['Proj this wk', fmtPts(ctx.projections[playerId])],
-    ].concat(wa !== null ? [['Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), fmtPts(wa), wg && wg.state === 'post' ? '' : ' live']] : []).concat([
+    ].concat(wa !== null ? [['Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), fmtPts(wa), ' act-main' + (wg && wg.state === 'post' ? '' : ' live'), 'proj ' + fmtPts(ctx.projections[playerId])]]
+      : [['Proj this wk', fmtPts(ctx.projections[playerId])]]).concat([
       ['Last game', pending || fmtPts(lastGamePts(playerId))],
       ['Last 3 avg', pending || fmtPts(last3Avg(playerId))],
       ['Season avg', pending || fmtPts(seasonAvgPts(playerId))],
       ['Season total', pending || fmtPts(seasonTotalPts(playerId))],
-    ]).map(function(pair){ return '<div class="hs-block' + (pair[2] || '') + '"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div></div>'; }).join('');
+    ]).map(function(pair){ return '<div class="hs-block' + (pair[2] || '') + '"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div>' + (pair[3] ? '<div class="hs-sub">' + pair[3] + '</div>' : '') + '</div>'; }).join('');
 
     // Season stats: the most important few here; everything else lives on the Analysis screen.
     const raw = aggregatedRaw(playerId, 'season') || {};
@@ -5979,9 +5996,9 @@
     const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
     const tr = snapTrend(pid), skill = SKILL_POSITIONS.indexOf(p.position) !== -1;
     const wa = weekActual(pid), wg = gameOf(p.team);
-    const stats = [
-      [fmtPts(ctx.projections[pid]), 'Proj wk ' + ctx.week],
-    ].concat(wa !== null ? [[fmtPts(wa), 'Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), wg && wg.state === 'post' ? '' : ' live']] : []).concat([
+    const stats = [].concat(wa !== null
+      ? [[fmtPts(wa), 'Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), ' act-main' + (wg && wg.state === 'post' ? '' : ' live'), 'proj ' + fmtPts(ctx.projections[pid])]]
+      : [[fmtPts(ctx.projections[pid]), 'Proj wk ' + ctx.week]]).concat([
       [loading ? '…' : fmtPts(lastGamePts(pid)), 'Last'],
       [loading ? '…' : fmtPts(last3Avg(pid)), 'Last 3 avg'],
       [loading ? '…' : fmtPts(seasonAvgPts(pid)), 'Avg'],
@@ -5991,7 +6008,7 @@
       '<div><div class="pf-name">' + escapeHTML(playerName(p)) + '</div>' +
       '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') +
         injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div>' + gameLineHTML(pid) + playerLinksHTML(pid) + '</div>' +
-      '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat' + (s[2] || '') + '" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
+      '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat' + (s[2] || '') + '" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div>' + (s[3] ? '<div class="k sub">' + escapeHTML(s[3]) + '</div>' : '') + '</div>'; }).join('') + '</div></div>';
 
     let left = '';
     const wr = wa !== null ? weekRaw(pid) : null;
