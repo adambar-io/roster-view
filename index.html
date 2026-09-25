@@ -197,7 +197,33 @@
   .player-meta{ color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
   .key-stats{ color: var(--text); font-size: 12px; margin-top: 3px; font-variant-numeric: tabular-nums; }
   .key-stats span{ margin-right: 10px; }
+  .slot-row .key-stats{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } /* one line in compact rows */
+  .key-stats span span{ margin-right: 0; }
   .key-stats .kv{ color: var(--text-3); }
+  .key-stats .kw{ color: var(--danger); font-weight: 700; font-size: 10.5px; letter-spacing: .04em; }
+  /* live scoring */
+  .gs{ display: inline-block; font-weight: 700; font-size: 10.5px; letter-spacing: .03em; text-transform: uppercase; padding: 1px 6px; border-radius: 6px; vertical-align: 1px; white-space: nowrap; }
+  .gs.live{ color: var(--danger); background: var(--danger-soft); }
+  .gs.live::before, .live-dot{ content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--danger); margin-right: 4px; vertical-align: 1px; animation: livePulse 1.6s ease-in-out infinite; }
+  .gs.final{ color: var(--text-2); background: var(--surface-3); }
+  .gs.off{ color: var(--warn); background: var(--warn-soft); }
+  .gs.est{ font-style: italic; }
+  @keyframes livePulse{ 0%, 100%{ opacity: 1; } 50%{ opacity: .25; } }
+  .stat-col.act-live .val, .cs.act-live .cv, .hs-block.live .hs-val, .pf-stat.live .v, td.act-live, .vs-bench-row b.act-live{ color: var(--accent); }
+  .stat-col.act-live .cap{ color: var(--danger); }
+  .stat-col.act-final .cap{ color: var(--text-2); }
+  .mu-left{ font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .mu-sub b{ color: var(--text-2); font-weight: 600; }
+  .mu-ago{ float: right; font-weight: 500; font-size: 12px; color: var(--text-3); }
+  .mu-note{ margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--text-3); font-weight: 500; }
+  .vs-pts small{ display: block; font-size: 10px; font-weight: 600; color: var(--text-3); text-align: inherit; }
+  .vs-pts.pre{ color: var(--text-2); font-weight: 600; }
+  .vs-ts b{ color: var(--text-2); font-weight: 600; }
+  .vs-bench-row b small{ font-size: 10px; color: var(--text-3); font-weight: 600; }
+  .fresh.live{ color: var(--danger); }
+  .th-sub{ font-size: 9.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .05em; }
+  .mx-ks{ white-space: nowrap; font-size: 12px; }
+  .bars .fill.live{ background: var(--accent); }
 
   .status-chip{ font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 5px; text-transform: uppercase; letter-spacing: 0.03em; }
   .status-chip.st-warn{ background: var(--warn-soft); color: var(--warn); }
@@ -522,7 +548,8 @@
     .list-head{ display: flex; }
     .slot-row .col{ display: block; flex-shrink: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
     .list-head .h-col{ display: block; flex-shrink: 0; }
-    .slot-row .col.col-avg, .list-head .h-col.h-avg{ display: none; } /* only from 740px, below */
+    .slot-row .col.col-avg, .list-head .h-col.h-avg, .slot-row .col.col-l3, .list-head .h-col.h-l3{ display: none; } /* only from 740px, below */
+    .slot-row .stat-col.act-live .cap, .slot-row .stat-col.act-final .cap{ display: block; } /* table mode: still say live / final */
     .col-opp, .h-opp{ width: 78px; text-align: left; }
     .col-snap, .h-snap{ width: 78px; text-align: right; }
     .col-tgt, .h-tgt{ width: 58px; text-align: right; color: var(--text-2); }
@@ -535,7 +562,7 @@
     .slot-row.static .col{ visibility: hidden; }
   }
   @container list (min-width: 740px){
-    .slot-row .col.col-avg, .list-head .h-col.h-avg{ display: block; width: 58px; text-align: right; color: var(--text-2); }
+    .slot-row .col.col-avg, .list-head .h-col.h-avg, .slot-row .col.col-l3, .list-head .h-col.h-l3{ display: block; width: 58px; text-align: right; color: var(--text-2); }
   }
   /* Waivers has the most columns: until there's room, drop target share and tighten the rest so names stay readable. */
   @container list (min-width: 600px) and (max-width: 819px){
@@ -1393,12 +1420,12 @@
           <div class="starters">
             <div class="section-title">Starters <span class="st-hint" style="opacity:0.7;">— <span class="hint-mouse">click</span><span class="hint-touch">tap</span> a player to compare &amp; swap</span><button class="opt-btn" id="opt-btn" title="Fill your starters with the highest projected lineup"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9z"/></svg>Optimal lineup</button><button class="xbtn" data-expand="roster" aria-label="Expand lineup to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
             <div class="opt-note" id="opt-note" role="status" aria-live="polite" hidden></div>
-            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
             <div id="starters-list"></div>
           </div>
           <div class="bench-section">
             <div class="section-title">Bench</div>
-            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat">Last</div><div class="h-col h-avg">Avg</div></div>
+            <div class="list-head"><div class="h-slot"></div><div class="h-info">Player</div><div class="h-col h-opp">Opp</div><div class="h-col h-snap">Snap</div><div class="h-stat">Proj</div><div class="h-stat h-last">Last</div><div class="h-col h-l3" title="Average of the last 3 games">L3</div><div class="h-col h-avg">Avg</div></div>
             <div id="bench-list"></div>
           </div>
           <div class="bye-plan" id="bye-plan" hidden></div>
@@ -1422,7 +1449,7 @@
           </div>
           <div id="add-drop"></div>
           <div class="section-title"><span id="pl-title">Available</span> <span style="opacity:0.7;" id="fa-sub"></span><button class="xbtn" data-expand="fa" aria-label="Expand waivers to full screen" title="Expand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M10 20H4v-6M20 4l-6.5 6.5M4 20l6.5-6.5"/></svg></button></div>
-          <div class="list-head pl-head"><div class="h-slot"></div><button type="button" class="h-info h-sort" data-pl-sort="name">Player</button><div class="h-col h-opp">Opp</div><button type="button" class="h-col h-snap h-sort" data-pl-sort="snap" title="Season snap share">Snap</button><button type="button" class="h-col h-tgt h-sort" data-pl-sort="tgt" title="Season target share">Tgt</button><button type="button" class="h-stat h-sort" data-pl-sort="proj">Proj</button><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
+          <div class="list-head pl-head"><div class="h-slot"></div><button type="button" class="h-info h-sort" data-pl-sort="name">Player</button><div class="h-col h-opp">Opp</div><button type="button" class="h-col h-snap h-sort" data-pl-sort="snap" title="Season snap share">Snap</button><button type="button" class="h-col h-tgt h-sort" data-pl-sort="tgt" title="Season target share">Tgt</button><button type="button" class="h-stat h-sort" data-pl-sort="proj">Proj</button><button type="button" class="h-stat h-sort h-last" data-pl-sort="last" title="Last game">Last</button><div class="h-col h-vs">vs your weakest</div><div class="h-pick" aria-hidden="true"></div></div>
           <div id="fa-list"></div>
           <button class="fa-more" id="fa-more" style="display:none;">Show more</button>
         </section>
@@ -1619,9 +1646,9 @@
 
   const POSITION_KEY_STATS = {
     QB:  [['pass_yd','YD'],['pass_td','TD'],['pass_int','INT'],['rush_yd','RUSH YD']],
-    RB:  [['rush_yd','YD'],['rush_td','TD'],['rec','REC'],['rec_yd','REC YD']],
-    WR:  [['rec','REC'],['rec_yd','YD'],['rec_td','TD'],['rec_tgt','TGT']],
-    TE:  [['rec','REC'],['rec_yd','YD'],['rec_td','TD'],['rec_tgt','TGT']],
+    RB:  [['rush_att','CAR'],['rush_yd','YD'],['rush_td','TD'],['rec','REC'],['rec_yd','REC YD']],
+    WR:  [['rec_tgt','TGT'],['rec','REC'],['rec_yd','YD'],['rec_td','TD']],
+    TE:  [['rec_tgt','TGT'],['rec','REC'],['rec_yd','YD'],['rec_td','TD']],
     K:   [['fgm','FG'],['fga','FGA'],['xpm','XP']],
     DEF: [['sack','SACK'],['int','INT'],['fum_rec','FR'],['def_td','TD']],
   };
@@ -2011,8 +2038,92 @@
   }
   function fmtStat(v){ return (v === null || v === undefined || isNaN(v)) ? '—' : (Number.isInteger(v) ? String(v) : v.toFixed(1)); }
 
+  // ---- weekly actuals (weekly.json from the GitHub Action) ----
+  // Every fantasy player's stats for each completed game (QB/RB/WR/TE/K/DEF), so last game / season / recent form work
+  // for anyone (free agents, other teams' players, defenses) without one request per player. Completed weeks the file
+  // doesn't have yet (the Action runs a few times a day) come straight from Sleeper's weekly stats (ctx.gapWeeks).
+  // My roster still uses the per-player download (ctx.history), which is also the fallback when weekly.json is missing.
+  const WEEKLY_URL = 'weekly.json';
+  // stats that aren't the player's own counting stats (Sleeper points/ranks, games flags, team snaps, rates)
+  const WEEK_DROP = /^(pts_(std|ppr|half_ppr|idp)$|pos_rank|rank_|adp_|pos_adp|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|fan_pts_allow|.*_(ypa|ypc|ypr|ypt|pct|rtg|avg)$)/;
+  ctx.gapWeeks = {};
+  async function loadWeekly(season){
+    const cached = await idbGet('weekly');
+    if(cached && cached.data && cached.data.season === season) return cached;
+    return fetchWeekly(season);
+  }
+  async function fetchWeekly(season){
+    try{
+      const res = await fetch(WEEKLY_URL, { cache: 'no-cache' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(data.season !== season || !data.players) throw new Error(WEEKLY_URL + ' is for ' + data.season);
+      const out = { ts: Date.now(), data: data };
+      idbSet('weekly', out);
+      return out;
+    }catch(e){
+      const cached = await idbGet('weekly');
+      if(cached && cached.data && cached.data.season === season){ console.warn('weekly.json: refresh failed, using cached copy —', e.message); return cached; }
+      console.warn('weekly.json unavailable (' + e.message + '); other players\' actuals load one by one when opened.');
+      return null;
+    }
+  }
+  function applyWeekly(res){
+    if(!res || !res.data) return false;
+    const cur = ctx.weekly;
+    if(cur && (res.data.generated || '') < (cur.generated || '')) return false;
+    const same = cur && cur.generated === res.data.generated;
+    ctx.weekly = res.data;
+    if(!same) histReset();
+    return !same;
+  }
+  // One week of Sleeper stats for every fantasy player: { pid: { t: team, o: opponent, s: stats } }.
+  // Used for completed weeks weekly.json doesn't have yet, and for this week's games while they're played.
+  async function fetchWeekStats(week){
+    const arr = await fetchJSON(UNOFFICIAL + '/stats/nfl/' + ctx.season + '/' + week + '?season_type=regular&' + positionQuery());
+    const out = {};
+    (Array.isArray(arr) ? arr : []).forEach(function(e){
+      if(!e || !e.player_id || !e.stats) return;
+      const st = {};
+      for(const k in e.stats){ const v = e.stats[k]; if(typeof v === 'number' && v !== 0 && (k === 'gp' || !WEEK_DROP.test(k))) st[k] = v; }
+      out[e.player_id] = { t: e.team || null, o: e.opponent || null, s: st };
+    });
+    return out;
+  }
+  async function fillGapWeeks(force){
+    if(!ctx.weekly) return false;
+    const from = (ctx.weekly.through_week || 0) + 1, to = ctx.week - 1;
+    let changed = false;
+    Object.keys(ctx.gapWeeks).forEach(function(w){ if(Number(w) < from || Number(w) > to){ delete ctx.gapWeeks[w]; changed = true; } });
+    for(let w = from; w <= to && w >= to - 2; w++){ // at most the last few weeks; normally just the one that ended last night
+      if(ctx.gapWeeks[w] && !force) continue;
+      try{ ctx.gapWeeks[w] = await fetchWeekStats(w); changed = true; }catch(e){ console.warn('Week ' + w + ' stats unavailable', e); }
+    }
+    if(changed) histReset();
+    return changed;
+  }
+  let histMemo = {}, aggMemo = {};
+  function histReset(){ histMemo = {}; aggMemo = {}; if(typeof plReset === 'function') plReset(); }
+  function gameEntry(week, g){
+    const m = g.t && ctx.nfl && ctx.nfl.sched && ctx.nfl.sched[g.t] ? ctx.nfl.sched[g.t][week] : null;
+    return { week: week, raw: g.s || {}, opp: g.o || null, away: m ? m.charAt(0) === '@' : null };
+  }
+  // A player's completed games, scored with this league's settings: [{ week, raw, pts, opp, away }], [] when they
+  // haven't played, null only when nothing is loaded yet (no weekly.json and no per-player download).
+  function hist(pid){
+    if(ctx.history[pid]) return ctx.history[pid];
+    if(!ctx.weekly) return null;
+    if(pid in histMemo) return histMemo[pid];
+    const w = ctx.weekly.players[pid] || {}, weeks = [];
+    for(const k in w) weeks.push(gameEntry(Number(k), w[k]));
+    for(const k in ctx.gapWeeks){ const g = ctx.gapWeeks[k][pid]; if(g && playedWeek(g.s)) weeks.push(gameEntry(Number(k), g)); }
+    return (histMemo[pid] = scoreHistory(weeks));
+  }
+
   function aggregatedRaw(pid, mode){ // mode: 'last' | 'season'  (season = full-season total)
-    const weeks = ctx.history[pid] || [];
+    const memoKey = mode + '|' + pid;
+    if(!ctx.history[pid] && memoKey in aggMemo) return aggMemo[memoKey];
+    const weeks = hist(pid) || [];
     if(!weeks.length) return null;
     const set = (mode === 'last') ? weeks.slice(-1) : weeks;
     const acc = {}, n = {};
@@ -2027,32 +2138,47 @@
       }
     });
     for(const k in acc){ if(statKind(k) === 'rate') acc[k] = acc[k] / n[k]; } // season rate = mean of weekly rates
+    if(!ctx.history[pid]) aggMemo[memoKey] = acc;
     return acc;
   }
   function lastGamePts(pid){
-    const weeks = ctx.history[pid] || [];
+    const weeks = hist(pid) || [];
     return weeks.length ? weeks[weeks.length - 1].pts : null;
   }
   function seasonAvgPts(pid){
-    const weeks = ctx.history[pid] || [];
+    const weeks = hist(pid) || [];
     if(!weeks.length) return null;
     return weeks.reduce(function(a,b){ return a + b.pts; }, 0) / weeks.length;
   }
   function seasonTotalPts(pid){
-    const weeks = ctx.history[pid] || [];
+    const weeks = hist(pid) || [];
     if(!weeks.length) return null;
     return weeks.reduce(function(a,b){ return a + b.pts; }, 0);
   }
+  // Recent form: average of the last 3 games played (fewer early in the season: L3 is then the average of what exists).
+  function last3Avg(pid){
+    const weeks = (hist(pid) || []).slice(-3);
+    if(!weeks.length) return null;
+    return weeks.reduce(function(a,b){ return a + b.pts; }, 0) / weeks.length;
+  }
+  function seasonStat(pid, key){
+    const raw = aggregatedRaw(pid, 'season');
+    if(!raw) return hist(pid) ? 0 : null;
+    return typeof raw[key] === 'number' ? raw[key] : 0;
+  }
+  // Compact actuals under a player's name: this week's stat line once their game has started ("WK 3 ..."), otherwise
+  // the position's key season totals. Actual results; season avg / last-3 avg sit on the signals line (formHTML).
   function keyStatsLine(pid, pos){
     const defs = POSITION_KEY_STATS[pos];
-    if(!defs) return '';
-    const raw = aggregatedRaw(pid, 'season');
-    if(!raw) return '';
-    return defs.map(function(pair){
+    const wr = weekActual(pid) !== null ? weekRaw(pid) : null;
+    const raw = wr || aggregatedRaw(pid, 'season');
+    let out = wr ? '<span class="kw">WK ' + ctx.week + '</span>' : '';
+    if(defs && raw) out += defs.map(function(pair){
       const v = raw[pair[0]];
       if(v === undefined) return '';
       return '<span><span class="kv">' + pair[1] + '</span> ' + Math.round(v) + '</span>';
     }).filter(Boolean).join('');
+    return out;
   }
 
   // Order here is also the game-log column order; unlisted keys follow alphabetically.
@@ -2744,6 +2870,9 @@
     ctx.h2h = []; renderH2HTray();
     ctx.seedCheck = null;
     const nflPromise = loadNflverse(ctx.season); // in parallel; never blocks the roster
+    const weeklyPromise = loadWeekly(ctx.season);
+    ctx.weekly = null; ctx.gapWeeks = {}; histReset();
+    ctx.live = { games: null, gamesTs: 0, gamesFailed: false, stats: null, statsTs: 0, muTs: 0, ts: 0, failed: false, busy: false };
     try{
       const dataReady = Promise.all([ fetchLeagueBundle(leagueId), getPlayersDict() ]);
       dataReady.catch(function(){}); // handled below; avoids an "unhandled rejection" while we wait for the screen switch
@@ -2823,6 +2952,13 @@
         if(ctx.focusAuto && ctx.view === 'roster') ctx.focus = null; // byes are known now; let the default pick a bye starter
         rerenderEverything();
         if(!ctx.focus) selectDefaultFocus();
+        if(weekStarted()) livePoll({ force: true });
+      });
+      weeklyPromise.then(async function(res){
+        if(loadId !== ctx.loadId || !res || !applyWeekly(res)) return;
+        await fillGapWeeks();
+        if(loadId !== ctx.loadId) return;
+        rerenderEverything();
       });
     }catch(err){
       console.error(err);
@@ -2848,6 +2984,7 @@
       const playersP = (opts.manual || isStale(ctx.playersSource === 'sleeper' ? 'daily' : 'players', ctx.playersTs)) ? downloadPlayers() : null;
       if(playersP) playersP.catch(function(){});
       const nflP = fetchNflverse(ctx.season);
+      const weeklyP = fetchWeekly(ctx.season);
       if(!opts.topUp){ // topUp: the load that just ran already fetched these
         const bundle = await fetchLeagueBundle(leagueId);
         if(loadId !== ctx.loadId) return;
@@ -2883,6 +3020,11 @@
       const nfl = await nflP;
       if(loadId !== ctx.loadId) return;
       if(nfl && applyNfl(nfl)) changed = true;
+      const wk = await weeklyP;
+      if(loadId !== ctx.loadId) return;
+      if(wk && applyWeekly(wk)) changed = true;
+      if(await fillGapWeeks(!!opts.manual)) changed = true;
+      if(loadId !== ctx.loadId) return;
       const espnBefore = ctx.espnTs;
       await loadEspn(!!opts.manual);
       if(ctx.espnTs !== espnBefore) changed = true;
@@ -2893,6 +3035,7 @@
         if(!ctx.focus) selectDefaultFocus();
       }
       if(ctx.draftNote){ showOptNote('<span class="on-txt">' + ctx.draftNote + '</span>', null); ctx.draftNote = null; }
+      if(weekStarted()) livePoll({ force: !!opts.manual || !ctx.live.ts });   // the manual refresh button refreshes live scores too
     }catch(e){
       failed = true;
       console.warn('Refresh failed; showing the last data', e);
@@ -2923,7 +3066,7 @@
     const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     const layoutChanged = JSON.stringify(positions) !== JSON.stringify(ctx.rosterPositions);
     ctx.league = bundle.league; ctx.myRoster = my; ctx.lastRosters = bundle.rosters; ctx.users = bundle.users; ctx.rosterPositions = positions;
-    if(weekRolled){ ctx.week = bundle.week; ctx.weekRolled = true; }
+    if(weekRolled){ ctx.week = bundle.week; ctx.weekRolled = true; ctx.live.games = null; ctx.live.stats = null; ctx.live.ts = 0; ctx.live.gamesTs = ctx.live.statsTs = 0; histReset(); }
     const sleeperChanged = JSON.stringify(orig) !== JSON.stringify(ctx.originalStarters);
     if(!dirty || weekRolled || layoutChanged || sleeperChanged){
       ctx.draftStarters = orig.slice();
@@ -2977,9 +3120,13 @@
     const b = document.getElementById('fresh'), t = document.getElementById('fresh-txt');
     if(!b || !t) return;
     b.hidden = !ctx.updatedAt;
-    b.classList.toggle('busy', !!ctx.refreshing);
+    b.classList.toggle('busy', !!ctx.refreshing || !!(ctx.live && ctx.live.busy));
+    b.classList.toggle('live', !!(ctx.live && ctx.live.ts && weekStarted() && liveWindow()));
     b.classList.toggle('err', !ctx.refreshing && !!(ctx.refreshFailed || ctx.projFailed));
+    const live = ctx.live && ctx.live.ts && weekStarted() && liveWindow();
     const txt = ctx.refreshing ? 'Updating…'
+      : live && ctx.live.failed ? 'Live scores didn’t update · tap to retry'
+      : live ? 'Live · updated ' + liveAgoText()
       : ctx.refreshFailed ? 'Couldn’t update · tap to retry'
       : ctx.projFailed ? 'Projections didn’t load · tap to retry'
       : ctx.updatedAt ? 'Updated ' + agoText(ctx.updatedAt) : '';
@@ -2999,6 +3146,223 @@
     renderFreshness();
     if(ctx.lastRefresh && Date.now() - ctx.lastRefresh > (isGameDay(Date.now()) ? GAME_DAY_MIN_GAP : HOUR)) refreshData();
   }, 30 * 1000);
+
+
+  // ============ live scoring ============
+  // Points: Sleeper's league matchups (/league/{id}/matchups/{week}): players_points and points are already scored with
+  // this league's settings and cover every rostered player in the league. Sleeper's CDN caches that response for 60 s
+  // (Cache-Control: s-maxage=60, checked during a live game in Sept 2026), so polling every 30 s shows each update
+  // within about 30 s of Sleeper publishing it. Players on no roster (Players tab) are scored from Sleeper's weekly
+  // stats for this week (cached 5 min by Sleeper), fetched every few minutes.
+  // Game state and clock: ESPN's public scoreboard (state, quarter, clock, score; allows browser requests, cached 5 s),
+  // every 60 s. If it fails, state is estimated from the kickoff time in nflverse.json and labelled as an estimate.
+  // Polling only runs while a game is on (kickoff .. about 4 h later) and the app is on screen; it stops when hidden.
+  const LIVE_POLL = 30 * 1000, LIVE_GAMES_GAP = 60 * 1000, LIVE_STATS_GAP = 3 * 60 * 1000;
+  const GAME_LENGTH = 190 * 60 * 1000;                 // a typical NFL broadcast window, for the no-clock estimate
+  const ESPN_SCOREBOARD = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+  const ESPN_ABBR = { WSH: 'WAS' };
+  ctx.live = { games: null, gamesTs: 0, gamesFailed: false, stats: null, statsTs: 0, muTs: 0, ts: 0, failed: false, busy: false };
+  let muPtsMemo = null, muPtsFor = null;
+
+  async function fetchGames(week){
+    const d = await fetchJSON(ESPN_SCOREBOARD + '?seasontype=2&week=' + week + '&dates=' + ctx.season);
+    const out = {};
+    (d.events || []).forEach(function(ev){
+      const c = (ev.competitions || [])[0] || {}, st = ev.status || c.status || {}, ty = st.type || {};
+      const teams = (c.competitors || []).map(function(x){
+        const ab = x.team && x.team.abbreviation;
+        return { t: ESPN_ABBR[ab] || ab, score: Number(x.score) || 0, home: x.homeAway === 'home' };
+      });
+      if(teams.length !== 2) return;
+      const off = /POSTPONED|CANCELED|CANCELLED|SUSPENDED/.test(ty.name || '');
+      teams.forEach(function(me, i){
+        const them = teams[1 - i];
+        out[me.t] = {
+          state: off ? 'off' : (ty.state || 'pre'), name: ty.name || '', period: st.period || 0, clock: typeof st.clock === 'number' ? st.clock : null,
+          displayClock: st.displayClock || '', detail: ty.shortDetail || '', kick: Date.parse(ev.date) || null,
+          us: me.score, them: them.score, opp: them.t, home: me.home, src: 'espn',
+        };
+      });
+    });
+    return out;
+  }
+  // The game for a team this week: ESPN's if we have a recent copy, otherwise an estimate from the kickoff time.
+  // null = no game this week (bye) or no schedule.
+  function gameOf(team){
+    if(!team) return null;
+    const g = ctx.live.games && ctx.live.games[team];
+    if(g && Date.now() - ctx.live.gamesTs < 10 * 60 * 1000) return g;
+    const m = matchup(team, ctx.week);
+    if(!m || m.bye) return null;
+    const k = kickoff(team, ctx.week), now = Date.now();
+    if(!k) return { state: 'pre', kick: null, src: 'none' };
+    if(g && g.state === 'post') return g;                           // a final result doesn't go stale
+    return { state: now < k ? 'pre' : now < k + GAME_LENGTH ? 'in' : 'post', kick: k, src: 'estimate' };
+  }
+  // Share of the game still to play, 0..1. ESPN clock when we have it; otherwise time since kickoff (flagged est).
+  function remainingFrac(g){
+    if(!g || g.state === 'pre') return { f: 1, est: false };
+    if(g.state !== 'in') return { f: 0, est: false };
+    if(g.src === 'espn' && g.period){
+      if(/HALFTIME/.test(g.name)) return { f: 0.5, est: false };
+      if(g.period > 4) return { f: 0, est: false };                 // overtime: count it as over
+      const left = (4 - g.period) * 900 + (typeof g.clock === 'number' ? g.clock : 450);
+      return { f: Math.max(0, Math.min(1, left / 3600)), est: false };
+    }
+    if(!g.kick) return { f: 0.5, est: true };
+    return { f: Math.max(0.05, Math.min(1, 1 - (Date.now() - g.kick) / GAME_LENGTH)), est: true };
+  }
+  // Has any game this week kicked off? (switches the matchup card and rows to actual points)
+  function weekStarted(){
+    if(ctx.live.games){ for(const t in ctx.live.games){ if(ctx.live.games[t].state !== 'pre' && ctx.live.games[t].state !== 'off') return true; } }
+    const k = ctx.nfl && ctx.nfl.kick;
+    if(!k) return false;
+    const now = Date.now();
+    for(const t in k){ const x = Date.parse(k[t][String(ctx.week)]); if(!isNaN(x) && x <= now) return true; }
+    return false;
+  }
+  // Is a game on right now (or about to be)? Drives polling.
+  function liveWindow(){
+    const now = Date.now();
+    if(ctx.live.games && now - ctx.live.gamesTs < 10 * 60 * 1000){
+      for(const t in ctx.live.games){ if(ctx.live.games[t].state === 'in') return true; }
+    }
+    const k = ctx.nfl && ctx.nfl.kick;
+    if(!k) return false;
+    for(const t in k){
+      const x = Date.parse(k[t][String(ctx.week)]);
+      if(isNaN(x) || x - now > 60 * 1000 || now - x > GAME_LENGTH + 45 * 60 * 1000) continue;
+      const g = ctx.live.games && ctx.live.games[t];
+      if(!g || g.state !== 'post') return true;
+    }
+    return false;
+  }
+  // Sleeper's live points for every rostered player in this league (league scoring).
+  function muPoints(){
+    if(muPtsFor === ctx.matchups && muPtsMemo) return muPtsMemo;
+    const o = {};
+    (ctx.matchups || []).forEach(function(m){ const pp = m.players_points || {}; for(const k in pp) o[k] = pp[k]; });
+    muPtsFor = ctx.matchups; muPtsMemo = o;
+    return o;
+  }
+  // This week's actual points once the player's game has started; null before kickoff (or on a bye).
+  function weekActual(pid){
+    const p = ctx.players[pid];
+    if(!p) return null;
+    const g = gameOf(p.team);
+    if(!g || g.state === 'pre' || g.state === 'off') return null;
+    const mp = muPoints();
+    if(typeof mp[pid] === 'number') return mp[pid];
+    const st = ctx.live.stats && ctx.live.stats[pid];
+    if(st) return calcPoints(st.s, ctx.league.scoring_settings || {}) || 0;
+    return ctx.live.stats ? 0 : null;
+  }
+  function weekRaw(pid){ const st = ctx.live.stats && ctx.live.stats[pid]; return st ? st.s : null; }
+  // Projected final for one player: actual so far + projection for what's left of their game.
+  function projFinal(pid){
+    if(!pid || pid === '0' || !ctx.players[pid]) return { v: 0, state: 'none' };
+    const p = ctx.players[pid], g = gameOf(p.team), proj = typeof ctx.projections[pid] === 'number' ? ctx.projections[pid] : 0;
+    if(!g) return { v: 0, state: 'bye' };
+    if(g.state === 'off') return { v: 0, state: 'off' };
+    const act = weekActual(pid);
+    if(g.state === 'pre' || act === null) return { v: proj, state: 'pre', proj: proj };
+    if(g.state === 'post') return { v: act, state: 'post', act: act, est: g.src === 'estimate' };
+    const r = remainingFrac(g);
+    return { v: act + proj * r.f, state: 'in', act: act, proj: proj, est: r.est };
+  }
+  // A team's live line: Sleeper's official points so far, and a projected final from its Sleeper starters.
+  function liveTeam(rosterId){
+    const m = (ctx.matchups || []).find(function(x){ return x.roster_id === rosterId; });
+    if(!m) return null;
+    const starters = (m.starters || []).filter(function(x){ return x && x !== '0'; });
+    const mp = muPoints();
+    let fin = 0, est = false, pre = 0, inG = 0, post = 0;
+    starters.forEach(function(pid){
+      const f = projFinal(pid);
+      fin += f.v; if(f.est) est = true;
+      if(f.state === 'pre') pre++; else if(f.state === 'in') inG++; else if(f.state === 'post') post++;
+    });
+    const sum = starters.reduce(function(a, pid){ return a + (typeof mp[pid] === 'number' ? mp[pid] : 0); }, 0);
+    return { pts: typeof m.points === 'number' ? m.points : sum, fin: fin, est: est, pre: pre, inG: inG, post: post, starters: m.starters || [] };
+  }
+  // Short game state for a team: "Q3 8:12", "Half", "Final", or null before kickoff.
+  function gameStateText(g){
+    if(!g || g.state === 'pre') return null;
+    if(g.state === 'off') return 'Postponed';
+    if(g.src !== 'espn') return g.state === 'in' ? 'In progress' : 'Likely final';
+    if(g.state === 'post') return 'Final' + (g.period > 4 ? '/OT' : '');
+    if(/HALFTIME/.test(g.name)) return 'Half';
+    if(/END_PERIOD/.test(g.name)) return 'End Q' + g.period;
+    return (g.period > 4 ? 'OT' : 'Q' + g.period) + ' ' + (g.displayClock || '');
+  }
+  // Game line used in rows and cards once a game has started; before kickoff it's the usual opponent text.
+  function gameStatusHTML(team){
+    const g = gameOf(team), txt = gameStateText(g);
+    if(!txt) return null;
+    const m = matchup(team, ctx.week), opp = m && !m.bye ? m.text : '';
+    const score = g.src === 'espn' ? ' ' + g.us + '–' + g.them : '';
+    const cls = g.state === 'in' ? 'live' : g.state === 'post' ? 'final' : 'off';
+    return '<span class="gs ' + cls + (g.src !== 'espn' ? ' est' : '') + '">' + escapeHTML(txt) + '</span> <span class="opp">' + escapeHTML(opp) + score + '</span>';
+  }
+  // Second stat column in rows: this week's actual points once their game has started, otherwise last game.
+  function actualCell(pid){
+    const p = ctx.players[pid], wa = weekActual(pid);
+    if(wa === null) return { v: fmtPts(lastGamePts(pid)), cap: 'last', cls: '' };
+    const g = gameOf(p && p.team);
+    return { v: fmtPts(wa), cap: g && g.state === 'post' ? 'final' : 'live', cls: g && g.state === 'post' ? ' act-final' : ' act-live' };
+  }
+
+  async function livePoll(opts){
+    opts = opts || {};
+    if(!ctx.league || !ctx.myRoster || ctx.live.busy) return;
+    if(!opts.force && (document.visibilityState !== 'visible' || !liveWindow())) return;
+    ctx.live.busy = true;
+    const loadId = ctx.loadId, week = ctx.week, now = Date.now();
+    try{
+      const wantGames = opts.force || now - ctx.live.gamesTs >= LIVE_GAMES_GAP - 2000;
+      const wantStats = opts.force || now - ctx.live.statsTs >= LIVE_STATS_GAP - 2000;
+      const [mu, games, stats] = await Promise.all([
+        fetchMatchups(ctx.league.league_id, week),
+        wantGames ? fetchGames(week).catch(function(e){ console.warn('Live game clock unavailable (ESPN scoreboard)', e); return null; }) : null,
+        wantStats ? fetchWeekStats(week).catch(function(e){ console.warn('This week\'s stats unavailable', e); return null; }) : null,
+      ]);
+      if(loadId !== ctx.loadId || week !== ctx.week) return;
+      if(mu){ ctx.matchups = mu; ctx.live.muTs = Date.now(); }
+      if(games){ ctx.live.games = games; ctx.live.gamesTs = Date.now(); ctx.live.gamesFailed = false; }
+      else if(wantGames) ctx.live.gamesFailed = true;
+      if(stats){ ctx.live.stats = stats; ctx.live.statsTs = Date.now(); }
+      ctx.live.failed = !mu;
+      if(mu) ctx.live.ts = Date.now();
+      rerenderLive();
+    }finally{
+      ctx.live.busy = false;
+      renderFreshness();
+    }
+  }
+  // Re-render what shows live numbers, without touching filters, open menus or scroll.
+  function rerenderLive(){
+    if(typeof plReset === 'function') plReset();
+    renderAll();
+    if(ctx.view === 'fa' && !(document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))) renderPlayers(true);
+    refreshFocus();
+    if(maxOpen()) renderMax(0);
+    renderLiveAgo();
+  }
+  function liveAgoText(){
+    if(!ctx.live.ts) return '';
+    const sec = Math.round((Date.now() - ctx.live.ts) / 1000);
+    return sec < 10 ? 'just now' : sec < 60 ? sec + 's ago' : agoText(ctx.live.ts);
+  }
+  function renderLiveAgo(){
+    document.querySelectorAll('[data-live-ago]').forEach(function(el){ el.textContent = 'Updated ' + liveAgoText(); });
+  }
+  // Poll on a steady beat while a game is on and the app is visible; hidden = no timers doing work.
+  setInterval(function(){
+    if(document.visibilityState !== 'visible' || !ctx.myRoster) return;
+    if(liveWindow() && Date.now() - ctx.live.ts >= LIVE_POLL - 2000) livePoll();
+    if(ctx.live.ts && weekStarted()){ renderLiveAgo(); renderFreshness(); }
+  }, 5 * 1000);
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible' && liveWindow()) livePoll(); });
 
   // ---- this week's matchup (Sleeper /league/{id}/matchups/{week}) ----
   async function fetchMatchups(leagueId, week){
@@ -3027,6 +3391,7 @@
   function matchupCardHTML(){
     const mu = myMatchup();
     if(!mu) return '';
+    if(weekStarted()){ const live = liveMatchupCardHTML(mu); if(live) return live; }
     const sleeperTotal = sumProj(ctx.originalStarters), planTotal = sumProj(ctx.draftStarters), oppTotal = sumProj(mu.starters);
     const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
     const mine = dirty ? planTotal : sleeperTotal, d = mine - oppTotal;
@@ -3042,6 +3407,37 @@
       '<div class="mu-foot' + tone + '">' + (dirty
         ? 'With your changes you’re ' + marginText(planTotal - oppTotal) + ' <span class="dim">(Sleeper lineup: ' + marginText(sleeperTotal - oppTotal) + ')</span>'
         : 'You’re projected ' + marginText(d)) + '</div>' +
+    '</button>';
+  }
+  function playsLeftText(t){
+    const bits = [];
+    if(t.inG) bits.push(t.inG + ' playing');
+    if(t.pre) bits.push(t.pre + ' yet to play');
+    return bits.length ? bits.join(' · ') : 'All games done';
+  }
+  // Live: actual points (Sleeper's live scoring for this league) and a projected final for both teams.
+  function liveMatchupCardHTML(mu){
+    const me = liveTeam(ctx.myRoster.roster_id), op = liveTeam(mu.rosterId);
+    if(!me || !op) return null;
+    const done = !(me.pre + me.inG + op.pre + op.inG);
+    const d = done ? me.pts - op.pts : me.fin - op.fin, now = me.pts - op.pts;
+    const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down', nowTone = Math.abs(now) < 0.05 ? '' : now > 0 ? ' up' : ' down';
+    const on = me.inG + op.inG > 0 || liveWindow();
+    const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
+    const side = function(cls, name, t, tn){
+      return '<div class="mu-side' + cls + '"><div class="mu-name">' + escapeHTML(name) + '</div><div class="mu-pts num' + tn + '">' + t.pts.toFixed(1) + '</div>' +
+        '<div class="mu-sub">' + (done ? 'Final' : 'Proj. final <b>' + t.fin.toFixed(1) + '</b>') + '</div><div class="mu-left">' + playsLeftText(t) + '</div></div>';
+    };
+    const est = me.est || op.est;
+    return '<button type="button" class="mu-card live" data-open-opp aria-label="This week’s matchup, live. Compare your lineup with ' + escapeHTML(mu.name) + '’s">' +
+      '<div class="mu-head"><span class="eyebrow">Week ' + ctx.week + ' · ' + (done ? 'final' : on ? '<span class="live-dot"></span>live' : 'in progress') + '</span><span class="mu-link">Compare lineups ›</span></div>' +
+      '<div class="mu-row">' + side('', els.teamName.textContent || 'You', me, nowTone) + '<div class="mu-vs" aria-hidden="true">vs</div>' + side(' opp', mu.name, op, '') + '</div>' +
+      '<div class="mu-foot' + tone + '">' + (done ? (Math.abs(d) < 0.05 ? 'Tied' : d > 0 ? 'You won by ' + d.toFixed(1) : 'You lost by ' + (-d).toFixed(1))
+        : 'Projected to ' + (Math.abs(d) < 0.05 ? 'finish dead even' : (d > 0 ? 'win' : 'lose') + ' by ' + Math.abs(d).toFixed(1))) +
+        '<span class="mu-ago" data-live-ago>Updated ' + liveAgoText() + '</span></div>' +
+      '<div class="mu-note">Actual points from Sleeper in your league’s scoring. Proj. final = points so far + projection for the rest of each game' +
+        (est ? ' (no game clock available, so time left is estimated from kickoff)' : '') + '.' +
+        (dirty ? ' Live scores use your lineup in Sleeper, not your planned changes.' : '') + '</div>' +
     '</button>';
   }
   function renderMatchupCard(){
@@ -3067,34 +3463,40 @@
     });
     return holes;
   }
-  function vsCell(pid, side, tone, hole){
+  function vsCell(pid, side, tone, hole, live){
     if(!pid || pid === '0' || !ctx.players[pid]){
       return '<div class="vs-cell ' + side + ' hole"><div class="vs-who"><div class="vs-nm">Empty</div><div class="vs-mt">Nobody in this slot</div></div><div class="vs-pts">—</div></div>';
     }
     const p = ctx.players[pid], proj = ctx.projections[pid], m = matchup(p.team, ctx.week);
+    const gs = live ? gameStatusHTML(p.team) : null, wa = live ? weekActual(pid) : null;
+    const pts = wa === null ? fmtPts(proj) + (live ? '<small>proj</small>' : '') : fmtPts(wa) + '<small>proj ' + fmtPts(proj) + '</small>';
     return '<div class="vs-cell ' + side + (hole ? ' hole' : '') + '" data-open="' + escapeHTML(pid) + '" role="button" tabindex="0">' +
       avatarTag(pid, 'vs-av') +
       '<div class="vs-who"><div class="vs-nm">' + escapeHTML(playerName(p)) + '</div>' +
-        '<div class="vs-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + (m ? ' · ' + (m.bye ? 'BYE' : escapeHTML(m.text)) : '') + ' ' + injuryChip(effectiveStatus(pid)) + '</div></div>' +
-      '<div class="vs-pts' + tone + '">' + fmtPts(proj) + '</div></div>';
+        '<div class="vs-mt">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') + (gs ? ' · ' + gs : m ? ' · ' + (m.bye ? 'BYE' : escapeHTML(m.text)) : '') + ' ' + injuryChip(effectiveStatus(pid)) + '</div></div>' +
+      '<div class="vs-pts' + tone + (live && wa === null ? ' pre' : '') + '">' + pts + '</div></div>';
   }
   function oppHTML(){
     const mu = myMatchup();
     if(!mu) return '<div class="empty-state">No matchup this week.</div>';
-    const mine = ctx.draftStarters, theirs = mu.starters;
+    let live = weekStarted() ? { me: liveTeam(ctx.myRoster.roster_id), op: liveTeam(mu.rosterId) } : null;
+    if(live && (!live.me || !live.op)) live = null;
+    const pad = function(arr){ arr = (arr || []).slice(); while(arr.length < ctx.rosterPositions.length) arr.push('0'); return arr; };
+    // Live: Sleeper's lineups are what score. Before kickoff: my plan vs their Sleeper lineup.
+    const mine = live ? pad(live.me.starters) : ctx.draftStarters, theirs = live ? pad(live.op.starters) : mu.starters;
     const dirty = JSON.stringify(ctx.draftStarters) !== JSON.stringify(ctx.originalStarters);
-    const myTotal = sumProj(mine), oppTotal = sumProj(theirs), d = myTotal - oppTotal;
+    const myTotal = live ? live.me.fin : sumProj(mine), oppTotal = live ? live.op.fin : sumProj(theirs), d = myTotal - oppTotal;
     const myHoles = lineupHoles(mine), oppHoles = lineupHoles(theirs);
     const holeSet = function(h){ const o = {}; h.forEach(function(x){ o[x.i] = true; }); return o; };
     const mh = holeSet(myHoles), oh = holeSet(oppHoles);
     let myWins = 0, oppWins = 0;
     const rows = ctx.rosterPositions.map(function(label, i){
       const a = mine[i], b = theirs[i];
-      const pa = a && a !== '0' ? ctx.projections[a] : 0, pb = b && b !== '0' ? ctx.projections[b] : 0;
+      const pa = !a || a === '0' ? 0 : live ? projFinal(a).v : ctx.projections[a], pb = !b || b === '0' ? 0 : live ? projFinal(b).v : ctx.projections[b];
       const w = h2hCompare(typeof pa === 'number' ? pa : 0, typeof pb === 'number' ? pb : 0, fmtPts, 'high');
       if(w === 'a') myWins++; else if(w === 'b') oppWins++;
-      return '<div class="vs-row">' + vsCell(a, 'me', w === 'a' ? ' win' : w === 'b' ? ' lose' : '', mh[i]) +
-        '<div class="vs-slot">' + escapeHTML(label) + '</div>' + vsCell(b, 'opp', w === 'b' ? ' win' : w === 'a' ? ' lose' : '', oh[i]) + '</div>';
+      return '<div class="vs-row">' + vsCell(a, 'me', w === 'a' ? ' win' : w === 'b' ? ' lose' : '', mh[i], !!live) +
+        '<div class="vs-slot">' + escapeHTML(label) + '</div>' + vsCell(b, 'opp', w === 'b' ? ' win' : w === 'a' ? ' lose' : '', oh[i], !!live) + '</div>';
     }).join('');
     const holesCallout = function(who, h){
       return h.length ? '<div class="callout"><b>' + who + ': ' + h.length + ' hole' + (h.length > 1 ? 's' : '') + '</b>&nbsp;' + h.map(function(x){ return x.text; }).join('; ') + '.</div>' : '';
@@ -3103,23 +3505,29 @@
       const set = new Set(starters);
       return (roster || []).filter(function(pid){ return !set.has(pid) && ctx.players[pid]; })
         .sort(function(x, y){ return (ctx.projections[y] || -1) - (ctx.projections[x] || -1); })
-        .map(function(pid){ const p = ctx.players[pid]; return '<div class="vs-bench-row" data-open="' + escapeHTML(pid) + '"><span style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span> ' + escapeHTML(playerName(p)) + '<b>' + fmtPts(ctx.projections[pid]) + '</b></div>'; })
+        .map(function(pid){ const p = ctx.players[pid], wa = weekActual(pid); return '<div class="vs-bench-row" data-open="' + escapeHTML(pid) + '"><span style="color:' + posColor(p.position) + '">' + escapeHTML(p.position) + '</span> ' + escapeHTML(playerName(p)) + '<b' + (wa !== null ? ' class="act-live" title="Actual points this week"' : ' title="Projection"') + '>' + fmtPts(wa !== null ? wa : ctx.projections[pid]) + (wa !== null ? '' : ' <small>proj</small>') + '</b></div>'; })
         .join('') || '<div class="vs-bench-row dim">Empty</div>';
     };
     const tone = Math.abs(d) < 0.05 ? '' : d > 0 ? ' up' : ' down';
     return '<div class="vs-view">' +
       '<div class="vs-head">' +
-        '<div class="vs-team me"><div class="vs-tn">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="vs-tp num' + tone + '">' + myTotal.toFixed(1) + '</div>' +
-          '<div class="vs-ts">' + (dirty ? 'Your plan · Sleeper ' + sumProj(ctx.originalStarters).toFixed(1) : 'Your Sleeper lineup') + '</div></div>' +
-        '<div class="vs-mid"><span>vs</span><small>Wk ' + ctx.week + '</small></div>' +
-        '<div class="vs-team opp"><div class="vs-tn">' + escapeHTML(mu.name) + '</div><div class="vs-tp num">' + oppTotal.toFixed(1) + '</div><div class="vs-ts">Their Sleeper lineup</div></div>' +
+        (live
+          ? '<div class="vs-team me"><div class="vs-tn">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="vs-tp num">' + live.me.pts.toFixed(1) + '</div>' +
+              '<div class="vs-ts">Proj. final <b>' + live.me.fin.toFixed(1) + '</b> · ' + playsLeftText(live.me) + '</div></div>' +
+            '<div class="vs-mid"><span>vs</span><small>Wk ' + ctx.week + (liveWindow() ? ' <span class="live-dot" title="Games in progress"></span>' : '') + '</small></div>' +
+            '<div class="vs-team opp"><div class="vs-tn">' + escapeHTML(mu.name) + '</div><div class="vs-tp num">' + live.op.pts.toFixed(1) + '</div><div class="vs-ts">Proj. final <b>' + live.op.fin.toFixed(1) + '</b> · ' + playsLeftText(live.op) + '</div></div>'
+          : '<div class="vs-team me"><div class="vs-tn">' + escapeHTML(els.teamName.textContent || 'You') + '</div><div class="vs-tp num' + tone + '">' + myTotal.toFixed(1) + '</div>' +
+              '<div class="vs-ts">' + (dirty ? 'Your plan · Sleeper ' + sumProj(ctx.originalStarters).toFixed(1) : 'Your Sleeper lineup') + '</div></div>' +
+            '<div class="vs-mid"><span>vs</span><small>Wk ' + ctx.week + '</small></div>' +
+            '<div class="vs-team opp"><div class="vs-tn">' + escapeHTML(mu.name) + '</div><div class="vs-tp num">' + oppTotal.toFixed(1) + '</div><div class="vs-ts">Their Sleeper lineup</div></div>') +
       '</div>' +
-      '<div class="vs-sum' + tone + '">' + (Math.abs(d) < 0.05 ? 'Dead even' : 'You’re projected ' + marginText(d)) + ' · you win ' + myWins + ' of ' + ctx.rosterPositions.length + ' slots, they win ' + oppWins + '</div>' +
+      '<div class="vs-sum' + tone + '">' + (Math.abs(d) < 0.05 ? (live ? 'Projected to finish dead even' : 'Dead even') : live ? 'Projected to ' + (d > 0 ? 'win' : 'lose') + ' by ' + Math.abs(d).toFixed(1) : 'You’re projected ' + marginText(d)) + ' · you win ' + myWins + ' of ' + ctx.rosterPositions.length + ' slots, they win ' + oppWins +
+        (live ? ' <span class="mu-ago" data-live-ago>Updated ' + liveAgoText() + '</span>' : '') + '</div>' +
       holesCallout('You', myHoles) + holesCallout(escapeHTML(mu.name), oppHoles) +
       '<div class="vs-list">' + rows + '</div>' +
       '<details class="vs-benches"><summary>Benches</summary><div class="vs-bench-cols"><div><div class="eyebrow">Yours</div>' + bench(ctx.myRoster.players, mine) + '</div>' +
         '<div><div class="eyebrow">Theirs</div>' + bench(mu.players, theirs) + '</div></div></details>' +
-      '<p class="vs-note">Projections in your league’s scoring. Tap a player for their page.</p>' +
+      '<p class="vs-note">' + (live ? 'Big numbers are actual points (Sleeper’s live scoring, your league’s settings); “proj” is the projection. Slots are colored by projected final (points so far + projection for the rest of the game' + (live.me.est || live.op.est ? ', time left estimated from kickoff because the game clock isn’t available' : '') + '). Live, both sides show their lineups in Sleeper.' : 'Projections in your league’s scoring.') + ' Tap a player for their page.</p>' +
     '</div>';
   }
 
@@ -3323,7 +3731,7 @@
   }
 
   function rerenderEverything(){
-    if(typeof plReset === 'function') plReset();
+    histReset();
     seasonMemo = {};
     renderAll();
     if(ctx.view === 'fa') renderFreeAgents();
@@ -3335,9 +3743,17 @@
   }
 
   // Completed weeks only, ascending, scored with this league's settings.
+  // Sleeper lists players who were active but never got on the field (gp missing, no stats). Those aren't games:
+  // counting them as 0-point games dragged season averages down. weekly.json only has played games (no gp key).
+  function playedWeek(raw){
+    if(!raw) return false;
+    if(typeof raw.gp === 'number') return raw.gp > 0;
+    for(const k in raw){ if(typeof raw[k] === 'number' && raw[k] !== 0 && !NON_STAT_KEY.test(k) && !/^(gms_active|gs|tm_)/.test(k)) return true; }
+    return false;
+  }
   function scoreHistory(weeks){
     const scoring = ctx.league.scoring_settings || {};
-    return (weeks || []).filter(function(w){ return w.week < ctx.week; })
+    return (weeks || []).filter(function(w){ return w.week < ctx.week && playedWeek(w.raw); })
       .sort(function(a, b){ return a.week - b.week; })
       .map(function(w){ return { week: w.week, raw: w.raw, pts: calcPoints(w.raw, scoring), opp: w.opp || null, away: w.away }; })
       .filter(function(w){ return w.pts !== null; });
@@ -3400,6 +3816,8 @@
     return g ? { text: g, bye: false } : { text: 'BYE', bye: true };
   }
   function matchupHTML(team){
+    const live = gameStatusHTML(team);
+    if(live) return ' · ' + live;
     const m = matchup(team, ctx.week);
     if(!m) return ' · <span class="opp">—</span>';
     return ' · <span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>';
@@ -3443,6 +3861,8 @@
   }
   // Table-mode cells (desktop): opponent on its own, snap % with trend arrow.
   function oppOnly(team){
+    const live = gameStatusHTML(team);
+    if(live) return live;
     const m = matchup(team, ctx.week);
     return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span>' : '<span class="opp">—</span>';
   }
@@ -3454,13 +3874,21 @@
   }
 
   // Compact signal line for roster / waiver rows. withShares adds target + air-yards share (pass catchers on the waiver list).
+  // Recent form, actual points in league scoring: season average and average of the last 3 games (L2 / L1 early on).
+  function formHTML(pid){
+    const a = seasonAvgPts(pid), l3 = last3Avg(pid), n = (hist(pid) || []).length;
+    if(a === null) return '';
+    return '<span class="sig-item" title="Season average, actual points"><span class="sig-k">Avg</span> ' + a.toFixed(1) + '</span>' +
+      (n > 1 ? '<span class="sig-item" title="Average of the last ' + Math.min(3, n) + ' games, actual points"><span class="sig-k">L' + Math.min(3, n) + '</span> ' + l3.toFixed(1) + '</span>' : '');
+  }
   function signalsHTML(pid, withShares){
     const p = ctx.players[pid];
-    if(!p || SKILL_POSITIONS.indexOf(p.position) === -1) return '';
+    if(!p) return '';
+    if(SKILL_POSITIONS.indexOf(p.position) === -1){ const f = formHTML(pid); return f ? '<div class="sig">' + f + '</div>' : ''; }
     const tr = snapTrend(pid);
     const arrow = tr ? { up: '↑', down: '↓', flat: '→' }[tr.dir] : '';
     const trendTitle = tr ? tr.recent.map(function(x){ return 'Wk' + x.week + ' ' + pct(x.s); }).join(' → ') : 'No snap data';
-    let html = '<div class="sig">' +
+    let html = '<div class="sig">' + formHTML(pid) +
       '<span class="sig-item" title="Offensive snap share, ' + escapeHTML(trendTitle) + '"><span class="sig-k">Snap</span> ' + (tr ? pct(tr.last) : '—') +
         (tr ? ' <span class="trend ' + tr.dir + '">' + arrow + '</span>' : '') + '</span>';
     if(withShares && p.position !== 'QB'){
@@ -3876,7 +4304,7 @@
           '<div class="player-info"><div class="player-name empty-name">Empty</div>' +
             '<div class="player-meta"><span class="hint-mouse">Click</span><span class="hint-touch">Tap</span> to add ' + escapeHTML(group.join('/')) + '</div></div>' +
           '<div class="col col-opp"></div><div class="col col-snap"></div>' +
-          '<div class="stat-col"><div class="val">—</div><div class="cap">proj</div></div><div class="stat-col"></div><div class="col col-avg"></div>' +
+          '<div class="stat-col"><div class="val">—</div><div class="cap">proj</div></div><div class="stat-col"></div><div class="col col-l3"></div><div class="col col-avg"></div>' +
         '</div>';
     }
     const p = ctx.players[playerId];
@@ -3901,7 +4329,7 @@
       (!ro && slotIndex !== undefined && pos === 'TE' && isFlexSlot(ctx.rosterPositions[slotIndex]) ? '<span class="status-chip te-flex-tag" title="A tight end is in your flex slot">TE in ' + escapeHTML(ctx.rosterPositions[slotIndex]) + '</span>' : '');
     const avatarUrl = playerImageUrl(playerId);
     const proj = ctx.projections[playerId];
-    const last = lastGamePts(playerId);
+    const act = actualCell(playerId);
     const keyStats = keyStatsLine(playerId, pos);
     const byeStarter = slotIndex !== undefined && (isOnBye(playerId) || (ro && cantPlay(effectiveStatus(playerId)))); // a starter who won't play
     const byeChip = byeStarter ? '<span class="status-chip bye-tag">Bye</span>' : '';
@@ -3920,12 +4348,15 @@
         '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(playerId, true) + '</div>' +
         '<div class="col col-snap">' + snapCell(playerId) + '</div>' +
         '<div class="stat-col"><div class="val">' + fmtPts(proj) + '</div><div class="cap">proj</div>' + rangeCellHTML(playerId) + '</div>' +
-        '<div class="stat-col"><div class="val">' + fmtPts(last) + '</div><div class="cap">last</div></div>' +
+        '<div class="stat-col' + act.cls + '"><div class="val">' + act.v + '</div><div class="cap">' + act.cap + '</div></div>' +
+        '<div class="col col-l3">' + fmtPts(last3Avg(playerId)) + '</div>' +
         '<div class="col col-avg">' + fmtPts(seasonAvgPts(playerId)) + '</div>' +
       '</div>';
   }
 
   function renderAll(){
+    const started = weekStarted();
+    document.querySelectorAll('.h-last').forEach(function(el){ el.textContent = started ? 'Actual' : 'Last'; el.title = started ? 'This week once their game starts (live / final), otherwise last game' : 'Last game'; });
     let startersHTML = '';
     ctx.rosterPositions.forEach(function(slot, i){ startersHTML += playerRow(ctx.draftStarters[i], slot, i); });
     els.startersList.innerHTML = startersHTML || '<div class="empty-state">No starters set.</div>';
@@ -4164,7 +4595,7 @@
     return (rosMemo[pid] = r ? { pts: calcPoints(r.s, ctx.league.scoring_settings || {}) || 0, weeks: r.w } : null);
   }
   function recentTrend(pid){
-    const h = ctx.history[pid];
+    const h = hist(pid);
     if(!h || h.length < 3) return null;
     const last3 = h.slice(-3).reduce(function(a, w){ return a + w.pts; }, 0) / 3, avg = seasonAvgPts(pid);
     return { last3: last3, avg: avg, dir: last3 - avg >= 2 ? 'up' : last3 - avg <= -2 ? 'down' : 'flat' };
@@ -4190,7 +4621,7 @@
     const label = posList.join('/') || 'players';
     if(!bench.length && !avail.length){ el.innerHTML = ''; return; }
     // recent form for the best available needs their history (not prefetched for free agents)
-    const missing = avail.filter(function(pid){ return !ctx.history[pid]; });
+    const missing = avail.filter(function(pid){ return !hist(pid); });
     if(missing.length && !renderAddDrop.pending){
       renderAddDrop.pending = true;
       Promise.all(missing.map(ensureHistory)).then(function(){ renderAddDrop.pending = false; if(ctx.view === 'fa') renderAddDrop(); });
@@ -4200,7 +4631,7 @@
       const bits = [];
       bits.push(v ? '<b>' + v.pts.toFixed(0) + '</b> pts rest of season · ' + v.weeks + ' wk' + (v.weeks === 1 ? '' : 's') : '<b>—</b> no projection left');
       if(tr) bits.push('last 3: ' + tr.last3.toFixed(1) + ' <span class="trend ' + tr.dir + '">' + { up: '↑', down: '↓', flat: '→' }[tr.dir] + '</span> vs ' + tr.avg.toFixed(1) + ' avg');
-      else if(ctx.history[pid]) bits.push((ctx.history[pid].length || 0) + ' game' + (ctx.history[pid].length === 1 ? '' : 's') + ' played');
+      else if(hist(pid)) bits.push((hist(pid).length || 0) + ' game' + (hist(pid).length === 1 ? '' : 's') + ' played');
       if(r && r.ok) bits.push('range ' + Math.round(r.floor) + '–' + Math.round(r.ceil) + (r.early ? ' (early)' : ''));
       return '<div class="ad-item" ' + (mine ? 'data-player-id-open="' + escapeHTML(pid) + '"' : 'data-fa-open="' + escapeHTML(pid) + '"') + ' role="button" tabindex="0">' +
         avatarTag(pid, 'ad-av') + '<div class="ad-info"><div class="ad-name">' + escapeHTML(playerName(p)) + ' ' + injuryChip(p.injury_status) +
@@ -4234,27 +4665,17 @@
   }
   function fmtCount(n){ return n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k' : String(n); }
 
-  // ---- season totals for every player (season.json from the GitHub Action), so filters/sorts can use season average ----
-  const SEASON_URL = 'season.json';
+  // ---- season totals for every player: from weekly.json (see hist), so filters/sorts can use season numbers ----
   async function loadSeason(){
-    if(ctx.seasonData && ctx.seasonData.season === ctx.season && Date.now() - (ctx.seasonTs || 0) < 30 * 60 * 1000) return ctx.seasonData;
-    try{
-      const res = await fetch(SEASON_URL, { cache: 'no-cache' });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      const j = await res.json();
-      if(j.season !== ctx.season || !j.players) throw new Error('season.json is for ' + j.season);
-      ctx.seasonData = j; ctx.seasonTs = Date.now(); seasonMemo = {}; plMemo = {};
-    }catch(e){ console.warn('Season totals unavailable:', e.message); }
-    return ctx.seasonData || null;
+    if(!ctx.weekly){ const r = await loadWeekly(ctx.season); if(r && applyWeekly(r)) await fillGapWeeks(); }
+    return ctx.weekly || null;
   }
   let seasonMemo = {};
   function seasonValue(pid){
-    if(!ctx.seasonData) return null;
-    if(pid in seasonMemo) return seasonMemo[pid];
-    const r = ctx.seasonData.players[pid];
-    if(!r || !r.g) return (seasonMemo[pid] = null);
-    const pts = calcPoints(r.s, ctx.league.scoring_settings || {}) || 0;
-    return (seasonMemo[pid] = { pts: pts, g: r.g, avg: pts / r.g });
+    const h = hist(pid);
+    if(!h || !h.length) return null;
+    const pts = h.reduce(function(a, w){ return a + w.pts; }, 0);
+    return { pts: pts, g: h.length, avg: pts / h.length };
   }
 
   // ============ Players tab: Available / Trending / All players, with shared position, stat filters, search, sort ============
@@ -4266,11 +4687,22 @@
   const PL_METRICS = {
     proj: { label: 'Projection (this week)', short: 'Proj', unit: 'pts', get: function(pid){ const v = ctx.projections[pid]; return typeof v === 'number' ? v : null; } },
     ros:  { label: 'Rest-of-season points', short: 'ROS', unit: 'pts', get: function(pid){ const v = rosValue(pid); return v ? v.pts : null; } },
-    avg:  { label: 'Season avg points', short: 'Avg', unit: 'pts', get: function(pid){ const v = seasonValue(pid); return v ? v.avg : null; } },
+    wk:   { label: 'This week (actual points)', short: 'Wk', unit: 'pts', actual: true, get: function(pid){ return weekActual(pid); } },
+    last: { label: 'Last game points', short: 'Last', unit: 'pts', actual: true, get: function(pid){ return lastGamePts(pid); } },
+    l3:   { label: 'Last 3 games avg', short: 'L3', unit: 'pts', actual: true, get: function(pid){ return last3Avg(pid); } },
+    avg:  { label: 'Season avg points', short: 'Avg', unit: 'pts', actual: true, get: function(pid){ const v = seasonValue(pid); return v ? v.avg : null; } },
+    tot:  { label: 'Season total points', short: 'Total', unit: 'pts', actual: true, get: function(pid){ return seasonTotalPts(pid); } },
     snap: { label: 'Snap share', short: 'Snap', pct: true, get: function(pid){ return seasonShare(pid, 's'); } },
     tgt:  { label: 'Target share', short: 'Tgt', pct: true, get: function(pid){ return seasonShare(pid, 't'); } },
     air:  { label: 'Air yards share', short: 'Air', pct: true, get: function(pid){ return seasonShare(pid, 'a'); } },
-    gp:   { label: 'Games played', short: 'Games', unit: '', get: function(pid){ const v = seasonValue(pid); return v ? v.g : null; } },
+    gp:   { label: 'Games played', short: 'Games', unit: '', actual: true, get: function(pid){ const h = hist(pid); return h ? h.length : null; } },
+    tgts: { label: 'Targets (season)', short: 'Tgts', unit: '', actual: true, pos: ['RB', 'WR', 'TE'], get: function(pid){ return seasonStat(pid, 'rec_tgt'); } },
+    rec:  { label: 'Receptions (season)', short: 'Rec', unit: '', actual: true, pos: ['RB', 'WR', 'TE'], get: function(pid){ return seasonStat(pid, 'rec'); } },
+    recyd:{ label: 'Receiving yards (season)', short: 'Rec yd', unit: '', actual: true, pos: ['RB', 'WR', 'TE'], get: function(pid){ return seasonStat(pid, 'rec_yd'); } },
+    car:  { label: 'Carries (season)', short: 'Car', unit: '', actual: true, pos: ['QB', 'RB', 'WR'], get: function(pid){ return seasonStat(pid, 'rush_att'); } },
+    rushyd:{ label: 'Rushing yards (season)', short: 'Rush yd', unit: '', actual: true, pos: ['QB', 'RB', 'WR'], get: function(pid){ return seasonStat(pid, 'rush_yd'); } },
+    passyd:{ label: 'Passing yards (season)', short: 'Pass yd', unit: '', actual: true, pos: ['QB'], get: function(pid){ return seasonStat(pid, 'pass_yd'); } },
+    td:   { label: 'Touchdowns (season, rush + rec + pass)', short: 'TD', unit: '', actual: true, pos: ['QB', 'RB', 'WR', 'TE'], get: function(pid){ const a = seasonStat(pid, 'rush_td'), b = seasonStat(pid, 'rec_td'), c = seasonStat(pid, 'pass_td'); return a === null ? null : a + b + c; } },
   };
   const PL_PRESETS = [
     { k: 'snap', op: '>=', v: 60 }, { k: 'tgt', op: '>=', v: 20 }, { k: 'proj', op: '>=', v: 10 }, { k: 'avg', op: '>=', v: 12 }, { k: 'ros', op: '>=', v: 120 },
@@ -4280,7 +4712,9 @@
   function metric(key, pid){
     const m = plMemo.m || (plMemo.m = {}), k = key + '|' + pid;
     if(k in m) return m[k];
-    const v = PL_METRICS[key].get(pid);
+    const def = PL_METRICS[key], p = ctx.players[pid];
+    if(def.pos && (!p || def.pos.indexOf(p.position) === -1)) return (m[k] = null);
+    const v = def.get(pid);
     return (m[k] = (typeof v === 'number' && !isNaN(v)) ? v : null);
   }
   function syncFaPos(){
@@ -4362,7 +4796,7 @@
     if(st.sort === key) st.dir = st.dir === 'asc' ? 'desc' : 'asc';
     else { st.sort = key; st.dir = key === 'name' ? 'asc' : 'desc'; }
     ctx.faLimit = PL_PAGE;
-    if((key === 'ros' && !ctx.ros) || ((key === 'avg' || key === 'gp') && !ctx.seasonData)) loadPlayersData();
+    if((key === 'ros' && !ctx.ros) || (PL_METRICS[key] && PL_METRICS[key].actual && !ctx.weekly)) loadPlayersData();
   }
   function sortedClass(key){
     const st = ctx.pl, active = st.sort === key || (key === 'proj' && st.sort === 'default' && st.view !== 'trend');
@@ -4397,13 +4831,13 @@
     const st = ctx.pl;
     st.filters = st.filters.filter(function(x){ return !(x.k === f.k && x.op === f.op); }).concat([f]); // same stat + direction replaces
     ctx.faLimit = PL_PAGE;
-    if((f.k === 'ros' && !ctx.ros) || ((f.k === 'avg' || f.k === 'gp') && !ctx.seasonData)) loadPlayersData();
+    if((f.k === 'ros' && !ctx.ros) || (PL_METRICS[f.k] && PL_METRICS[f.k].actual && !ctx.weekly)) loadPlayersData();
     renderPlayers(true);
   }
   function loadPlayersData(){
     const jobs = [];
     if(!ctx.ros) jobs.push(loadRos());
-    if(!ctx.seasonData) jobs.push(loadSeason());
+    if(!ctx.weekly) jobs.push(loadSeason());
     if(!ctx.trending || Date.now() - ctx.trending.ts > 30 * 60 * 1000) jobs.push(loadTrending());
     if(jobs.length) Promise.all(jobs).then(function(){ plReset(); if(ctx.view === 'fa'){ renderPlayers(true); renderAddDrop(); } });
   }
@@ -4472,12 +4906,14 @@
           '<div class="player-meta">' + escapeHTML(p.position) + ' · ' + escapeHTML(p.team || 'FA') +
             (tc != null ? ' · <span class="tr-count ' + ctx.pl.trendKind + '">' + (ctx.pl.trendKind === 'add' ? '+' : '−') + fmtCount(tc) + '</span>' : '') +
             '<span class="m-opp">' + matchupHTML(p.team) + ' ' + dvpChipHTML(pid) + '</span> ' + depthChipHTML(pid) + '</div>' +
+          (function(){ const k = keyStatsLine(pid, p.position); return k ? '<div class="key-stats">' + k + '</div>' : ''; })() +
           who + signalsHTML(pid, true) +
         '</div>' +
         '<div class="col col-opp">' + oppOnly(p.team) + dvpChipHTML(pid, true) + '</div>' +
         '<div class="col col-snap">' + snapCell(pid) + '</div>' +
         '<div class="col col-tgt">' + (SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '—') + '</div>' +
         '<div class="stat-col"><div class="val">' + fmtPts(ctx.projections[pid]) + '</div><div class="cap">proj</div>' + rangeCellHTML(pid) + '</div>' +
+        (function(){ const a = actualCell(pid); return '<div class="stat-col' + a.cls + '"><div class="val">' + a.v + '</div><div class="cap">' + a.cap + '</div></div>'; })() +
         '<div class="col col-vs">' + who.replace('class="fa-vs"', 'class="fa-vs-inline"') + '</div>' +
         '<div class="row-vs">' + vsBtn(pid) + '</div>' +
       '</div>';
@@ -4538,7 +4974,7 @@
   });
   document.getElementById('pl-sort').addEventListener('change', function(e){
     ctx.pl.sort = e.target.value; ctx.pl.dir = e.target.value === 'name' ? 'asc' : 'desc'; ctx.faLimit = PL_PAGE;
-    if((ctx.pl.sort === 'ros' && !ctx.ros) || ((ctx.pl.sort === 'avg' || ctx.pl.sort === 'gp') && !ctx.seasonData)) loadPlayersData();
+    if((ctx.pl.sort === 'ros' && !ctx.ros) || (PL_METRICS[ctx.pl.sort] && PL_METRICS[ctx.pl.sort].actual && !ctx.weekly)) loadPlayersData();
     renderPlayers(true);
   });
   function renderFilterBuilder(){
@@ -4687,13 +5123,13 @@
   }
   function candidateStatsHTML(pid){
     const proj = ctx.projections[pid];
-    const last = lastGamePts(pid);
-    const avg = seasonAvgPts(pid);
+    const a = actualCell(pid);
     return '' +
       '<div class="cand-stats">' +
         '<div class="cs"><div class="cv">' + fmtPts(proj) + '</div><div class="cl">Proj</div></div>' +
-        '<div class="cs"><div class="cv">' + fmtPts(last) + '</div><div class="cl">Last</div></div>' +
-        '<div class="cs"><div class="cv">' + fmtPts(avg) + '</div><div class="cl">Avg</div></div>' +
+        '<div class="cs' + a.cls + '"><div class="cv">' + a.v + '</div><div class="cl">' + a.cap + '</div></div>' +
+        '<div class="cs"><div class="cv">' + fmtPts(last3Avg(pid)) + '</div><div class="cl" title="Average of the last 3 games">L3</div></div>' +
+        '<div class="cs"><div class="cv">' + fmtPts(seasonAvgPts(pid)) + '</div><div class="cl">Avg</div></div>' +
       '</div>';
   }
 
@@ -4712,12 +5148,15 @@
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
 
     const pending = loadingHistory ? '…' : null;
+    const wa = weekActual(playerId), wg = gameOf(player.team);
     els.heroStats.innerHTML = injuryMiniHTML(playerId) + [
       ['Proj this wk', fmtPts(ctx.projections[playerId])],
+    ].concat(wa !== null ? [['Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), fmtPts(wa), wg && wg.state === 'post' ? '' : ' live']] : []).concat([
       ['Last game', pending || fmtPts(lastGamePts(playerId))],
+      ['Last 3 avg', pending || fmtPts(last3Avg(playerId))],
       ['Season avg', pending || fmtPts(seasonAvgPts(playerId))],
       ['Season total', pending || fmtPts(seasonTotalPts(playerId))],
-    ].map(function(pair){ return '<div class="hs-block"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div></div>'; }).join('');
+    ]).map(function(pair){ return '<div class="hs-block' + (pair[2] || '') + '"><div class="hs-label">' + pair[0] + '</div><div class="hs-val">' + pair[1] + '</div></div>'; }).join('');
 
     // Season stats: the most important few here; everything else lives on the Analysis screen.
     const raw = aggregatedRaw(playerId, 'season') || {};
@@ -4733,8 +5172,8 @@
 
   // Season history on demand (roster players are loaded up front; free agents only when opened).
   async function ensureHistory(pid){
-    if(!ctx.history[pid]) ctx.history[pid] = scoreHistory(await getPlayerSeasonHistory(pid, ctx.season));
-    return ctx.history[pid];
+    if(!hist(pid)) ctx.history[pid] = scoreHistory(await getPlayerSeasonHistory(pid, ctx.season));
+    return hist(pid);
   }
 
   // ---- player analysis: one player's full season, game by game (full-screen player page) ----
@@ -4766,7 +5205,7 @@
   // sit in a collapsed "More stats" group. Used on the full player page.
   function gameLogHTML(pid){
     const p = ctx.players[pid];
-    const weeks = ctx.history[pid] || [];
+    const weeks = hist(pid) || [];
     if(!weeks.length) return '<div class="empty-state">No completed games this season.</div>';
     const byWeek = {}; weeks.forEach(function(w){ byWeek[w.week] = w; });
     const cols = [];
@@ -4845,7 +5284,7 @@
     if(!p) return;
     ctx.focusPid = pid;
     ctx.focus = { kind: 'fa', pid: pid };
-    const needsHistory = !ctx.history[pid];
+    const needsHistory = !hist(pid);
     renderHero(pid, needsHistory);
 
     const worst = weakestRostered(p.position);
@@ -4969,16 +5408,18 @@
   }
   function renderMax(dir){
     const e = maxStack[maxStack.length - 1];
+    const openDetails = dir ? [] : Array.prototype.map.call(maxBody.querySelectorAll('details'), function(d){ return d.open; });
     maxBody.innerHTML = e.kind === 'roster' ? maxRosterHTML() : e.kind === 'fa' ? maxWaiversHTML() : e.kind === 'h2h' ? h2hHTML(e.pids[0], e.pids[1]) : e.kind === 'opp' ? oppHTML() : e.kind === 'trade' ? tradeHTML() : maxPlayerHTML(e.pid);
+    if(openDetails.length) maxBody.querySelectorAll('details').forEach(function(d, i){ if(openDetails[i]) d.open = true; });
     maxBody.style.setProperty('--bar-h', maxEl.querySelector('.max-bar').offsetHeight + 'px');
     maxTitle.textContent = maxTitleFor(e);
     maxBackLabel.textContent = maxStack.length > 1 ? maxTitleFor(maxStack[maxStack.length - 2]) : 'Back to ' + VIEW_TITLES[ctx.view];
     if(dir && !reduceMotion.matches) maxBody.animate([{ opacity: 0, transform: 'translateX(' + (dir > 0 ? 28 : -28) + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 360, easing: 'cubic-bezier(.2,.8,.2,1)' });
     // A player page needs their season history; fetch it once, then re-render if they're still on top.
-    if(e.kind === 'player' && !ctx.history[e.pid]){
+    if(e.kind === 'player' && !hist(e.pid)){
       ensureHistory(e.pid).then(function(){ if(maxOpen() && maxStack[maxStack.length - 1] === e) renderMax(0); });
     }
-    if(e.kind === 'h2h' && e.pids.some(function(id){ return !ctx.history[id]; })){
+    if(e.kind === 'h2h' && e.pids.some(function(id){ return !hist(id); })){
       Promise.all(e.pids.map(ensureHistory)).then(function(){ if(maxOpen() && maxStack[maxStack.length - 1] === e) renderMax(0); });
     }
   }
@@ -5062,7 +5503,7 @@
   // 6+ games: 20th and 80th percentile. 3-5 games: lowest and highest, marked "early". Under 3: not shown at all.
   const RANGE_MIN_GAMES = 3, RANGE_FULL_GAMES = 6;
   function weekRange(pid){
-    const h = ctx.history[pid];
+    const h = hist(pid);
     if(!h) return null;
     const pts = h.map(function(w){ return w.pts; }).filter(function(v){ return typeof v === 'number'; }).sort(function(a, b){ return a - b; });
     const n = pts.length;
@@ -5206,7 +5647,7 @@
   function h2hHTML(a, b){
     const pa = ctx.players[a], pb = ctx.players[b];
     if(!pa || !pb) return '<div class="empty-state">Pick two players to compare.</div>';
-    const loading = !ctx.history[a] || !ctx.history[b];
+    const loading = !hist(a) || !hist(b);
     const tally = { a: 0, b: 0 };
     const cell = function(v, fmt){ return v === null || v === undefined || (typeof v === 'number' && isNaN(v)) ? '—' : fmt(v); };
     // One comparable row: the better value green, the worse red; ties and missing values stay neutral.
@@ -5227,15 +5668,18 @@
     // This week
     const opp = function(pid){ const m = matchup(ctx.players[pid].team, ctx.week); return m ? '<span class="opp' + (m.bye ? ' bye' : '') + '">' + escapeHTML(m.text) + '</span> ' + dvpChipHTML(pid) : ''; };
     const status = function(pid){ const st = effectiveStatus(pid); return st && st !== 'Healthy' ? injuryChip(st) : '<span class="dim">Healthy</span>'; };
+    const waA = weekActual(a), waB = weekActual(b);
     let week = row('Projected points', ctx.projections[a], ctx.projections[b], fmtPts, 'high') +
+      (waA !== null || waB !== null ? row('Actual points (wk ' + ctx.week + ', so far)', waA, waB, fmtPts, 'high') : '') +
       textRow('Opponent', opp(a), opp(b)) + textRow('Status', status(a), status(b));
 
     // Fantasy points (league scoring)
-    const best = function(pid){ const h = ctx.history[pid] || []; return h.length ? Math.max.apply(null, h.map(function(w){ return w.pts; })) : null; };
-    const games = function(pid){ return ctx.history[pid] ? ctx.history[pid].length : null; };
+    const best = function(pid){ const h = hist(pid) || []; return h.length ? Math.max.apply(null, h.map(function(w){ return w.pts; })) : null; };
+    const games = function(pid){ return hist(pid) ? hist(pid).length : null; };
     const fp = loading
       ? row('Last game', null, null, dots) + row('Season average', null, null, dots) + row('Season total', null, null, dots)
       : row('Last game', lastGamePts(a), lastGamePts(b), fmtPts, 'high') +
+        row('Last 3 games avg', last3Avg(a), last3Avg(b), fmtPts, 'high') +
         row('Season average', seasonAvgPts(a), seasonAvgPts(b), fmtPts, 'high') +
         row('Season total', seasonTotalPts(a), seasonTotalPts(b), fmtPts, 'high') +
         row('Best game', best(a), best(b), fmtPts, 'high') +
@@ -5342,15 +5786,16 @@
   function completedWeeks(){ const w = []; for(let i = 1; i < ctx.week; i++) w.push(i); return w; }
 
   function maxRosterHTML(){
-    const weeks = completedWeeks();
+    const weeks = completedWeeks(), started = weekStarted(), extra = 1 + (started ? 1 : 0);
     const head = '<thead><tr><th class="l">Slot</th><th class="l">Player</th><th class="l">Opp</th><th>Snap by week</th><th>Tgt share</th><th>Proj</th>' +
-      weeks.map(function(w){ return '<th>Wk ' + w + '</th>'; }).join('') + '<th>Avg</th><th>Total</th></tr></thead>';
+      weeks.map(function(w){ return '<th>Wk ' + w + '</th>'; }).join('') + (started ? '<th>Wk ' + ctx.week + '<div class="th-sub">actual</div></th>' : '') +
+      '<th title="Average of the last 3 games">L3</th><th>Avg</th><th>Total</th></tr></thead>';
     function row(pid, slotLabel, slotIndex, i){
-      if(!pid || pid === '0' || !ctx.players[pid]) return '<tr><td class="l slot">' + escapeHTML(slotLabel) + '</td><td class="l dim" colspan="' + (6 + weeks.length) + '">Empty</td></tr>';
-      const p = ctx.players[pid], hist = ctx.history[pid] || [];
+      if(!pid || pid === '0' || !ctx.players[pid]) return '<tr><td class="l slot">' + escapeHTML(slotLabel) + '</td><td class="l dim" colspan="' + (6 + weeks.length + extra) + '">Empty</td></tr>';
+      const p = ctx.players[pid], games = hist(pid) || [];
       const fresh = slotIndex != null && ctx.originalStarters[slotIndex] !== pid;
       const cls = (slotIndex != null && isOnBye(pid) ? 'bye ' : '') + (fresh ? 'fresh' : '');
-      const byWeek = {}; hist.forEach(function(h){ byWeek[h.week] = h.pts; });
+      const byWeek = {}; games.forEach(function(h){ byWeek[h.week] = h.pts; });
       const t = SKILL_POSITIONS.indexOf(p.position) !== -1 && p.position !== 'QB' ? pct(seasonShare(pid, 't')) : '<span class="dim">—</span>';
       return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '" class="' + cls + '"><td class="l slot">' + escapeHTML(slotLabel) + '</td><td class="l">' + mxWho(pid, fresh) + '</td>' +
         '<td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td><td class="muted">' + t + '</td><td><span class="proj">' + fmtPts(ctx.projections[pid]) + '</span></td>' +
@@ -5358,14 +5803,15 @@
           if(byWeek[w] != null) return '<td class="muted">' + fmtPts(byWeek[w]) + '</td>';
           const m = matchup(p.team, w); return '<td>' + (m && m.bye ? '<span class="wk-bye">BYE</span>' : '<span class="dim">—</span>') + '</td>';
         }).join('') +
-        '<td class="muted">' + fmtPts(seasonAvgPts(pid)) + '</td><td class="muted">' + fmtPts(seasonTotalPts(pid)) + '</td></tr>';
+        (started ? (function(){ const a = actualCell(pid); return '<td class="' + (a.cap === 'last' ? 'dim' : a.cls.trim()) + '">' + (a.cap === 'last' ? '—' : a.v) + '</td>'; })() : '') +
+        '<td class="muted">' + fmtPts(last3Avg(pid)) + '</td><td class="muted">' + fmtPts(seasonAvgPts(pid)) + '</td><td class="muted">' + fmtPts(seasonTotalPts(pid)) + '</td></tr>';
     }
     const starterSet = new Set(ctx.draftStarters);
     const bench = (ctx.myRoster.players || []).filter(function(pid){ return !starterSet.has(pid); });
     return byeCallouts(ctx.draftStarters) +
       '<div class="mx-scroll"><table class="mx-tbl">' + head + '<tbody class="stagger">' +
       ctx.rosterPositions.map(function(slot, i){ return row(ctx.draftStarters[i], slot, i, i); }).join('') +
-      '<tr class="grp"><td colspan="' + (8 + weeks.length) + '">Bench</td></tr>' +
+      '<tr class="grp"><td colspan="' + (8 + weeks.length + extra) + '">Bench</td></tr>' +
       bench.map(function(pid, i){ return row(pid, (ctx.players[pid] && ctx.players[pid].position) || 'BN', null, ctx.rosterPositions.length + i); }).join('') +
       '</tbody></table></div>';
   }
@@ -5384,6 +5830,7 @@
       (chips ? '<div class="pl-active mx-active">' + chips + '</div>' : '') +
       '<div class="mx-scroll"><table class="mx-tbl"><thead><tr>' + th('Player', 'name', 'l') + th('Opp', null, 'l') + th('Snap by week', 'snap') +
       th('Tgt share', 'tgt') + th('Air share', 'air') + th('Proj', 'proj') +
+      (weekStarted() ? th('Wk ' + ctx.week, 'wk') : '') + th('Last', 'last') + th('L3', 'l3') + th('Avg', 'avg') + th('Total', 'tot') + th('Key stats (season)', null, 'l') +
       '<th class="l" style="padding-left:20px">' + (st.view !== 'avail' ? 'Team / vs yours' : ctx.faPos === 'FLEX' ? 'vs your FLEX' : 'vs your weakest') + '</th><th><span class="sr-only">Compare</span></th></tr></thead><tbody class="stagger">' +
       list.map(function(pid, i){
         const proj = ctx.projections[pid], v = isAvailable(pid) ? faVsParts(pid) : null;
@@ -5392,7 +5839,11 @@
         const c = catcher(pid);
         return '<tr style="--i:' + i + '" data-open="' + escapeHTML(pid) + '"><td class="l">' + mxWho(pid) + '</td><td class="l">' + oppCell(pid) + '</td><td>' + snapByWeek(pid) + '</td>' +
           '<td class="muted">' + (c ? pct(seasonShare(pid, 't')) : '<span class="dim">—</span>') + '</td><td class="muted">' + (c ? airPct(seasonShare(pid, 'a')) : '<span class="dim">—</span>') + '</td>' +
-          '<td><span class="proj">' + fmtPts(proj) + '</span></td><td class="l" style="padding-left:20px">' + vs + '</td><td>' + vsBtn(pid) + '</td></tr>';
+          '<td><span class="proj">' + fmtPts(proj) + '</span></td>' +
+          (weekStarted() ? (function(){ const wa = weekActual(pid); return '<td class="' + (wa === null ? 'dim' : 'act-live') + '">' + (wa === null ? '—' : fmtPts(wa)) + '</td>'; })() : '') +
+          '<td class="muted">' + fmtPts(lastGamePts(pid)) + '</td><td class="muted">' + fmtPts(last3Avg(pid)) + '</td><td class="muted">' + fmtPts(seasonAvgPts(pid)) + '</td><td class="muted">' + fmtPts(seasonTotalPts(pid)) + '</td>' +
+          '<td class="l key-stats mx-ks">' + (function(){ const r = aggregatedRaw(pid, 'season'), d = POSITION_KEY_STATS[ctx.players[pid].position]; return r && d ? d.map(function(x){ return r[x[0]] !== undefined ? '<span><span class="kv">' + x[1] + '</span> ' + Math.round(r[x[0]]) + '</span>' : ''; }).join('') : '<span class="dim">—</span>'; })() + '</td>' +
+          '<td class="l" style="padding-left:20px">' + vs + '</td><td>' + vsBtn(pid) + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
       (list.length ? '' : '<div class="empty-state">No players match your filters.</div>') +
       (all.length > list.length ? '<button type="button" class="fa-more" data-mx-more>Show ' + Math.min(PL_PAGE, all.length - list.length) + ' more (' + (all.length - list.length) + ' left)</button>' : '');
@@ -5401,32 +5852,44 @@
   function maxPlayerHTML(pid){
     const p = ctx.players[pid];
     if(!p) return '<div class="empty-state">Unknown player.</div>';
-    const loading = !ctx.history[pid];
-    const hist = ctx.history[pid] || [];
+    const loading = !hist(pid);
+    const games = hist(pid) || [];
     const onRoster = (ctx.myRoster.players || []).indexOf(pid) !== -1;
     const tr = snapTrend(pid), skill = SKILL_POSITIONS.indexOf(p.position) !== -1;
+    const wa = weekActual(pid), wg = gameOf(p.team);
     const stats = [
       [fmtPts(ctx.projections[pid]), 'Proj wk ' + ctx.week],
+    ].concat(wa !== null ? [[fmtPts(wa), 'Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live'), wg && wg.state === 'post' ? '' : ' live']] : []).concat([
       [loading ? '…' : fmtPts(lastGamePts(pid)), 'Last'],
+      [loading ? '…' : fmtPts(last3Avg(pid)), 'Last 3 avg'],
       [loading ? '…' : fmtPts(seasonAvgPts(pid)), 'Avg'],
       [loading ? '…' : fmtPts(seasonTotalPts(pid)), 'Total'],
-    ].concat(positionCards(pid, p.position, loading, tr));
+    ]).concat(positionCards(pid, p.position, loading, tr));
     const hero = '<div class="pf-hero" style="--team:' + teamColor(p.team) + '">' + avatarTag(pid, 'mx-av') +
       '<div><div class="pf-name">' + escapeHTML(playerName(p)) + '</div>' +
       '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') +
         injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div>' + gameLineHTML(pid) + playerLinksHTML(pid) + '</div>' +
-      '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
+      '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat' + (s[2] || '') + '" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
 
-    let left = '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
+    let left = '';
+    const wr = wa !== null ? weekRaw(pid) : null;
+    if(wr){
+      const keys = Object.keys(wr).filter(function(k){ return wr[k] !== 0 && !NOT_PLAYER_STAT.test(k) && k !== 'gp'; });
+      const g = statsForPosition(p.position, keys), shown = g.main.concat(g.more);
+      left += '<div class="card pf-card pf-week"><div class="pf-sec"><h3>Week ' + ctx.week + (wg && wg.state === 'post' ? '' : ' so far') + '</h3><span class="eyebrow">' + (wg && wg.state === 'post' ? 'Final' : 'Live') + ' · actual</span></div>' +
+        '<div class="raw-stats">' + (shown.length ? shown.map(function(k){ return '<div><span class="rk">' + escapeHTML(statLabel(k)) + '</span><span class="rv">' + fmtStat(wr[k]) + '</span></div>'; }).join('') : '<div class="dim">No stats yet.</div>') + '</div></div>';
+    }
+    left += '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
       (loading ? '<div style="display:grid;gap:10px;padding:6px 0 4px">' + [80, 100, 100, 70].map(function(w){ return '<span class="skel" style="height:14px;width:' + w + '%"></span>'; }).join('') + '</div>' : gameLogHTML(pid));
-    if(!loading && hist.length){
-      const maxPts = Math.max.apply(null, hist.map(function(h){ return h.pts; }).concat([ctx.projections[pid] || 0, 1]));
+    if(!loading && games.length){
+      const maxPts = Math.max.apply(null, games.map(function(h){ return h.pts; }).concat([ctx.projections[pid] || 0, 1]));
       left += '<div class="pf-sec" style="margin-top:22px"><h3>Points by week</h3><span class="eyebrow">vs this week&#39;s projection</span></div><div class="bars">' +
-        hist.map(function(h, i){
+        games.map(function(h, i){
           const opp = h.opp ? (h.away === true ? '@ ' : h.away === false ? 'vs ' : '') + h.opp : '';
           return '<div class="bar"><span class="lbl">Wk ' + h.week + ' ' + escapeHTML(opp) + '</span><div class="track"><div class="fill" style="--i:' + i + ';width:' + Math.max(0, h.pts / maxPts * 100) + '%"></div></div><b>' + fmtPts(h.pts) + '</b></div>';
         }).join('') +
-        (typeof ctx.projections[pid] === 'number' ? '<div class="bar"><span class="lbl">Wk ' + ctx.week + ' proj</span><div class="track"><div class="fill proj" style="--i:' + hist.length + ';width:' + (ctx.projections[pid] / maxPts * 100) + '%"></div></div><b class="dim">' + fmtPts(ctx.projections[pid]) + '</b></div>' : '') +
+        (wa !== null ? '<div class="bar"><span class="lbl">Wk ' + ctx.week + (wg && wg.state === 'post' ? ' final' : ' live') + '</span><div class="track"><div class="fill live" style="--i:' + games.length + ';width:' + Math.max(0, Math.min(100, wa / maxPts * 100)) + '%"></div></div><b>' + fmtPts(wa) + '</b></div>' : '') +
+        (typeof ctx.projections[pid] === 'number' ? '<div class="bar"><span class="lbl">Wk ' + ctx.week + ' proj</span><div class="track"><div class="fill proj" style="--i:' + games.length + ';width:' + (ctx.projections[pid] / maxPts * 100) + '%"></div></div><b class="dim">' + fmtPts(ctx.projections[pid]) + '</b></div>' : '') +
         '</div>';
     }
     const snaps = (nflWeeks(pid) || []).filter(function(x){ return typeof x.s === 'number'; });
@@ -5443,7 +5906,7 @@
   // The last two header cards depend on the position, so there's never a card that can't apply (no "snap %" for a kicker).
   function positionCards(pid, pos, loading, tr){
     const season = loading ? {} : (aggregatedRaw(pid, 'season') || {});
-    const games = (ctx.history[pid] || []).length;
+    const games = (hist(pid) || []).length;
     const v = function(x){ return loading ? '…' : fmtStat(typeof x === 'number' ? x : null); };
     if(pos === 'QB') return [[tr ? pct(tr.last) : '—', 'Snap'], [v(season.pass_td), 'Pass TD']];
     if(pos === 'K') return [[loading ? '…' : (season.fga ? fmtStat(season.fgm || 0) + '/' + fmtStat(season.fga) : '—'), 'FG made'], [v(season.fgm_lng), 'Long FG']];

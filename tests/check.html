@@ -110,16 +110,32 @@
   // ---- 3b. floor / ceiling rules ----
   section('Floor / ceiling: few games are handled honestly');
   const rsrc = ['const RANGE_MIN_GAMES', 'function weekRange(', 'function ordinal('].map(extract).join('\n');
-  const hist = {};
-  const g = new Function('ctx', rsrc + '; return { weekRange, ordinal };')({ history: hist });
-  hist.two = [{ pts: 10 }, { pts: 20 }];
-  hist.four = [{ pts: 12 }, { pts: 3 }, { pts: 25 }, { pts: 9 }];
-  hist.ten = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function(v){ return { pts: v }; });
+  const H = {};
+  const g = new Function('hist', rsrc + '; return { weekRange, ordinal };')(function(pid){ return H[pid] || null; });
+  H.two = [{ pts: 10 }, { pts: 20 }];
+  H.four = [{ pts: 12 }, { pts: 3 }, { pts: 25 }, { pts: 9 }];
+  H.ten = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function(v){ return { pts: v }; });
   const two = g.weekRange('two'), four = g.weekRange('four'), ten = g.weekRange('ten');
   check('2 games: no range shown', two && two.ok === false && two.n === 2);
   check('4 games: lowest–highest, marked early', four.ok && four.early && four.floor === 3 && four.ceil === 25);
   check('10 games: 20th–80th percentile', ten.ok && !ten.early && Math.abs(ten.floor - 2.8) < 1e-9 && Math.abs(ten.ceil - 8.2) < 1e-9, ten.floor + '–' + ten.ceil);
   check('ordinals (1st, 2nd, 3rd, 11th, 22nd)', ['1st', '2nd', '3rd', '11th', '22nd'].join() === [1, 2, 3, 11, 22].map(g.ordinal).join());
+
+  // ---- 3c. actuals: which weeks count as games, and how much of a live game is left ----
+  section('Actuals: games played and live game clock');
+  const asrc = ['const NON_STAT_KEY', 'const GAME_LENGTH', 'function playedWeek(', 'function remainingFrac('].map(extract).join('\n');
+  const a = new Function(asrc + '; return { playedWeek, remainingFrac };')();
+  check('active but never played (Sleeper lists gms_active, no gp) is not a game', a.playedWeek({ gms_active: 1, pos_rank_ppr: 999 }) === false);
+  check('gp 0 is not a game', a.playedWeek({ gp: 0, rec: 0 }) === false);
+  check('gp 1 is a game, even with 0 points', a.playedWeek({ gp: 1 }) === true);
+  check('weekly.json entry (no gp key, has stats) is a game', a.playedWeek({ rec: 3, rec_yd: 20 }) === true);
+  const near = function(x, y){ return Math.abs(x - y) < 1e-9; };
+  check('Q3 8:00 left → 38% of the game left', near(a.remainingFrac({ state: 'in', src: 'espn', name: 'STATUS_IN_PROGRESS', period: 3, clock: 480 }).f, (900 + 480) / 3600));
+  check('halftime → half left', a.remainingFrac({ state: 'in', src: 'espn', name: 'STATUS_HALFTIME', period: 2, clock: 0 }).f === 0.5);
+  check('overtime → nothing left to project', a.remainingFrac({ state: 'in', src: 'espn', name: 'STATUS_IN_PROGRESS', period: 5, clock: 300 }).f === 0);
+  check('before kickoff → all of it; final → none', a.remainingFrac({ state: 'pre' }).f === 1 && a.remainingFrac({ state: 'post' }).f === 0);
+  const e = a.remainingFrac({ state: 'in', src: 'estimate', kick: Date.now() - 95 * 60 * 1000 });
+  check('no clock: estimated from kickoff and flagged', e.est === true && e.f > 0.45 && e.f < 0.55, 'got ' + e.f.toFixed(2));
 
   // ---- 4. injury statuses vs live Sleeper values ----
   section('Injury statuses: every live Sleeper value is known');

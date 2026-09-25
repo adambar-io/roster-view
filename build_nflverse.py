@@ -37,8 +37,11 @@ INJURY_POS = SKILL + ('K',)        # positions that get injury / practice data
 PLAYER_FIELDS = ['full_name', 'first_name', 'last_name', 'position', 'fantasy_positions', 'team', 'injury_status',
                  'injury_body_part', 'injury_notes', 'injury_start_date', 'practice_participation', 'practice_description', 'espn_id']
 # Sleeper stat/projection keys that never score (the app scores with the league's own settings).
-NON_SCORING = re.compile(r'^(pts_|pos_rank|rank_|adp_|pos_adp|gp$|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|.*_(ypa|ypc|ypr|ypt|pct|rtg|lng|avg)$)')
+NON_SCORING = re.compile(r'^(pts_(std|ppr|half_ppr|idp)$|pos_rank|rank_|adp_|pos_adp|gp$|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|.*_(ypa|ypc|ypr|ypt|pct|rtg|lng|avg)$)')
 DVP_POS = ('QB', 'RB', 'WR', 'TE', 'K')
+# weekly.json keeps every stat the app can show or score: counts, bonus buckets and "long" plays. Dropped: Sleeper's own
+# points/ranks, games flags, team snap counts and per-attempt rates (the app works rates out from the counts).
+WEEKLY_DROP = re.compile(r'^(pts_(std|ppr|half_ppr|idp)$|pos_rank|rank_|adp_|pos_adp|gp$|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|fan_pts_allow|.*_(ypa|ypc|ypr|ypt|pct|rtg|avg)$)')
 ROS_POS = ('QB', 'RB', 'WR', 'TE', 'K', 'DEF')
 LAST_FANTASY_WEEK = 17   # rest-of-season sums run through the usual fantasy championship week
 PRACTICE = {'Did Not Participate In Practice': 'DNP', 'Limited Participation in Practice': 'LP', 'Full Participation in Practice': 'FP'}
@@ -137,23 +140,29 @@ def scoring_stats(stats):
     return {k: v for k, v in (stats or {}).items() if isinstance(v, (int, float)) and v and not NON_SCORING.match(k)}
 
 
-def build_dvp(season, through_week, totals=None):
+def compact_num(v):
+    return int(v) if float(v).is_integer() else round(v, 2)
+
+
+def build_dvp(season, through_week, weekly=None):
     """Raw stats each defense has allowed to each position, summed over completed weeks, plus games played.
     Scoring is linear (stat x weight), so the app can score these sums with any league's settings.
-    If totals is given, it is filled with each player's own season sums: {pid: {'g': games, 's': stats}}."""
+    If weekly is given, it is filled with each player's own games: {pid: {week: {t: team, o: opponent, s: stats}}}. Only weeks the player
+    actually played (Sleeper's gp > 0): Sleeper also lists active players who never got on the field, with no stats,
+    and counting those as 0-point games dragged season averages down."""
     dvp = {}
     for week in range(1, through_week + 1):
-        print(f'  sleeper stats week {week} (defense vs position, season totals)', file=sys.stderr)
+        print(f'  sleeper stats week {week} (defense vs position, weekly actuals)', file=sys.stderr)
         for e in sleeper_weekly('stats', season, week, DVP_POS + ('DEF',)):
             pos, opp = (e.get('player') or {}).get('position'), team(e.get('opponent') or '')
-            st = scoring_stats(e.get('stats'))
+            raw = e.get('stats') or {}
+            st = scoring_stats(raw)
+            if weekly is not None and (raw.get('gp') or 0) > 0:
+                keep = {k: compact_num(v) for k, v in raw.items() if isinstance(v, (int, float)) and v and not WEEKLY_DROP.match(k)}
+                g = {'t': team(e.get('team') or ''), 'o': opp, 's': keep}   # home/away comes from the schedule in the app
+                weekly.setdefault(str(e['player_id']), {})[str(week)] = g
             if not st:
                 continue
-            if totals is not None:
-                t = totals.setdefault(str(e['player_id']), {'g': 0, 's': {}})
-                t['g'] += 1
-                for k, v in st.items():
-                    t['s'][k] = round(t['s'].get(k, 0) + v, 2)
             if pos not in DVP_POS or not opp:
                 continue
             d = dvp.setdefault(opp, {}).setdefault(pos, {'g': [], 's': {}})
@@ -642,20 +651,20 @@ def main():
     # which the app only loads for the waiver screen and the trade helper.
     state = json.loads(get('https://api.sleeper.app/v1/state/nfl'))
     cur_week = int(state.get('week') or 1) if str(state.get('season')) == str(args.season) else LAST_FANTASY_WEEK + 1
-    totals = {}
+    weekly = {}
     try:
-        out['dvp'] = build_dvp(args.season, min(cur_week - 1, 18), totals)
+        out['dvp'] = build_dvp(args.season, min(cur_week - 1, 18), weekly)
         out['dvp_through'] = min(cur_week - 1, 18)
     except Exception as e:
         print('  (defense vs position unavailable:', e, ')', file=sys.stderr)
-    # season.json: every player's season stat totals + games, so the Players tab can filter/sort all players by
-    # season average without fetching each player's history.
-    season_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'season.json')
-    old_season = load_previous(season_path)
-    if totals and (old_season.get('players') != totals or old_season.get('through_week') != cur_week - 1):
-        with open(season_path, 'w', encoding='utf-8') as f:
-            json.dump({'season': args.season, 'generated': out['generated'], 'through_week': cur_week - 1, 'players': totals}, f, separators=(',', ':'))
-        print(f'Wrote {season_path} ({os.path.getsize(season_path):,} bytes, {len(totals):,} players).', file=sys.stderr)
+    # weekly.json: every fantasy player's stats for each completed game (QB/RB/WR/TE/K/DEF), so the app can show last
+    # game / season / recent form for anyone (free agents, other teams, defenses) and score it with the league's settings.
+    weekly_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'weekly.json')
+    old_weekly = load_previous(weekly_path)
+    if weekly and (old_weekly.get('players') != weekly or old_weekly.get('through_week') != cur_week - 1):
+        with open(weekly_path, 'w', encoding='utf-8') as f:
+            json.dump({'season': args.season, 'generated': out['generated'], 'through_week': min(cur_week - 1, 18), 'players': weekly}, f, separators=(',', ':'))
+        print(f'Wrote {weekly_path} ({os.path.getsize(weekly_path):,} bytes, {len(weekly):,} players).', file=sys.stderr)
     # espn.json: ESPN injuries (unofficial). On failure the previous file stays, so the app shows the last good copy.
     espn_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'espn.json')
     try:
