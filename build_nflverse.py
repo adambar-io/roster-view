@@ -11,7 +11,8 @@ Usage:   python build_nflverse.py                 (season defaults to the curren
          python build_nflverse.py --season 2026
 Re-run it whenever you want fresher data (nflverse updates daily in season). Standard library only.
 """
-import argparse, csv, datetime, gzip, io, json, os, re, sys, time, unicodedata, urllib.error, urllib.request
+import argparse, csv, datetime, gzip, hashlib, html, io, json, os, re, sys, threading, time, unicodedata, urllib.error, urllib.parse, urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 REL = 'https://github.com/nflverse/nflverse-data/releases/download'
 SOURCES = {
@@ -224,6 +225,161 @@ def build_espn(sleeper):
             else:   # listed, not dropped
                 unmatched.append({'n': a.get('displayName'), 't': tm, 'pos': pos, 'st': e.get('status'), 'espn': eid})
     return {'espn_timestamp': d.get('timestamp'), 'players': players, 'unmatched': unmatched}
+
+
+# ---------- outbound links on the player page ----------
+# NFL.com: https://www.nfl.com/players/<slug>/stats/ . The slug is name-based but NOT predictable (Ja'Marr Chase is
+# ja-marr-chase, De'Von Achane is devon-achane, DK Metcalf is d-k-metcalf, Travis Etienne Jr. is travis-etienne) and
+# names collide (josh-allen = the Bills QB), and the pages carry no player ID. So each slug is verified: the page's
+# name and position must match, plus the team or the birth date (profile page JSON-LD). Verified slugs are kept between builds.
+NFL_TEAM_SLUGS = {
+    'ARI': 'arizona-cardinals', 'ATL': 'atlanta-falcons', 'BAL': 'baltimore-ravens', 'BUF': 'buffalo-bills',
+    'CAR': 'carolina-panthers', 'CHI': 'chicago-bears', 'CIN': 'cincinnati-bengals', 'CLE': 'cleveland-browns',
+    'DAL': 'dallas-cowboys', 'DEN': 'denver-broncos', 'DET': 'detroit-lions', 'GB': 'green-bay-packers',
+    'HOU': 'houston-texans', 'IND': 'indianapolis-colts', 'JAX': 'jacksonville-jaguars', 'KC': 'kansas-city-chiefs',
+    'LV': 'las-vegas-raiders', 'LAC': 'los-angeles-chargers', 'LAR': 'los-angeles-rams', 'MIA': 'miami-dolphins',
+    'MIN': 'minnesota-vikings', 'NE': 'new-england-patriots', 'NO': 'new-orleans-saints', 'NYG': 'new-york-giants',
+    'NYJ': 'new-york-jets', 'PHI': 'philadelphia-eagles', 'PIT': 'pittsburgh-steelers', 'SF': 'san-francisco-49ers',
+    'SEA': 'seattle-seahawks', 'TB': 'tampa-bay-buccaneers', 'TEN': 'tennessee-titans', 'WAS': 'washington-commanders',
+}
+NFL_UA = 'Mozilla/5.0 (compatible; sleepa/1.0; +https://github.com/adambar-io/sleepa)'
+SUFFIX_RE = re.compile(r'\s+(jr|sr|ii|iii|iv|v)\.?$', re.I)
+
+
+def stathead_key(gsis):
+    """stathead.app's player key: 'sh_' + blake2b-80 of 'NFL:<gsis_id>' (their scripts/build-player-crosswalk.py).
+    Verified Sept 2026: reproduces all 12,257 keys in their published player-crosswalk.json."""
+    return 'sh_' + hashlib.blake2b(('NFL:' + gsis).encode('utf-8'), digest_size=5).hexdigest()
+
+
+def fetch_once(url):
+    """One try, no retry (unknown NFL.com slugs answer 500; retrying those would only waste time)."""
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={'User-Agent': NFL_UA}), timeout=40) as r:
+            return r.read().decode('utf-8', 'ignore')
+    except Exception:
+        return None
+
+
+def slugify(text):
+    t = unicodedata.normalize('NFKD', text or '').encode('ascii', 'ignore').decode().lower()
+    return re.sub(r'[^a-z0-9]+', '-', t).strip('-')
+
+
+def nfl_slug_guesses(name):
+    out = []
+    names = [name, SUFFIX_RE.sub('', name or '')]
+    m = re.match(r'^([A-Z])\.?([A-Z])\.?\s+(.*)$', name or '')   # initials: DK Metcalf -> d-k-metcalf, A.J. Brown -> a-j-brown
+    if m:
+        names.append(m.group(1) + ' ' + m.group(2) + ' ' + m.group(3))
+    for n in names:
+        for x in (re.sub(r"[.']", '', n), re.sub(r"[.']", '-', n)):
+            sl = slugify(x)
+            if sl and sl not in out:
+                out.append(sl)
+    return out
+
+
+def resolve_nfl_slug(player, budget):
+    """Return a verified NFL.com slug for a Sleeper player dict, or None. budget() -> False when out of fetches."""
+    want_name, want_team, want_pos = norm_name(player.get('full_name')), NFL_TEAM_SLUGS.get(player.get('team')), player.get('position')
+    want_born = player.get('birth_date')
+
+    def stats_header(slug):
+        # older check, for profile pages that render without JSON-LD (e.g. michael-pittman-jr, a broken template):
+        # the stats page's title name, header team and position
+        if not budget():
+            return None
+        page = fetch_once(f'https://www.nfl.com/players/{slug}/stats/')
+        if not page:
+            return False
+        t = re.search(r'<title>([^<]*?) Stats Summary \| NFL\.com', page)
+        tm = re.search(r'nfl-c-player-header__team[^>]*>\s*<a[^>]*href="/teams/([a-z0-9-]+)/', page)
+        ps = re.search(r'nfl-c-player-header__position">\s*([A-Z]+)\s*<', page)
+        name_ok = t and norm_name(html.unescape(t.group(1))) == want_name
+        pos_ok = ps and (ps.group(1) == want_pos or (want_pos == 'K' and ps.group(1) in ('K', 'PK')))
+        return bool(name_ok and tm and tm.group(1) == want_team and pos_ok)
+
+    def matches(slug):
+        # The profile page's schema.org JSON-LD carries name, current team, position (not always) and birth date; the
+        # stats page's header often has no team (e.g. Josh Jacobs). Name must match, plus two of team / birth date /
+        # position, and a listed position must never disagree.
+        if not budget():
+            return None
+        page = fetch_once(f'https://www.nfl.com/players/{slug}/')
+        if not page:
+            return False                                   # unknown slug (NFL.com answers 500)
+        m = re.search(r'<script type="application/ld\+json">(\{"@type":"SportsTeam".*?)</script>', page, re.S)
+        try:
+            d = json.loads(m.group(1)) if m else None
+        except Exception:
+            d = None
+        if not d:
+            return stats_header(slug)
+        role = d.get('member') or {}
+        person = role.get('member') or {}
+        pos = role.get('roleName')
+        if norm_name(html.unescape(person.get('name') or '')) != want_name:
+            return False
+        if pos and not (pos == want_pos or (want_pos == 'K' and pos in ('K', 'PK'))):
+            return False
+        team_ok = slugify(d.get('name')) == want_team
+        born_ok = bool(want_born) and person.get('birthDate') == want_born
+        return (team_ok + born_ok + bool(pos)) >= 2
+
+    for slug in nfl_slug_guesses(player.get('full_name')):
+        ok = matches(slug)
+        if ok is None:
+            return None
+        if ok:
+            return slug
+    # Sleeper often drops suffixes NFL.com keeps (Marvin Harrison -> marvin-harrison-jr, Kenneth Walker -> kenneth-walker-iii).
+    # (NFL.com's directory ?query= only filters in the browser via JavaScript; fetched server-side it returns a cached,
+    # unrelated list, so it can't be used here.)
+    if not SUFFIX_RE.search(player.get('full_name') or ''):
+        base = slugify(re.sub(r"[.']", '', player.get('full_name') or ''))
+        for suffix in ('jr', 'iii', 'ii', 'sr', 'iv', '2', '3'):   # -2/-3: NFL.com's de-dup of shared names (michael-pittman-2)
+            ok = matches(base + '-' + suffix)
+            if ok is None:
+                return None
+            if ok:
+                return base + '-' + suffix
+    return None
+
+
+def add_player_links(players, sleeper, gsis_of, previous, max_fetches):
+    """Adds 'sh' (stathead key) and, when verified, 'nfl' (+ 'nflt' = team it was verified for) to players[sid].
+    Unverified players are listed in the returned dict so the app can fall back to NFL.com's search."""
+    prev_players = previous.get('players', {}) if previous else {}
+    for sid, g in gsis_of.items():
+        players.setdefault(sid, {})['sh'] = stathead_key(g)
+    todo = []
+    for sid in gsis_of:
+        p = sleeper.get(sid) or {}
+        old = prev_players.get(sid, {})
+        if old.get('nfl') and old.get('nflt') == p.get('team'):
+            players[sid]['nfl'], players[sid]['nflt'] = old['nfl'], old['nflt']    # verified before, same team
+        elif p.get('team') in NFL_TEAM_SLUGS and p.get('full_name'):
+            todo.append(sid)
+    lock, used = threading.Lock(), [0]
+
+    def budget():
+        with lock:
+            if used[0] >= max_fetches:
+                return False
+            used[0] += 1
+            return True
+
+    def work(sid):
+        return sid, resolve_nfl_slug(sleeper[sid], budget)
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        for sid, slug in ex.map(work, todo):
+            if slug:
+                players[sid]['nfl'], players[sid]['nflt'] = slug, sleeper[sid]['team']
+    unresolved = [sid for sid in gsis_of if not players.get(sid, {}).get('nfl')]
+    print(f'  NFL.com links: {len(gsis_of) - len(unresolved)} verified, {len(unresolved)} not yet ({used[0]} page fetches this run, cap {max_fetches})', file=sys.stderr)
+    return unresolved
 
 
 def load_previous(path):
@@ -449,6 +605,9 @@ def build(season, previous=None):
     if 'depth' in stale:
         depth_as_of = prev.get('depth_as_of', depth_as_of)
 
+    # outbound links for the player page (stathead.app key for everyone matched; NFL.com slug when verified)
+    nfl_unresolved = add_player_links(players, sleeper, gsis_of, prev, int(os.environ.get('NFL_LINK_BUDGET', '200')))
+
     out = {
         'season': season,
         'generated': datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
@@ -460,6 +619,8 @@ def build(season, previous=None):
         'players': players,
         'inj': inj,
         'inj_unmatched': inj_unmatched,
+        'nfl_team_slugs': NFL_TEAM_SLUGS,
+        'nfl_unresolved': nfl_unresolved,
         'inj_as_of': inj_updated.strftime('%Y-%m-%dT%H:%MZ'),
         'stale': stale,
         'coverage': dict(method, relevant=len(relevant), snap_rows_unmapped=snap_unmapped),

@@ -600,6 +600,21 @@
   .pf-meta{ font-size: 14px; color: var(--text-2); margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
   .pf-game{ display: flex; align-items: baseline; gap: 4px 8px; flex-wrap: wrap; margin-top: 4px; font-size: 14px; color: var(--text-2); }
   .pf-game b{ font-weight: 600; color: var(--text); } .pf-game.bye b{ color: var(--danger); }
+  .pf-links{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .ext-link{ display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--hair);
+    color: var(--text); font-size: 13px; font-weight: 600; text-decoration: none; }
+  .ext-link:hover{ background: var(--surface-3); }
+  .ext-link small{ font-size: 11px; font-weight: 500; color: var(--text-3); }
+  .ext-link svg{ width: 14px; height: 14px; color: var(--text-3); flex: none; }
+  .res-list{ list-style: none; margin: 0; padding: 0; }
+  .res-list li{ border-top: 1px solid var(--hair); }
+  .res-list a{ display: flex; align-items: center; gap: 12px; padding: 12px 0; color: inherit; text-decoration: none; }
+  .res-list a:hover b{ text-decoration: underline; }
+  .res-list span{ flex: 1; min-width: 0; }
+  .res-list b{ display: block; font-size: 15px; font-weight: 600; }
+  .res-list i{ display: block; font-style: normal; color: var(--text-2); font-size: 13.5px; line-height: 1.45; margin-top: 2px; }
+  .res-list em{ font-style: normal; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; margin-left: 6px; }
+  .res-list svg{ width: 16px; height: 16px; color: var(--text-3); flex: none; }
   .pf-stats{ display: grid; grid-template-columns: repeat(6, minmax(86px, 1fr)); gap: 10px; margin-left: auto; }
   .pf-stat{ background: color-mix(in srgb, var(--surface) 72%, transparent); border-radius: var(--radius-sm); padding: 12px 14px; }
   .pf-stat .v{ font-size: 24px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
@@ -1337,6 +1352,7 @@
       <button class="nav-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>Players</span></button>
       <button class="nav-btn" data-view="league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg><span>League</span></button>
       <button class="nav-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span>Compare</span></button>
+      <button class="nav-btn" data-view="resources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4V4z"/><path d="M9 20a4 4 0 0 1 0-8h10M9 8h6"/></svg><span>Resources</span></button>
       <button class="nav-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>Settings</span></button>
     </nav>
     <div class="side-foot">
@@ -1437,6 +1453,29 @@
           </div>
         </section>
 
+        <section class="view" id="resources-view" style="display:none;">
+          <div class="settings">
+            <div class="card set-card"><h3>Latest fantasy news</h3><p class="set-sub">One live feed of player news (injuries, depth-chart moves, signings), updated all day.</p>
+              <ul class="res-list">
+                <li><a href="https://www.fantasypros.com/nfl/player-news.php" target="_blank" rel="noopener noreferrer"><span><b>FantasyPros Player News<em>Live</em></b><i>Newest first, with the fantasy impact of each item.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+              </ul>
+            </div>
+            <div class="card set-card"><h3>Stats &amp; analysis sites</h3><p class="set-sub">Picked because they work well on both phone and desktop. Links open in a new tab.</p>
+              <ul class="res-list">
+                <li><a href="https://www.fantasypros.com/nfl/" target="_blank" rel="noopener noreferrer"><span><b>FantasyPros<em>Free + paid</em></b><i>Consensus expert rankings, start/sit, and waiver and trade tools.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.playerprofiler.com/" target="_blank" rel="noopener noreferrer"><span><b>PlayerProfiler<em>Free</em></b><i>Advanced stats and athletic profiles for every player: target share, air yards, efficiency.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.stathead.app/" target="_blank" rel="noopener noreferrer"><span><b>StatHead<em>Free</em></b><i>Open-source fantasy stats app with weekly and season stats, usage and player pages.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://fantasycalc.com/" target="_blank" rel="noopener noreferrer"><span><b>FantasyCalc<em>Free</em></b><i>Trade values built from real trades in real leagues, plus a trade calculator.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://keeptradecut.com/" target="_blank" rel="noopener noreferrer"><span><b>KeepTradeCut<em>Free</em></b><i>Crowd-sourced dynasty and redraft player values and a trade calculator.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.rotowire.com/football/" target="_blank" rel="noopener noreferrer"><span><b>RotoWire<em>Free + paid</em></b><i>Fast injury and depth-chart news, projections and rankings.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.fantasylife.com/" target="_blank" rel="noopener noreferrer"><span><b>Fantasy Life<em>Free + paid</em></b><i>Weekly rankings, matchup analysis and tools.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.footballguys.com/" target="_blank" rel="noopener noreferrer"><span><b>Footballguys<em>Free + paid</em></b><i>Long-running rankings, projections and in-depth weekly articles.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+                <li><a href="https://www.rotoballer.com/nfl" target="_blank" rel="noopener noreferrer"><span><b>RotoBaller<em>Free + paid</em></b><i>Player news, rankings and start/sit advice, updated through the week.</i></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg></a></li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
         <section class="view" id="settings-view" style="display:none;">
           <div class="settings">
             <div class="card set-card"><h3>Appearance</h3><p class="set-sub">Auto follows your device's light or dark setting.</p><div class="theme-seg" role="group" aria-label="Theme"><button type="button" data-theme-opt="system">Auto</button><button type="button" data-theme-opt="light">Light</button><button type="button" data-theme-opt="dark">Dark</button></div></div>
@@ -1464,6 +1503,7 @@
     <button class="tab-btn" data-view="fa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>Players</button>
     <button class="tab-btn" data-view="league"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4"/></svg>League</button>
     <button class="tab-btn" data-view="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg>Compare</button>
+    <button class="tab-btn" data-view="resources"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4V4z"/><path d="M9 20a4 4 0 0 1 0-8h10M9 8h6"/></svg>Resources</button>
     <button class="tab-btn" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>Settings</button>
   </nav>
 </div>
@@ -1623,6 +1663,7 @@
     tabNav: document.getElementById('tab-nav'),
     compareView: document.getElementById('compare-view'),
     settingsView: document.getElementById('settings-view'),
+    resourcesView: document.getElementById('resources-view'),
     leagueView: document.getElementById('league-view'),
     cmpEmpty: document.getElementById('cmp-empty'),
     lineupTop: document.getElementById('lineup-top'),
@@ -2378,6 +2419,29 @@
     }
     return '<div class="pf-game"><b>Wk ' + ctx.week + ' ' + escapeHTML(m.text) + '</b><span>' + escapeHTML(gameWhen(kickoff(p.team, ctx.week))) + '</span></div>';
   }
+  // ---- outbound links on the player page (plain links, new tab) ----
+  // NFL.com: https://www.nfl.com/players/<slug>/stats/ . Slugs aren't predictable from the name, so build_nflverse.py
+  // verifies each one against NFL.com (name + team/birth date/position) and ships it as nflverse.json players[sid].nfl.
+  // Unverified players get NFL.com's player directory filtered by name; team defenses get the team stats page.
+  // StatHead = stathead.app (open-source app, not Sports Reference's Stathead): https://www.stathead.app/#/player/sh_<key>,
+  // key = blake2b-80 of 'NFL:<gsis_id>', computed in the build (players[sid].sh). No gsis match -> their home page.
+  const EXT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h4"/></svg>';
+  function extLink(href, label, note){
+    return '<a class="ext-link" href="' + escapeHTML(href) + '" target="_blank" rel="noopener noreferrer">' + escapeHTML(label) +
+      (note ? '<small>' + escapeHTML(note) + '</small>' : '') + EXT_ICON + '</a>';
+  }
+  function playerLinksHTML(pid){
+    const p = ctx.players[pid];
+    if(!p) return '';
+    const n = (ctx.nfl && ctx.nfl.players && ctx.nfl.players[pid]) || {};
+    const teams = (ctx.nfl && ctx.nfl.nfl_team_slugs) || {};
+    let nfl, nflNote = '';
+    if(p.position === 'DEF' && teams[pid]) nfl = 'https://www.nfl.com/teams/' + teams[pid] + '/stats';
+    else if(n.nfl) nfl = 'https://www.nfl.com/players/' + n.nfl + '/stats/';
+    else { nfl = 'https://www.nfl.com/players/active/all?query=' + encodeURIComponent(p.full_name || ((p.first_name || '') + ' ' + (p.last_name || '')).trim()); nflNote = 'search'; }
+    const sh = n.sh ? 'https://www.stathead.app/#/player/' + n.sh : 'https://www.stathead.app/';
+    return '<div class="pf-links">' + extLink(nfl, 'Official NFL Stats', nflNote) + extLink(sh, 'View on StatHead', n.sh ? '' : 'home') + '</div>';
+  }
   function kickText(t){ return t ? new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'time TBD'; }
   // Flex slots currently holding a tight end (flagged on the row and in the optimizer note).
   function teInFlex(starters){
@@ -2566,7 +2630,7 @@
     els.rosterScreen.style.display = '';
     els.rosterScreen.classList.add('is-loading');
     ctx.view = null;
-    ['rosterView', 'faView', 'compareView', 'settingsView', 'leagueView'].forEach(function(k){ els[k].style.display = k === 'rosterView' ? '' : 'none'; });
+    ['rosterView', 'faView', 'compareView', 'settingsView', 'resourcesView', 'leagueView'].forEach(function(k){ els[k].style.display = k === 'rosterView' ? '' : 'none'; });
     els.lineupTop.style.display = '';
     els.panes.classList.remove('solo');
     els.byeAlert.classList.add('gone');
@@ -4015,7 +4079,7 @@
   }
 
   // ---- available players (informational only — not part of the lineup builder) ----
-  const VIEW_TITLES = { roster: 'Lineup', fa: 'Players', league: 'League', compare: 'Compare', settings: 'Settings' };
+  const VIEW_TITLES = { roster: 'Lineup', fa: 'Players', league: 'League', compare: 'Compare', resources: 'Resources', settings: 'Settings' };
   // Fade a list's rows in one after another (on load and when you switch screens, not on every re-render).
   function staggerIn(list){
     if(!list || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -4034,9 +4098,10 @@
     els.faView.style.display = view === 'fa' ? '' : 'none';
     els.compareView.style.display = view === 'compare' ? '' : 'none';
     els.settingsView.style.display = view === 'settings' ? '' : 'none';
+    els.resourcesView.style.display = view === 'resources' ? '' : 'none';
     els.leagueView.style.display = view === 'league' ? '' : 'none';
     els.lineupTop.style.display = view === 'roster' ? '' : 'none';
-    els.panes.classList.toggle('solo', view === 'compare' || view === 'settings' || view === 'league');
+    els.panes.classList.toggle('solo', view === 'compare' || view === 'settings' || view === 'resources' || view === 'league');
 
     els.pageEyebrow.textContent = 'Week ' + ctx.week + ' · ' + (ctx.league ? ctx.league.name : '');
     els.pageTitle.textContent = VIEW_TITLES[view];
@@ -4053,7 +4118,7 @@
     if(view === 'settings') renderStatus();
     if(view === 'league') renderLeague();
     if(changed){
-      [els.rosterView, els.faView, els.compareView, els.settingsView, els.leagueView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
+      [els.rosterView, els.faView, els.compareView, els.settingsView, els.resourcesView, els.leagueView].forEach(function(v){ v.style.animation = 'none'; void v.offsetWidth; v.style.animation = ''; });
       if(view === 'roster' && !ctx.deferEntrance){ staggerIn(els.startersList); staggerIn(els.benchList); }
       if(view === 'fa') staggerIn(els.faList);
       if(!paneMode()) window.scrollTo(0, 0);
@@ -5349,7 +5414,7 @@
     const hero = '<div class="pf-hero" style="--team:' + teamColor(p.team) + '">' + avatarTag(pid, 'mx-av') +
       '<div><div class="pf-name">' + escapeHTML(playerName(p)) + '</div>' +
       '<div class="pf-meta">' + escapeHTML(p.position || '') + ' · ' + escapeHTML(p.team || 'FA') +
-        injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div>' + gameLineHTML(pid) + '</div>' +
+        injuryChip(p.injury_status) + depthChip(pid) + '<span>· ' + (onRoster ? 'On your roster' : 'Available') + '</span></div>' + gameLineHTML(pid) + playerLinksHTML(pid) + '</div>' +
       '<div class="pf-stats stagger">' + stats.map(function(s, i){ return '<div class="pf-stat" style="--i:' + i + '"><div class="v">' + s[0] + '</div><div class="k">' + escapeHTML(s[1]) + '</div></div>'; }).join('') + '</div></div>';
 
     let left = '<div class="card pf-card"><div class="pf-sec"><h3>Game log</h3><span class="eyebrow">League scoring</span></div>' +
