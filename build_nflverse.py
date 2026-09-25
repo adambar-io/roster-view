@@ -24,14 +24,17 @@ SOURCES = {
     'nfl_players':     REL + '/players/players.csv.gz',                           # gsis_id <-> pfr_id, names, teams
     'id_map':          'https://raw.githubusercontent.com/dynastyprocess/data/master/files/db_playerids.csv',  # sleeper_id <-> gsis_id
     'sleeper_players': 'https://api.sleeper.app/v1/players/nfl',
+    'espn_injuries':   'https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries',   # unofficial; ~8.7 MB, trimmed to espn.json
 }
+ESPN_TEAM_FIX = {'WSH': 'WAS'}     # ESPN abbreviation -> Sleeper abbreviation
+ESPN_SKIP_POS = {'C', 'G', 'T', 'OT', 'OG', 'OL', 'LS', 'P'}   # offensive line, long snapper, punter: never on a fantasy roster
 TEAM_FIX = {'LA': 'LAR'}           # nflverse abbreviation -> Sleeper abbreviation
 SKILL = ('QB', 'RB', 'WR', 'TE')   # positions that get snap / share / depth data
 INJURY_POS = SKILL + ('K',)        # positions that get injury / practice data
 # players.json: the Sleeper player fields the app uses (keep in sync with PLAYER_FIELDS in index.html). About 260 KB
 # gzipped instead of the 2.6 MB / 14.7 MB raw /players/nfl, so the app can re-check it on every open.
 PLAYER_FIELDS = ['full_name', 'first_name', 'last_name', 'position', 'fantasy_positions', 'team', 'injury_status',
-                 'injury_body_part', 'injury_notes', 'injury_start_date', 'practice_participation', 'practice_description']
+                 'injury_body_part', 'injury_notes', 'injury_start_date', 'practice_participation', 'practice_description', 'espn_id']
 # Sleeper stat/projection keys that never score (the app scores with the league's own settings).
 NON_SCORING = re.compile(r'^(pts_|pos_rank|rank_|adp_|pos_adp|gp$|gs$|gms_active$|tm_|off_snp$|def_snp$|st_snp$|cmp_pct$|.*_(ypa|ypc|ypr|ypt|pct|rtg|lng|avg)$)')
 DVP_POS = ('QB', 'RB', 'WR', 'TE', 'K')
@@ -47,6 +50,8 @@ def default_season():
 
 def get(url):
     headers = {'User-Agent': 'sleepa build_nflverse.py'}
+    if 'espn.com' in url:   # ESPN answers 403 to the custom agent string above (checked Sept 2026)
+        headers['User-Agent'] = 'Mozilla/5.0 (compatible; sleepa/1.0; +https://github.com/adambar-io/sleepa)'
     if url.startswith('https://api.github.com/') and os.environ.get('GITHUB_TOKEN'):
         headers['Authorization'] = 'Bearer ' + os.environ['GITHUB_TOKEN']   # in the Action: avoids the anonymous rate limit
     req = urllib.request.Request(url, headers=headers)
@@ -178,6 +183,47 @@ def build_ros(season, from_week, last_week=LAST_FANTASY_WEEK):
                 r['s'][k] = round(r['s'].get(k, 0) + v, 2)
     # keep fantasy-relevant players only (more than a token projection)
     return {pid: r for pid, r in ros.items() if r['s'].get('rec', 0) + r['s'].get('rush_yd', 0) + r['s'].get('pass_yd', 0) + r['s'].get('fgm', 0) + r['s'].get('xpm', 0) + r['w'] * (1 if pid.isalpha() else 0) > 1}
+
+
+def build_espn(sleeper):
+    """ESPN's unofficial injury list, trimmed to what the app shows and keyed by Sleeper ID.
+    Matching: Sleeper's espn_id when present (only ~1/3 of ESPN's entries), otherwise a unique normalized
+    name + team match (checked Sept 2026: all fantasy-position entries matched, no disagreements where both apply).
+    Anything unmatched is listed, not dropped."""
+    d = json.loads(get(SOURCES['espn_injuries']))
+    by_espn = {str(p['espn_id']): sid for sid, p in sleeper.items() if p.get('espn_id')}
+    by_nt = {}
+    for sid, p in sleeper.items():
+        if p.get('team'):
+            by_nt.setdefault((norm_name(p.get('full_name')), p['team']), []).append(sid)
+    players, unmatched = {}, []
+    for t in d.get('injuries', []):
+        for e in t.get('injuries', []):
+            a = e.get('athlete') or {}
+            pos = (a.get('position') or {}).get('abbreviation')
+            if pos in ESPN_SKIP_POS:
+                continue
+            href = ((a.get('links') or [{}])[0] or {}).get('href', '')
+            m = re.search(r'/id/(\d+)', href)
+            eid = m.group(1) if m else None
+            tm = ESPN_TEAM_FIX.get((a.get('team') or {}).get('abbreviation'), (a.get('team') or {}).get('abbreviation'))
+            sid = by_espn.get(eid) if eid else None
+            how = 'espn_id'
+            if not sid:
+                cands = by_nt.get((norm_name(a.get('displayName')), tm), [])
+                sid, how = (cands[0], 'name+team') if len(cands) == 1 else (None, None)
+            det = e.get('details') or {}
+            rec = {k: v for k, v in {
+                'st': e.get('status'), 'date': e.get('date'), 'short': e.get('shortComment'), 'long': e.get('longComment'),
+                'type': det.get('type'), 'loc': det.get('location'), 'side': det.get('side'), 'detail': det.get('detail'),
+                'ret': det.get('returnDate'), 'fant': (det.get('fantasyStatus') or {}).get('description'),
+            }.items() if v and v != 'Not Specified'}
+            if sid:
+                rec['m'] = how
+                players[sid] = rec
+            else:   # listed, not dropped
+                unmatched.append({'n': a.get('displayName'), 't': tm, 'pos': pos, 'st': e.get('status'), 'espn': eid})
+    return {'espn_timestamp': d.get('timestamp'), 'players': players, 'unmatched': unmatched}
 
 
 def load_previous(path):
@@ -340,9 +386,15 @@ def build(season, previous=None):
     except Exception as e:
         print('  (injuries unavailable:', e, ')', file=sys.stderr)
         inj_rows = []
+    inj_unmatched = []
     for r in inj_rows:
         sid, t = sid_of.get(r.get('gsis_id')), team(r.get('team', ''))
-        if not sid or t not in upcoming or r.get('season_type') != 'REG' or int(r['week']) != upcoming[t][0]:
+        if t not in upcoming or r.get('season_type') != 'REG' or int(r['week']) != upcoming[t][0]:
+            continue
+        if not sid:
+            # on this week's report but not matched to a Sleeper QB/RB/WR/TE/K: flag fantasy positions instead of dropping silently
+            if r.get('position') in INJURY_POS:
+                inj_unmatched.append({'n': r.get('full_name'), 't': t, 'pos': r.get('position'), 'gsis': r.get('gsis_id')})
             continue
         week, gd = upcoming[t]
         days = practice_days(gd)
@@ -358,6 +410,11 @@ def build(season, previous=None):
         e = {'w': week, 'g': gd.isoformat()}
         if r.get('report_status'):
             e['st'] = r['report_status']
+        # the raw columns, unmerged: reported injury, practice injury, latest practice status
+        for key, col in (('ri', 'report_primary_injury'), ('ri2', 'report_secondary_injury'), ('pi', 'practice_primary_injury'),
+                         ('pi2', 'practice_secondary_injury'), ('ps', 'practice_status')):
+            if r.get(col):
+                e[key] = r[col]
         body = r.get('report_primary_injury') or r.get('practice_primary_injury')
         body2 = r.get('report_secondary_injury') or r.get('practice_secondary_injury')
         if body:
@@ -402,6 +459,7 @@ def build(season, previous=None):
         'kick': kick,
         'players': players,
         'inj': inj,
+        'inj_unmatched': inj_unmatched,
         'inj_as_of': inj_updated.strftime('%Y-%m-%dT%H:%MZ'),
         'stale': stale,
         'coverage': dict(method, relevant=len(relevant), snap_rows_unmapped=snap_unmapped),
@@ -437,6 +495,22 @@ def main():
         with open(season_path, 'w', encoding='utf-8') as f:
             json.dump({'season': args.season, 'generated': out['generated'], 'through_week': cur_week - 1, 'players': totals}, f, separators=(',', ':'))
         print(f'Wrote {season_path} ({os.path.getsize(season_path):,} bytes, {len(totals):,} players).', file=sys.stderr)
+    # espn.json: ESPN injuries (unofficial). On failure the previous file stays, so the app shows the last good copy.
+    espn_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'espn.json')
+    try:
+        sleeper_full = json.loads(get(SOURCES['sleeper_players']))
+        espn = build_espn(sleeper_full)
+        old_espn = load_previous(espn_path)
+        if old_espn.get('players') != espn['players'] or old_espn.get('unmatched') != espn['unmatched']:
+            espn['fetched'] = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%MZ')
+            with open(espn_path, 'w', encoding='utf-8') as f:
+                json.dump(espn, f, separators=(',', ':'))
+            print(f"Wrote {espn_path} ({os.path.getsize(espn_path):,} bytes, {len(espn['players'])} matched, {len(espn['unmatched'])} unmatched).", file=sys.stderr)
+        else:
+            print('No ESPN injury changes; espn.json left as is.', file=sys.stderr)
+    except Exception as e:
+        print('  (ESPN injuries unavailable, keeping the previous espn.json:', e, ')', file=sys.stderr)
+
     ros_path = os.path.join(os.path.dirname(os.path.abspath(args.out)), 'ros.json')
     try:
         ros = build_ros(args.season, cur_week) if cur_week <= LAST_FANTASY_WEEK else {}

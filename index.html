@@ -796,6 +796,28 @@
     .vs-bench-cols{ grid-template-columns: 1fr; gap: 4px; }
   }
 
+  /* ---- injury reports by source ---- */
+  .inj-sources{ margin: 0 0 16px; }
+  .inj-title{ display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 2px 8px; }
+  .inj-title h3{ margin: 0; font-size: 17px; } .inj-title span{ font-size: 12.5px; color: var(--text-3); }
+  .inj-grid{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .inj-src{ background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; min-width: 0; }
+  .inj-src header{ display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--hair); }
+  .inj-src header b{ font-size: 14px; } .inj-src .asof{ font-size: 11.5px; color: var(--text-3); }
+  .inj-src dl{ display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 10px; margin: 0; font-size: 13px; }
+  .inj-src dt{ color: var(--text-3); } .inj-src dd{ margin: 0; color: var(--text); overflow-wrap: anywhere; }
+  .inj-src dd .status-chip{ margin: 0; } .inj-src .chip-full{ display: inline !important; }
+  .inj-src .prac{ margin-top: 10px; } .inj-src .prac-day{ background: var(--surface-2); }
+  .inj-none{ margin: 0; font-size: 13px; color: var(--text-3); }
+  .inj-fine{ margin: 8px 0 0; font-size: 11.5px; color: var(--text-3); line-height: 1.4; }
+  .inj-long summary{ cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent); margin-top: 8px; }
+  .inj-long p{ font-size: 13px; color: var(--text-2); line-height: 1.5; margin: 6px 0 0; }
+  .inj-mini{ grid-column: 1 / -1; border-radius: 14px; padding: 10px 12px; background: var(--warn-soft); margin-bottom: 4px; font-size: 13px; }
+  .inj-mini-row{ display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; padding: 3px 0; align-items: baseline; }
+  .inj-mini-row b{ font-size: 12px; color: var(--text-2); } .inj-mini .status-chip{ margin: 0; } .inj-mini .chip-full{ display: inline !important; }
+  .inj-more{ margin-top: 6px; }
+  @media (max-width: 900px){ .inj-grid{ grid-template-columns: 1fr; } }
+
   /* ---- sortable columns (Players tab + full view) ---- */
   .h-sort{ border: none; background: none; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; padding: 0; cursor: pointer; text-align: inherit; }
   .h-sort:hover, .th-sort button:hover{ color: var(--text); }
@@ -1425,6 +1447,7 @@
               <p class="set-sub" style="margin:10px 0 0">sleepa remembers your username and league on this device and opens straight to your team. Switch leagues above; this button signs out.</p>
             </div>
             <div class="card set-card"><h3>Data</h3><div class="set-data" data-status></div></div>
+            <div class="card set-card"><h3>Injury data matching</h3><p class="set-sub">Injury reports that couldn’t be matched to a Sleeper player are listed here instead of being dropped.</p><div class="set-data" id="inj-match"></div></div>
             <div class="card set-card"><h3>About sleepa</h3><p class="set-sub" style="margin:0">Read only. Lineup changes here are a plan; nothing is sent to Sleeper. Stats and projections come from Sleeper, scored with your league's settings. Opponents, snap share, target share and depth charts come from nflverse.</p><p class="disclaimer">sleepa is an unofficial fan-made companion and isn't affiliated with or endorsed by Sleeper.</p></div>
           </div>
         </section>
@@ -1487,7 +1510,7 @@
   const PLAYERS_CACHE_KEY = 'sleeper_players_cache_v4'; // v4 = + fantasy_positions, source (players.json / sleeper)
   // Keep in sync with PLAYER_FIELDS in build_nflverse.py, which writes players.json with exactly these fields.
   const PLAYER_FIELDS = ['full_name','first_name','last_name','position','fantasy_positions','team','injury_status',
-    'injury_body_part','injury_notes','injury_start_date','practice_participation','practice_description'];
+    'injury_body_part','injury_notes','injury_start_date','practice_participation','practice_description','espn_id'];
   // The trimmed player database the GitHub Action publishes next to this page (~260 KB gzipped, rebuilt every
   // 30 min on game days). Sleeper's own /players/nfl (2.6 MB gzipped, 14.7 MB raw) is only the fallback.
   const PLAYERS_URL = 'players.json';
@@ -2693,6 +2716,7 @@
       sb.setAttribute('role', 'button'); sb.setAttribute('tabindex', '0'); sb.setAttribute('aria-label', 'sleepa: back to your lineup');
       renderFreshness();
       pruneStatsCache(ctx.season);
+      loadEspn().then(function(){ if(loadId === ctx.loadId){ refreshFocus(); if(maxOpen()) renderMax(0); renderStatus(); } });
       refreshData({ topUp: true }); // anything that came from a stale cache is re-fetched in the background
       // If the app-open transition is still playing, replay the row + total entrance once it lands so you actually see it.
       if(ctx.deferEntrance) ctx.afterVt = function(){
@@ -2767,6 +2791,9 @@
       const nfl = await nflP;
       if(loadId !== ctx.loadId) return;
       if(nfl && applyNfl(nfl)) changed = true;
+      const espnBefore = ctx.espnTs;
+      await loadEspn(!!opts.manual);
+      if(ctx.espnTs !== espnBefore) changed = true;
       ctx.updatedAt = Date.now();
       if(opts.manual){ ctx.rosTs = 0; ctx.trending = null; }
       if(changed){
@@ -3381,41 +3408,163 @@
   }
   function dowShort(iso){ return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(iso + 'T12:00:00Z').getUTCDay()]; }
   const PRAC = { DNP: ['DNP', 0], LP: ['Limited', 1], FP: ['Full', 2] };
-  function injuryDetailHTML(pid){
-    const p = ctx.players[pid];
-    if(!p) return '';
-    const sl = p.injury_status && p.injury_status !== 'Healthy' ? p.injury_status : '';
-    const off = officialInjury(pid);
-    if(!sl && !off) return '';
-    const status = (off && off.st) || sl;
-    const body = (off && off.b) || (p.injury_body_part && p.injury_body_part !== 'Undisclosed' ? p.injury_body_part : '') || p.injury_body_part || '';
-    const since = p.injury_start_date ? new Date(p.injury_start_date + 'T12:00:00Z').toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
-    let h = '<div class="inj-card"><div class="inj-top">' + (status ? injuryChip(status) : '<span class="status-chip">On report</span>') +
-      '<b>' + escapeHTML(body || 'Injury') + '</b>' + (since ? '<span class="inj-since">since ' + since + '</span>' : '') + '</div>';
-    if(off && off.st) h += '<div class="inj-line">Official game status for ' + dowShort(off.g) + ': <b>' + escapeHTML(off.st) + '</b></div>';
-    if(p.injury_notes) h += '<div class="inj-line">' + escapeHTML(p.injury_notes) + '</div>';
-    if(p.practice_participation) h += '<div class="inj-line">Practice: ' + escapeHTML(p.practice_participation) + (p.practice_description ? ' · ' + escapeHTML(p.practice_description) : '') + '</div>';
-    if(off){
-      const days = practiceDays(off.g), log = off.p || {}, today = etDateISO(Date.now());
-      const seq = days.map(function(d){ return log[d]; }).filter(Boolean);
-      let trend = 'No practice report yet', tcls = '';
-      if(off.st === 'Out'){ trend = 'Ruled out'; tcls = 'down'; }
-      else if(seq.length === 1){ trend = { DNP: 'Not practicing so far', LP: 'Limited so far', FP: 'Practicing fully' }[seq[0]]; tcls = { DNP: 'down', LP: '', FP: 'up' }[seq[0]]; }
-      else if(seq.length > 1){
-        const a = PRAC[seq[0]][1], z = PRAC[seq[seq.length - 1]][1];
-        if(z > a){ trend = 'Trending toward playing'; tcls = 'up'; }
-        else if(z < a){ trend = 'Trending the wrong way'; tcls = 'down'; }
-        else { trend = { FP: 'Full all week', LP: 'Limited all week', DNP: 'Hasn’t practiced' }[seq[0]]; tcls = { FP: 'up', LP: '', DNP: 'down' }[seq[0]]; }
-      }
-      h += '<div class="prac"><div class="prac-head"><span class="eyebrow">Practice · week ' + off.w + '</span><span class="prac-trend ' + tcls + '">' + trend + '</span></div><div class="prac-days">' +
-        days.map(function(d){
-          const c = log[d];
-          const cls = c ? c.toLowerCase() : d > today ? 'later' : d === today ? 'today' : 'none';
-          const val = c ? PRAC[c][0] : d > today ? 'Upcoming' : d === today ? 'Later today' : 'No report';
-          return '<div class="prac-day ' + cls + '"><span class="pd-dow">' + dowShort(d) + '</span><span class="pd-val">' + val + '</span></div>';
-        }).join('') + '</div></div>';
+  // ---- injury reports from three sources, shown side by side and never merged ----
+  // Sleeper: players.json (the Action's trimmed copy of /players/nfl). nflverse: nflverse.json 'inj' (official weekly
+  // report + practice log). ESPN: espn.json (the Action's trimmed copy of ESPN's unofficial injuries endpoint), or ESPN
+  // directly if that file is missing. Each loads on its own, so one failing never hides the others.
+  const ESPN_URL = 'espn.json';
+  const ESPN_DIRECT = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/injuries';
+  const ESPN_MAX_AGE = 3 * 60 * 60 * 1000; // re-check at most every 3 hours
+  const ESPN_SKIP_POS = ['C', 'G', 'T', 'OT', 'OG', 'OL', 'LS', 'P'];
+  async function loadEspn(force){
+    if(!force && ctx.espn && Date.now() - (ctx.espnTs || 0) < ESPN_MAX_AGE) return ctx.espn;
+    if(!ctx.espn){
+      try{
+        const c = JSON.parse(localStorage.getItem('rv-espn') || 'null');
+        if(c && c.data && c.data.players){ ctx.espn = c.data; ctx.espnTs = c.ts; if(!force && Date.now() - c.ts < ESPN_MAX_AGE) return ctx.espn; }
+      }catch(e){ console.warn('Cached ESPN injuries unreadable', e); }
     }
-    return h + '</div>';
+    let data = null;
+    try{
+      const res = await fetch(ESPN_URL, { cache: 'no-cache' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+      if(!data || !data.players) throw new Error('unexpected shape');
+      data.via = 'sleepa';
+    }catch(e){
+      console.warn(ESPN_URL + ' unavailable (' + e.message + '); trying ESPN directly');
+      try{ data = await fetchEspnDirect(); }
+      catch(e2){ console.warn('ESPN injuries unavailable:', e2.message); ctx.espnFailed = true; return ctx.espn || null; }
+    }
+    ctx.espn = data; ctx.espnTs = Date.now(); ctx.espnFailed = false;
+    try{ lsSet('rv-espn', JSON.stringify({ ts: ctx.espnTs, data: data })); }catch(e){ console.warn('Could not cache ESPN injuries', e); }
+    return data;
+  }
+  // Fallback: ESPN's own endpoint (~8.7 MB), trimmed and matched here the same way the build does it:
+  // Sleeper's espn_id first, then a unique normalized name + team. Unmatched entries are kept in a list.
+  async function fetchEspnDirect(){
+    const d = await fetchJSON(ESPN_DIRECT);
+    if(!d || !Array.isArray(d.injuries)) throw new Error('ESPN response changed shape');
+    const nm = function(t){ return normName(t).replace(/\b(jr|sr|ii|iii|iv|v)\b/g, '').replace(/\s+/g, ' ').trim(); };
+    const byEspn = {}, byNameTeam = {};
+    Object.keys(ctx.players).forEach(function(pid){
+      const p = ctx.players[pid];
+      if(p.espn_id) byEspn[String(p.espn_id)] = pid;
+      if(p.team){ const k = nm(playerName(p)) + '|' + p.team; (byNameTeam[k] = byNameTeam[k] || []).push(pid); }
+    });
+    const players = {}, unmatched = [];
+    d.injuries.forEach(function(t){
+      (t.injuries || []).forEach(function(e){
+        const a = e.athlete || {}, pos = (a.position || {}).abbreviation;
+        if(ESPN_SKIP_POS.indexOf(pos) !== -1) return;
+        const href = ((a.links || [])[0] || {}).href || '', m = href.match(/\/id\/(\d+)/), eid = m ? m[1] : null;
+        let tm = (a.team || {}).abbreviation; if(tm === 'WSH') tm = 'WAS';
+        let sid = eid && byEspn[eid], how = 'espn_id';
+        if(!sid){ const c = byNameTeam[nm(a.displayName) + '|' + tm] || []; sid = c.length === 1 ? c[0] : null; how = 'name+team'; }
+        const det = e.details || {}, rec = {};
+        [['st', e.status], ['date', e.date], ['short', e.shortComment], ['long', e.longComment], ['type', det.type], ['loc', det.location],
+         ['side', det.side], ['detail', det.detail], ['ret', det.returnDate], ['fant', (det.fantasyStatus || {}).description]]
+          .forEach(function(kv){ if(kv[1] && kv[1] !== 'Not Specified') rec[kv[0]] = kv[1]; });
+        if(sid){ rec.m = how; players[sid] = rec; }
+        else unmatched.push({ n: a.displayName, t: tm, pos: pos, st: e.status, espn: eid });
+      });
+    });
+    return { espn_timestamp: d.timestamp, players: players, unmatched: unmatched, via: 'espn' };
+  }
+  function espnEntry(pid){ return ctx.espn && ctx.espn.players ? ctx.espn.players[pid] || null : null; }
+  function nflInjury(pid){ return ctx.nfl && ctx.nfl.inj ? ctx.nfl.inj[pid] || null : null; }
+  // The section shows when any source has an injury status. ESPN's "Active" means listed but playing: not a status.
+  function hasInjuryAnywhere(pid){
+    const p = ctx.players[pid], es = espnEntry(pid), nf = nflInjury(pid);
+    return !!((p && p.injury_status && p.injury_status !== 'Healthy') || (nf && nf.st) || (es && es.st && es.st !== 'Active'));
+  }
+  const fmtWhen = function(t){ const d = t ? new Date(typeof t === 'string' && /Z$/.test(t) && t.length === 17 ? t.replace('Z', ':00Z') : t) : null; return d && !isNaN(d) ? d.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; };
+  const fmtDay = function(iso){ const d = iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00Z') : null; return d && !isNaN(d) ? d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : iso; };
+  function chipFor(text){ // a colored chip for any source's wording, showing that source's own words
+    const map = { 'Injured Reserve': 'IR', 'Suspended': 'Sus', 'Physically Unable to Perform': 'PUP' };
+    const i = statusInfo(map[text] || text);
+    return i ? '<span class="status-chip st-' + i.tone + '"><span class="chip-full">' + escapeHTML(text) + '</span></span>' : escapeHTML(text);
+  }
+  function practiceStripHTML(nf){
+    const days = practiceDays(nf.g), log = nf.p || {}, today = etDateISO(Date.now());
+    const seq = days.map(function(d){ return log[d]; }).filter(Boolean);
+    let trend = 'No practice report yet', tcls = '';
+    if(nf.st === 'Out'){ trend = 'Ruled out'; tcls = 'down'; }
+    else if(seq.length === 1){ trend = { DNP: 'Not practicing so far', LP: 'Limited so far', FP: 'Practicing fully' }[seq[0]]; tcls = { DNP: 'down', LP: '', FP: 'up' }[seq[0]]; }
+    else if(seq.length > 1){
+      const a = PRAC[seq[0]][1], z = PRAC[seq[seq.length - 1]][1];
+      if(z > a){ trend = 'Trending toward playing'; tcls = 'up'; }
+      else if(z < a){ trend = 'Trending the wrong way'; tcls = 'down'; }
+      else { trend = { FP: 'Full all week', LP: 'Limited all week', DNP: 'Hasn’t practiced' }[seq[0]]; tcls = { FP: 'up', LP: '', DNP: 'down' }[seq[0]]; }
+    }
+    return '<div class="prac"><div class="prac-head"><span class="eyebrow">Practice · week ' + nf.w + '</span><span class="prac-trend ' + tcls + '">' + trend + '</span></div><div class="prac-days">' +
+      days.map(function(d){
+        const c = log[d];
+        const cls = c ? c.toLowerCase() : d > today ? 'later' : d === today ? 'today' : 'none';
+        const val = c ? PRAC[c][0] : d > today ? 'Upcoming' : d === today ? 'Later today' : 'No report';
+        return '<div class="prac-day ' + cls + '"><span class="pd-dow">' + dowShort(d) + '</span><span class="pd-val">' + val + '</span></div>';
+      }).join('') + '</div></div>';
+  }
+  function srcSection(name, asOf, rows, extra, emptyText){
+    const body = rows.filter(function(r){ return r[1]; });
+    return '<section class="inj-src"><header><b>' + name + '</b>' + (asOf ? '<span class="asof">' + asOf + '</span>' : '') + '</header>' +
+      (body.length || extra ? '<dl>' + body.map(function(r){ return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('') + '</dl>' + (extra || '')
+        : '<p class="inj-none">' + (emptyText || 'No data from this source.') + '</p>') + '</section>';
+  }
+  // Player detail screen: the full breakdown, one subsection per source, each exactly as that source has it.
+  function injurySourcesHTML(pid){
+    const p = ctx.players[pid];
+    if(!p || !hasInjuryAnywhere(pid)) return '';
+    const e = function(v){ return v ? escapeHTML(v) : ''; };
+    // Sleeper
+    const sl = srcSection('Sleeper', ctx.playersTs ? 'as of ' + fmtWhen(ctx.playersTs) : '', [
+      ['Status', p.injury_status && p.injury_status !== 'Healthy' ? chipFor(p.injury_status) : ''],
+      ['Body part', e(p.injury_body_part)], ['Notes', e(p.injury_notes)], ['Injury start', p.injury_start_date ? e(fmtDay(p.injury_start_date)) : ''],
+      ['Practice participation', e(p.practice_participation)], ['Practice description', e(p.practice_description)],
+    ]);
+    // nflverse
+    let nv;
+    if(!ctx.nfl) nv = srcSection('nflverse', '', [], '', 'nflverse data unavailable.');
+    else {
+      const nf = nflInjury(pid);
+      const asOf = ctx.nfl.inj_as_of ? 'as of ' + fmtWhen(ctx.nfl.inj_as_of) + ' (report file update)' : '';
+      const note = '<p class="inj-fine">Official weekly report. The file has no report dates; practice days are logged by sleepa’s data build, so a day it missed shows “No report”.</p>';
+      nv = nf ? srcSection('nflverse', asOf, [
+        ['Game status', nf.st ? chipFor(nf.st) + ' <span class="dim">for the ' + dowShort(nf.g) + ' ' + e(fmtDay(nf.g)) + ' game</span>' : '<span class="dim">None listed</span>'],
+        ['Reported injury', e([nf.ri, nf.ri2].filter(Boolean).join(', '))],
+        ['Practice injury', e([nf.pi, nf.pi2].filter(Boolean).join(', '))],
+        ['Latest practice status', e(nf.ps)],
+      ], practiceStripHTML(nf) + note) : srcSection('nflverse', asOf, [], '', 'No data from this source: not on this week’s official injury report.');
+    }
+    // ESPN
+    let es;
+    const en = espnEntry(pid);
+    if(!ctx.espn) es = srcSection('ESPN', '', [], '', ctx.espnFailed ? 'ESPN data unavailable.' : 'Loading ESPN…');
+    else {
+      const asOf = ctx.espn.espn_timestamp ? 'as of ' + fmtWhen(ctx.espn.espn_timestamp) : '';
+      es = en ? srcSection('ESPN', asOf, [
+        ['Status', en.st ? chipFor(en.st) + (en.st === 'Active' ? ' <span class="dim">(on ESPN’s list, playing)</span>' : '') : ''],
+        ['Fantasy status', e(en.fant)], ['Injury', e(en.type)], ['Location', e([en.loc, en.side].filter(Boolean).join(' · '))], ['Detail', e(en.detail)],
+        ['Expected return', en.ret ? e(fmtDay(en.ret)) : ''], ['Updated', en.date ? e(fmtWhen(en.date)) : ''], ['Latest', e(en.short)],
+      ], (en.long ? '<details class="inj-long"><summary>ESPN’s full note</summary><p>' + e(en.long) + '</p></details>' : '') +
+         '<p class="inj-fine">Unofficial ESPN data, matched to this player by ' + (en.m === 'espn_id' ? 'ESPN ID' : 'name and team') + '.</p>')
+        : srcSection('ESPN', asOf, [], '', 'No data from this source.');
+    }
+    return '<div class="inj-sources"><div class="inj-title"><h3>Injury reports</h3><span>Three sources, shown as each reports it</span></div><div class="inj-grid">' + sl + nv + es + '</div></div>';
+  }
+  // Player panel / iPhone sheet: one line per source, full breakdown on the player page.
+  function injuryMiniHTML(pid){
+    const p = ctx.players[pid];
+    if(!p || !hasInjuryAnywhere(pid)) return '';
+    const none = '<span class="dim">No data</span>';
+    const sl = p.injury_status && p.injury_status !== 'Healthy' ? chipFor(p.injury_status) + (p.injury_body_part ? ' ' + escapeHTML(p.injury_body_part) : '') : none;
+    const nf = nflInjury(pid);
+    const seq = nf ? practiceDays(nf.g).map(function(d){ return (nf.p || {})[d]; }).filter(Boolean).map(function(c){ return PRAC[c][0]; }) : [];
+    const nv = !ctx.nfl ? '<span class="dim">Unavailable</span>' : nf ? (nf.st ? chipFor(nf.st) + ' ' : '') + escapeHTML([nf.ri || nf.pi].filter(Boolean).join('')) + (seq.length ? ' · ' + escapeHTML(seq.join(' → ')) : '') || none : none;
+    const en = espnEntry(pid);
+    const es = !ctx.espn ? '<span class="dim">' + (ctx.espnFailed ? 'Unavailable' : 'Loading…') + '</span>' : en ? chipFor(en.st || '') + (en.type ? ' ' + escapeHTML(en.type) : '') + (en.ret ? ' · back ' + escapeHTML(fmtDay(en.ret)) : '') : none;
+    return '<div class="inj-mini"><div class="inj-mini-row"><b>Sleeper</b><span>' + sl + '</span></div><div class="inj-mini-row"><b>nflverse</b><span>' + nv + '</span></div>' +
+      '<div class="inj-mini-row"><b>ESPN</b><span>' + es + '</span></div><button type="button" class="all-stats inj-more"' + analyzeAttr(pid) + '>Full injury breakdown →</button></div>';
   }
 
   // Every injury status Sleeper uses (checked against live /players/nfl, Sept 2026). One list for the chips, the
@@ -3568,6 +3717,14 @@
       (ctx.updatedAt ? '<br>Updated · lineup &amp; projections ' + hm(ctx.lastRefresh) + ', injuries ' + hm(ctx.playersTs) +
         ', season stats ' + hm(statTs.length ? Math.min.apply(null, statTs) : 0) + ', nflverse ' + hm(ctx.nflTs) : '');
     document.querySelectorAll('[data-status]').forEach(function(el){ el.innerHTML = txt; });
+    const im = document.getElementById('inj-match');
+    if(im){
+      const list = function(u){ return u.map(function(x){ return escapeHTML(x.n) + ' (' + escapeHTML([x.t, x.pos].filter(Boolean).join(' ')) + (x.st ? ', ' + escapeHTML(x.st) : '') + ')'; }).join('; '); };
+      const nu = nfl && nfl.inj_unmatched, eu = ctx.espn && ctx.espn.unmatched;
+      im.innerHTML = 'nflverse · ' + (!nfl ? 'not loaded' : Object.keys(nfl.inj || {}).length + ' on this week’s reports matched' + (nu && nu.length ? '; <b>' + nu.length + ' not matched:</b> ' + list(nu) : ', none unmatched')) +
+        '<br>ESPN · ' + (!ctx.espn ? (ctx.espnFailed ? 'unavailable' : 'loading') : Object.keys(ctx.espn.players).length + ' matched' + (eu && eu.length ? '; <b>' + eu.length + ' not matched:</b> ' + list(eu) : ', none unmatched') +
+          (ctx.espn.via === 'espn' ? ' (fetched from ESPN directly)' : ''));
+    }
     renderLeagues();
     setLeagueAvatar(ctx.league);
     if(els.setTeam){
@@ -4462,7 +4619,7 @@
     els.heroMeta.textContent = (player.position || '') + ' · ' + (player.team || 'FA') + (player.injury_status && player.injury_status !== 'Healthy' ? ' · ' + player.injury_status : '');
 
     const pending = loadingHistory ? '…' : null;
-    els.heroStats.innerHTML = injuryDetailHTML(playerId) + [
+    els.heroStats.innerHTML = injuryMiniHTML(playerId) + [
       ['Proj this wk', fmtPts(ctx.projections[playerId])],
       ['Last game', pending || fmtPts(lastGamePts(playerId))],
       ['Season avg', pending || fmtPts(seasonAvgPts(playerId))],
@@ -5188,7 +5345,7 @@
     left += '</div>';
     const dvp = dvpInfo(pid);
     const context = rangeDetailHTML(pid) + (dvp ? '<div class="dvp-line"><span class="dvp-chip ' + (dvp.early ? 'early' : dvp.tone) + '">Matchup</span> ' + escapeHTML(dvpSentence(dvp)) + '</div>' : '');
-    return byeCallouts([pid]) + hero + injuryDetailHTML(pid) + (loading ? '' : context) + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
+    return byeCallouts([pid]) + hero + injurySourcesHTML(pid) + (loading ? '' : context) + '<div class="pf-grid">' + left + '<div class="card pf-card">' + maxSideHTML(pid) + '</div></div>';
   }
 
   // The last two header cards depend on the position, so there's never a card that can't apply (no "snap %" for a kicker).
